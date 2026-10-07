@@ -140,6 +140,30 @@ const paths: Record<string, ReactNode> = {
       <line x1="12" y1="8" x2="12.01" y2="8" />
     </>
   ),
+  popcorn: (
+    <>
+      <path d="M18 8a2 2 0 0 0 0-4 2 2 0 0 0-4 0 2 2 0 0 0-4 0 2 2 0 0 0-4 0 2 2 0 0 0 0 4l1.2 12h9.6L18 8Z" />
+      <path d="M10 8v12M14 8v12" />
+    </>
+  ),
+  drink: (
+    <>
+      <path d="M7 4h10l-1.2 16a2 2 0 0 1-2 1.8H10.2A2 2 0 0 1 8.2 20L7 4Z" />
+      <path d="M5 4h14M13 1v3" />
+    </>
+  ),
+  snack: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M8 4v16M16 4v16M3 9h18M3 15h18" />
+    </>
+  ),
+  gift: (
+    <>
+      <rect x="3" y="8" width="18" height="13" rx="2" />
+      <path d="M12 8v13M3 13h18M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {

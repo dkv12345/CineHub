@@ -99,7 +99,7 @@ async function fetchAPI(endpoint, retries = 2) {
         await ensureCookies();
         await new Promise((r) => setTimeout(r, 800 * attempt));
       } else {
-        console.error(`❌ Lỗi khi gọi ${endpoint}:`, error.message);
+        console.error(`[ERROR] Lỗi khi gọi ${endpoint}:`, error.message);
         return null;
       }
     }

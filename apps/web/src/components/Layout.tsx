@@ -244,7 +244,6 @@ export function Chatbot({ lift }: { lift?: boolean }) {
     { from: 'bot', text: 'Xin chào, mình là CineBot. Mình có thể giúp gì cho bạn?' },
   ]);
   const [typing, setTyping] = useState(false);
-  const [aiRecommendations, setAiRecommendations] = useState<AIRecommendation[]>([]);
   const end = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -7,7 +7,7 @@ const rootDir = path.resolve(__dirname, '..');
 const jsonPath = path.join(rootDir, 'data/seed/galaxy_normalized_v3.json');
 
 if (!fs.existsSync(jsonPath)) {
-  console.error('❌ Data file not found:', jsonPath);
+  console.error('[ERROR] Data file not found:', jsonPath);
   process.exit(1);
 }
 
@@ -305,28 +305,28 @@ export const cinemas = ${JSON.stringify(cinemasList, null, 2)};
 export const combos = [
   {
     id: 'single',
-    emoji: '🍿',
+    icon: 'popcorn',
     name: 'Combo Solo Classic',
     desc: '1 Bắp ngọt lớn (64oz) + 1 Nước ngọt có ga (32oz)',
     price: 85000,
   },
   {
     id: 'couple',
-    emoji: '🥤',
+    icon: 'drink',
     name: 'Combo Couple Sweet',
     desc: '1 Bắp phô mai/caramel lớn + 2 Nước ngọt (32oz)',
     price: 120000,
   },
   {
     id: 'vip',
-    emoji: '✨',
+    icon: 'sparkles',
     name: 'Combo CineHub VIP Gold',
     desc: '1 Bắp mix 2 vị + 2 Nước ép trái cây + 1 Snack khoai tây cao cấp',
     price: 165000,
   },
   {
     id: 'family',
-    emoji: '🎉',
+    icon: 'gift',
     name: 'Combo Family Party',
     desc: '2 Bắp lớn tự chọn vị + 4 Nước ngọt + 2 Xúc xích nướng',
     price: 240000,
@@ -414,7 +414,7 @@ export interface AIRecommendation {
 `;
 
 fs.writeFileSync(path.join(rootDir, 'apps/web/src/data.ts'), dataTs, 'utf-8');
-console.log('✅ Generated apps/web/src/data.ts with 43 movies & 31 cinemas');
+console.log('[SUCCESS] Generated apps/web/src/data.ts with 43 movies & 31 cinemas');
 
 // Map sessions for sessionsApi.ts
 const movieMapByExt = new Map(d.movies.map((m) => [m.externalId, m]));
@@ -615,7 +615,7 @@ fs.writeFileSync(
   'utf-8',
 );
 console.log(
-  '✅ Generated apps/web/src/services/sessionsApi.ts with',
+  '[SUCCESS] Generated apps/web/src/services/sessionsApi.ts with',
   sessionsList.length,
   'real showtimes!',
 );

@@ -7,12 +7,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const jsonPath = path.resolve(__dirname, '../../../data/seed/galaxy_normalized_v3.json');
 
 async function main() {
-  console.log('═══════════════════════════════════════════════════════════════');
-  console.log('🌱 CineHub Database Full Seeder (Galaxy Cinema & CineHub Core)');
-  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('===============================================================');
+  console.log('[INFO] CineHub Database Full Seeder (Galaxy Cinema & CineHub Core)');
+  console.log('===============================================================');
 
   // 1. Seat Types
-  console.log('1️⃣  Seeding Seat Types...');
+  console.log('[1/11] Seeding Seat Types...');
   const seatTypes = [
     { code: 'STANDARD', name: 'Ghế tiêu chuẩn', colorHex: '#4b5563', capacity: 1 },
     { code: 'VIP', name: 'Ghế VIP', colorHex: '#eab308', capacity: 1 },
@@ -29,7 +29,7 @@ async function main() {
   }
 
   // 2. Ticket Types
-  console.log('2️⃣  Seeding Ticket Types...');
+  console.log('[2/11] Seeding Ticket Types...');
   const ticketTypes = [
     { code: 'ADULT', name: 'Người lớn', sortOrder: 1 },
     { code: 'STUDENT', name: 'HSSV', sortOrder: 2 },
@@ -47,7 +47,7 @@ async function main() {
   }
 
   // 3. Cinema Chains
-  console.log('3️⃣  Seeding Cinema Chains...');
+  console.log('[3/11] Seeding Cinema Chains...');
   const chains = [
     {
       code: 'GALAXY',
@@ -88,14 +88,14 @@ async function main() {
   // Load normalized data file if present
   let data = null;
   if (fs.existsSync(jsonPath)) {
-    console.log(`📂 Loaded normalized dataset from: ${jsonPath}`);
+    console.log(`[INFO] Loaded normalized dataset from: ${jsonPath}`);
     data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
   }
 
   if (data) {
     // 4. Provinces & Wards
     console.log(
-      `4️⃣  Seeding ${data.provinces?.length || 0} Provinces & ${data.wards?.length || 0} Wards...`,
+      `[4/11] Seeding ${data.provinces?.length || 0} Provinces & ${data.wards?.length || 0} Wards...`,
     );
     const provinceMap = new Map();
     for (const p of data.provinces || []) {
@@ -121,7 +121,7 @@ async function main() {
 
     // 5. Cinemas & Auditoriums
     console.log(
-      `5️⃣  Seeding ${data.cinemas?.length || 0} Cinemas & ${data.auditoriums?.length || 0} Auditoriums...`,
+      `[5/11] Seeding ${data.cinemas?.length || 0} Cinemas & ${data.auditoriums?.length || 0} Auditoriums...`,
     );
     const cinemaMap = new Map();
     for (const c of data.cinemas || []) {
@@ -199,7 +199,7 @@ async function main() {
 
     // 6. Genres & Persons
     console.log(
-      `6️⃣  Seeding ${data.genres?.length || 0} Genres & ${data.persons?.length || 0} Persons...`,
+      `[6/11] Seeding ${data.genres?.length || 0} Genres & ${data.persons?.length || 0} Persons...`,
     );
     const genreMap = new Map();
     for (const g of data.genres || []) {
@@ -222,7 +222,7 @@ async function main() {
     }
 
     // 7. Movies, Credits, Sources
-    console.log(`7️⃣  Seeding ${data.movies?.length || 0} Movies...`);
+    console.log(`[7/11] Seeding ${data.movies?.length || 0} Movies...`);
     const movieMap = new Map();
     for (const m of data.movies || []) {
       const start = m.releaseDate ? new Date(m.releaseDate) : null;
@@ -331,7 +331,7 @@ async function main() {
     }
 
     // 8. Promotions
-    console.log(`8️⃣  Seeding ${data.promotions?.length || 0} Promotions...`);
+    console.log(`[8/11] Seeding ${data.promotions?.length || 0} Promotions...`);
     for (const promo of data.promotions || []) {
       await prisma.promotion.upsert({
         where: { dedupKey: promo.dedupKey },
@@ -353,7 +353,7 @@ async function main() {
     }
 
     // 9. Showtimes
-    console.log(`9️⃣  Seeding ${data.showtimes?.length || 0} Showtimes...`);
+    console.log(`[9/11] Seeding ${data.showtimes?.length || 0} Showtimes...`);
     let showtimeCount = 0;
     for (const s of data.showtimes || []) {
       const cinema = cinemaMap.get(s.cinemaExternalId);
@@ -401,7 +401,7 @@ async function main() {
   }
 
   // 10. Price Rules
-  console.log('🔟 Seeding Galaxy Price Rules Matrix...');
+  console.log('[10/11] Seeding Galaxy Price Rules Matrix...');
   const standardSeat = seatTypeMap.get('STANDARD');
   const vipSeat = seatTypeMap.get('VIP');
   const sweetboxSeat = seatTypeMap.get('SWEETBOX');
@@ -679,7 +679,7 @@ async function main() {
   }
 
   // 11. Concessions & Vouchers
-  console.log('1️⃣1️⃣ Seeding Concessions & Vouchers...');
+  console.log('[11/11] Seeding Concessions & Vouchers...');
   const concessions = [
     {
       name: 'Combo Solo Classic',
@@ -763,14 +763,14 @@ async function main() {
     });
   }
 
-  console.log('═══════════════════════════════════════════════════════════════');
-  console.log('✅ CineHub database seeding finished successfully!');
-  console.log('═══════════════════════════════════════════════════════════════');
+  console.log('===============================================================');
+  console.log('[SUCCESS] CineHub database seeding finished successfully!');
+  console.log('===============================================================');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during database seed:', e);
+    console.error('[ERROR] Error during database seed:', e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

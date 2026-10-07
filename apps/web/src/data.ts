@@ -1786,28 +1786,28 @@ export const cinemas = [
 export const combos = [
   {
     id: 'single',
-    emoji: '🍿',
+    icon: 'popcorn',
     name: 'Combo Solo Classic',
     desc: '1 Bắp ngọt lớn (64oz) + 1 Nước ngọt có ga (32oz)',
     price: 85000,
   },
   {
     id: 'couple',
-    emoji: '🥤',
+    icon: 'drink',
     name: 'Combo Couple Sweet',
     desc: '1 Bắp phô mai/caramel lớn + 2 Nước ngọt (32oz)',
     price: 120000,
   },
   {
     id: 'vip',
-    emoji: '✨',
+    icon: 'sparkles',
     name: 'Combo CineHub VIP Gold',
     desc: '1 Bắp mix 2 vị + 2 Nước ép trái cây + 1 Snack khoai tây cao cấp',
     price: 165000,
   },
   {
     id: 'family',
-    emoji: '🎉',
+    icon: 'gift',
     name: 'Combo Family Party',
     desc: '2 Bắp lớn tự chọn vị + 4 Nước ngọt + 2 Xúc xích nướng',
     price: 240000,

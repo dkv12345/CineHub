@@ -10,9 +10,9 @@ async function main() {
   const startedAt = new Date();
 
   try {
-    console.log('🚀 Starting Galaxy Cinema crawler job...');
+    console.log('[INFO] Starting Galaxy Cinema crawler job...');
     const sessions = await fetchSessions();
-    console.log(`📥 Fetched ${sessions.length} sessions from Galaxy API`);
+    console.log(`[INFO] Fetched ${sessions.length} sessions from Galaxy API`);
 
     await saveRaw(col, 'session', sessions, (s) => s.id);
 
@@ -23,19 +23,19 @@ async function main() {
       if (s.movie?.id) movies.set(s.movie.id, s.movie);
     }
 
-    console.log(`🏛️ Upserting ${cinemas.size} cinemas...`);
+    console.log(`[INFO] Upserting ${cinemas.size} cinemas...`);
     const cinemaRows = new Map();
     for (const [code, c] of cinemas) {
       cinemaRows.set(code, await upsertCinema(chain, c));
     }
 
-    console.log(`🎬 Upserting ${movies.size} movies...`);
+    console.log(`[INFO] Upserting ${movies.size} movies...`);
     const movieRows = new Map();
     for (const [id, m] of movies) {
       movieRows.set(id, await upsertMovie(chain, m));
     }
 
-    console.log('🎟️ Upserting showtimes and auditoriums...');
+    console.log('[INFO] Upserting showtimes and auditoriums...');
     const audCache = new Map();
     let done = 0;
     for (const s of sessions) {
@@ -55,10 +55,10 @@ async function main() {
     }
 
     console.log(
-      `✨ Completed: ${cinemas.size} cinemas, ${movies.size} movies, ${done} showtimes (${Date.now() - startedAt.getTime()}ms)`,
+      `[SUCCESS] Completed: ${cinemas.size} cinemas, ${movies.size} movies, ${done} showtimes (${Date.now() - startedAt.getTime()}ms)`,
     );
   } catch (error) {
-    console.error('❌ Crawl job failed:', error);
+    console.error('[ERROR] Crawl job failed:', error);
     process.exit(1);
   } finally {
     await client.close();

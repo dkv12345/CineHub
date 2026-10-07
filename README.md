@@ -1,10 +1,10 @@
-# 🎬 CineHub – Nền Tảng Đặt Vé Xem Phim Toàn Quốc (Monorepo)
+# CineHub – Nền Tảng Đặt Vé Xem Phim Toàn Quốc (Monorepo)
 
 > **CineHub** là nền tảng đặt vé xem phim trực tuyến hiện đại, hỗ trợ tra cứu lịch chiếu, chọn ghế trực quan 2D & mô phỏng góc nhìn phòng chiếu 3D POV (Three.js), tích hợp dữ liệu thực tế từ **Galaxy Cinema** (43 phim, 31 rạp, 3.289 suất chiếu) và kiến trúc cơ sở dữ liệu Polyglot (MySQL + Redis + MongoDB) với cơ chế chống double-booking đa lớp.
 
 ---
 
-## 📑 Mục lục
+## Mục lục
 
 1. [Công nghệ sử dụng & Quyết định kiến trúc](#1-công-nghệ-sử-dụng--quyết-định-kiến-trúc)
 2. [Cấu trúc thư mục Monorepo](#2-cấu-trúc-thư-mục-monorepo)
@@ -141,7 +141,7 @@ _Lệnh `db:seed` sẽ tự động nạp toàn bộ 43 phim, 31 rạp Galaxy, 3
 npm run dev
 ```
 
-🎉 **Hoàn tất!**
+**Hoàn tất thiết lập:**
 
 - Giao diện người dùng mở tại: **[http://localhost:5173](http://localhost:5173)**
 - Backend API mở tại: **[http://localhost:4000/api/health](http://localhost:4000/api/health)**

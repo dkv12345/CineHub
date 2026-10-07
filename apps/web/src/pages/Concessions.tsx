@@ -34,12 +34,12 @@ export default function Concessions() {
               key={c.id}
               className={`glass-card flex items-center gap-4 rounded-2xl p-4 ${qty(c.id) ? 'glass-selected' : ''}`}
             >
-              <span
-                className="grid h-24 w-24 shrink-0 place-items-center rounded-lg bg-[radial-gradient(circle_at_30%_20%,#3a2a12,#1a1610)] text-5xl"
+              <div
+                className="grid h-20 w-20 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-[#f5b50a]"
                 aria-hidden="true"
               >
-                {c.emoji}
-              </span>
+                <Icon name={c.icon || 'popcorn'} size={30} />
+              </div>
               <div className="min-w-0 flex-1">
                 <h2 className="font-extrabold">{c.name}</h2>
                 <p className="mt-1 text-xs leading-5 text-white/40">{c.desc}</p>
