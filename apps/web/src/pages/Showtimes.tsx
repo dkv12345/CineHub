@@ -78,22 +78,47 @@ export default function Showtimes({
     loadSessions();
   }, []);
 
-  // 7 days timeline
-  const days = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) => {
-        const info = dayInfo(i);
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        const dateStr = d.toISOString().slice(0, 10);
-        return { ...info, dateStr };
-      }),
-    [],
-  );
-
-  const activeDateStr = days[day]?.dateStr || days[0].dateStr;
-
   const allSessions = apiData?.data?.result || [];
+
+  // 7 days timeline based on available dates or current date
+  const days = useMemo(() => {
+    const datesInSessions = Array.from(
+      new Set(allSessions.map((s) => s.showDate).filter(Boolean)),
+    ).sort();
+
+    if (datesInSessions.length > 0) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayIdx = datesInSessions.indexOf(todayStr);
+      const sliceStart = todayIdx >= 0 ? todayIdx : 0;
+      const targetDates = datesInSessions.slice(sliceStart, sliceStart + 7);
+
+      return targetDates.map((dateStr, idx) => {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const isToday = dateStr === todayStr;
+        const isTomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10) === dateStr;
+        const WD = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+        const WD_short = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        return {
+          offset: idx,
+          short: isToday ? 'Hôm nay' : isTomorrow ? 'Ngày mai' : WD_short[dateObj.getDay()],
+          num: String(d).padStart(2, '0'),
+          label: `${WD[dateObj.getDay()]}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`,
+          dateStr,
+        };
+      });
+    }
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const info = dayInfo(i);
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      return { ...info, dateStr };
+    });
+  }, [allSessions]);
+
+  const activeDateStr = days[day]?.dateStr || days[0]?.dateStr || '';
 
   // Distinct lists for filters
   const cities = useMemo(() => getDistinctCities(allSessions), [allSessions]);
