@@ -1,0 +1,20 @@
+{
+  "name": "@cinehub/aggregator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "crawl:galaxy": "node src/jobs/crawl-galaxy.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cinehub/db": "*",
+    "@cinehub/shared": "*",
+    "dotenv": "^16.4.7",
+    "mongodb": "^6.13.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}

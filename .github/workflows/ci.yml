@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      DATABASE_URL: mysql://root:root@localhost:3306/cinehub
+      REDIS_URL: redis://localhost:6379
+      MONGODB_URI: mongodb://localhost:27017/cinehub
+      JWT_ACCESS_SECRET: ci-access-secret-0123456789012345
+      JWT_REFRESH_SECRET: ci-refresh-secret-0123456789012345
+      QR_HMAC_SECRET: ci-qr-secret-01234567890123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run db:validate
+      - run: npm test
