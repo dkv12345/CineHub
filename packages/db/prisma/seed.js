@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prisma } from '../src/index.js';
+import { seedConcessions } from './seed/concessions.js';
+import { seedSeats } from './seed/seats.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const jsonPath = path.resolve(__dirname, '../../../data/seed/galaxy_normalized_v3.json');
@@ -680,53 +682,7 @@ async function main() {
 
   // 11. Concessions & Vouchers
   console.log('[11/11] Seeding Concessions & Vouchers...');
-  const concessions = [
-    {
-      name: 'Combo Solo Classic',
-      description: '1 Bắp ngọt lớn (64oz) + 1 Nước ngọt (32oz)',
-      category: 'COMBO',
-      price: 85000,
-      sortOrder: 1,
-    },
-    {
-      name: 'Combo Couple Sweet',
-      description: '1 Bắp phô mai lớn + 2 Nước ngọt (32oz)',
-      category: 'COMBO',
-      price: 120000,
-      sortOrder: 2,
-    },
-    {
-      name: 'Combo CineHub VIP Gold',
-      description: '1 Bắp mix 2 vị + 2 Nước ép + 1 Snack khoai tây',
-      category: 'COMBO',
-      price: 165000,
-      sortOrder: 3,
-    },
-    {
-      name: 'Combo Family Party',
-      description: '2 Bắp lớn + 4 Nước ngọt + 2 Xúc xích nướng',
-      category: 'COMBO',
-      price: 240000,
-      sortOrder: 4,
-    },
-  ];
-  for (const c of concessions) {
-    const existing = await prisma.concession.findFirst({
-      where: { chainId: galaxyChain.id, name: c.name },
-    });
-    if (!existing) {
-      await prisma.concession.create({
-        data: {
-          chainId: galaxyChain.id,
-          name: c.name,
-          description: c.description,
-          category: c.category,
-          price: c.price,
-          sortOrder: c.sortOrder,
-        },
-      });
-    }
-  }
+  await seedConcessions(prisma, galaxyChain.id);
 
   const vouchers = [
     {
@@ -762,6 +718,9 @@ async function main() {
       create: v,
     });
   }
+
+  console.log('[11b] Generating mock seat maps for auditoriums...');
+  await seedSeats(prisma, seatTypeMap);
 
   console.log('===============================================================');
   console.log('[SUCCESS] CineHub database seeding finished successfully!');

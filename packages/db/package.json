@@ -10,14 +10,15 @@
   "scripts": {
     "postinstall": "prisma generate",
     "generate": "prisma generate",
-    "validate": "dotenv -e ../../.env -- prisma validate",
-    "migrate": "dotenv -e ../../.env -- prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
-    "studio": "dotenv -e ../../.env -- prisma studio",
-    "seed": "dotenv -e ../../.env -- node prisma/seed.js"
+    "validate": "npx dotenv-cli -e ../../.env -- prisma validate",
+    "migrate": "npx dotenv-cli -e ../../.env -- prisma migrate dev",
+    "migrate:deploy": "npx dotenv-cli -e ../../.env -- prisma migrate deploy",
+    "studio": "npx dotenv-cli -e ../../.env -- prisma studio",
+    "seed": "node --env-file=../../.env prisma/seed.js"
   },
   "prisma": {
-    "schema": "prisma/schema.prisma"
+    "schema": "prisma/schema.prisma",
+    "seed": "node --env-file=../../.env prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1"
