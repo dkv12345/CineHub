@@ -657,12 +657,16 @@ model ShowtimeSeat {
 model Concession {
   id          String             @id @default(uuid(7)) @db.Char(36)
   chainId     String             @db.Char(36)
-  cinemaId    String?            @db.Char(36) // null = áp dụng cả cụm; service phải kiểm cinema thuộc chain
+  cinemaId    String?            @db.Char(36) 
+  externalId  String?            @unique @db.VarChar(50) // MỚI: Lưu ticketTypeCode (VD: HOICB1EXPREMIUM) để upsert
   name        String             @db.VarChar(150)
   description String?            @db.VarChar(500)
   category    ConcessionCategory @default(COMBO)
   imageUrl    String?            @db.VarChar(500)
   price       Int
+  minSeats    Int                @default(0) // MỚI: Ràng buộc số ghế tối thiểu
+  maxSeats    Int                @default(99) // MỚI: Ràng buộc số ghế tối đa
+  cinemaApply Json?              // MỚI: Lưu ["1001", "1003"] nếu áp dụng cho nhiều rạp cụ thể
   isActive    Boolean            @default(true)
   sortOrder   Int                @default(0)
 
