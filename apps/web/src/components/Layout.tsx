@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { avatar, movies } from '../data';
-import type { Movie, AIRecommendation } from '../data';
+import type { Movie } from '../data';
 import { go, Link } from '../router';
 import { useStore } from '../store';
 import { Icon } from './ui';
@@ -100,7 +100,12 @@ export function Header({ path }: { path: string }) {
               aria-label="Tài khoản"
               className="h-10 w-10 overflow-hidden rounded-full border-2 border-white/15"
             >
-              <img src={avatar} alt="" className="h-full w-full object-cover" />
+              <img
+                src={user.photoURL || avatar}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-full w-full object-cover"
+              />
             </button>
             {drop && (
               <div
@@ -111,6 +116,12 @@ export function Header({ path }: { path: string }) {
                   <b className="block text-sm">{user.name}</b>
                   <small className="text-white/40">{user.email}</small>
                 </div>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5"
+                >
+                  <Icon name="user" size={17} /> Hồ sơ của tôi
+                </Link>
                 <Link
                   to="/my-tickets"
                   className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5"
@@ -269,8 +280,8 @@ export function Chatbot({ lift }: { lift?: boolean }) {
   return (
     <div className={`fixed right-5 z-[60] ${lift ? 'bottom-28' : 'bottom-5'}`}>
       {open && (
-        <div className="glass-panel chat-panel mb-3 flex h-[440px] w-[min(360px,calc(100vw-40px))] flex-col overflow-hidden rounded-2xl shadow-2xl">
-          <div className="flex items-center gap-3 bg-[#e50914] px-4 py-3">
+        <div className="glass-panel chat-panel mb-3 flex h-[440px] w-[min(360px,calc(100vw-40px))] flex-col overflow-hidden rounded-2xl text-gray-900 shadow-2xl">
+          <div className="flex items-center gap-3 bg-[#e50914] px-4 py-3 text-white">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20">
               <Icon name="chat" size={17} />
             </span>
@@ -290,7 +301,7 @@ export function Chatbot({ lift }: { lift?: boolean }) {
             {msgs.map((m, i) => (
               <div key={i}>
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-5 ${m.from === 'me' ? 'ml-auto rounded-br-sm bg-[#e50914]' : 'rounded-bl-sm bg-white/8'}`}
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-5 ${m.from === 'me' ? 'ml-auto rounded-br-sm bg-[#e50914] text-white' : 'rounded-bl-sm bg-gray-100 text-gray-900'}`}
                 >
                   {m.text}
                 </div>
@@ -298,20 +309,20 @@ export function Chatbot({ lift }: { lift?: boolean }) {
                   <Link
                     key={movie.id}
                     to={`/movie/${movie.id}`}
-                    className="mt-2 flex items-center gap-3 rounded-lg border border-white/8 bg-white/[.03] p-2.5 hover:border-white/20"
+                    className="mt-2 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-100 p-2.5 hover:bg-gray-200"
                   >
                     <img src={movie.poster} alt="" className="h-14 w-10 rounded object-cover" />
                     <span className="min-w-0">
-                      <b className="block truncate text-xs">{movie.title}</b>
+                      <b className="block truncate text-xs text-gray-900">{movie.title}</b>
                       <small className="text-[#f5b50a]">★ {movie.rating} · Đang chiếu</small>
-                      <small className="mt-1 block text-[10px] text-white/40">{movie.genre}</small>
+                      <small className="mt-1 block text-[10px] text-gray-600">{movie.genre}</small>
                     </span>
                   </Link>
                 ))}
               </div>
             ))}
             {typing && (
-              <div className="w-fit rounded-2xl rounded-bl-sm bg-white/8 px-4 py-3 text-xs text-white/50">
+              <div className="w-fit rounded-2xl rounded-bl-sm bg-gray-100 px-4 py-3 text-xs text-gray-700">
                 CineBot đang tìm phim...
               </div>
             )}
@@ -322,7 +333,7 @@ export function Chatbot({ lift }: { lift?: boolean }) {
               <button
                 key={c}
                 onClick={() => send(c)}
-                className="rounded-full border border-white/12 px-3 py-1 text-[11px] font-semibold text-white/60 hover:bg-white/8"
+                className="rounded-full bg-gray-200 px-3 py-1 text-[11px] font-semibold text-gray-800 transition-colors hover:bg-gray-300"
               >
                 {c}
               </button>
@@ -335,7 +346,7 @@ export function Chatbot({ lift }: { lift?: boolean }) {
               onKeyDown={(e) => e.key === 'Enter' && send(text)}
               aria-label="Tin nhắn"
               placeholder="Nhập câu hỏi..."
-              className="min-w-0 flex-1 rounded-full bg-white/6 px-4 py-2.5 text-sm outline-none placeholder:text-white/30"
+              className="min-w-0 flex-1 rounded-full bg-gray-100 px-4 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-500"
             />
             <button
               onClick={() => send(text)}
