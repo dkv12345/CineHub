@@ -1864,6 +1864,32 @@ export function getShows(movieId: number | string, cinemaIdx: number, dayOffset:
   return [...t2, ...t3, ...imax].sort((a, b) => a.time.localeCompare(b.time));
 }
 
+export const promotions = [
+  {
+    id: 'trai-buon-nguoi',
+    title: 'Ưu đãi Trại Buôn Người',
+    image:
+      'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773875/banner4_trai_buon_nguoi_1782x904.png',
+  },
+  {
+    id: 'shopeepay',
+    title: 'Ưu đãi ShopeePay',
+    image:
+      'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773846/banner3_shopeepay_1782x904.png',
+  },
+  {
+    id: 'momo',
+    title: 'Ưu đãi MoMo',
+    image: 'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773846/banner2_momo_1782x904.png',
+  },
+  {
+    id: 'joydrops',
+    title: 'Ưu đãi JoyDrops',
+    image:
+      'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773846/banner1_joydrops_1782x904.png',
+  },
+];
+
 export const seedReviews = [
   {
     name: 'Minh Anh',

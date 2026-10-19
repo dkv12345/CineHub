@@ -101,7 +101,12 @@ export function Header({ path }: { path: string }) {
               aria-label="Tài khoản"
               className="h-10 w-10 overflow-hidden rounded-full border-2 border-white/15"
             >
-              <img src={avatar} alt="" className="h-full w-full object-cover" />
+              <img
+                src={user.photoURL || avatar}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-full w-full object-cover"
+              />
             </button>
             {drop && (
               <div
@@ -112,6 +117,12 @@ export function Header({ path }: { path: string }) {
                   <b className="block text-sm">{user.name}</b>
                   <small className="text-white/40">{user.email}</small>
                 </div>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5"
+                >
+                  <Icon name="user" size={17} /> Hồ sơ của tôi
+                </Link>
                 <Link
                   to="/my-tickets"
                   className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5"

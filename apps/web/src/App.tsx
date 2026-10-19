@@ -11,6 +11,7 @@ import Concessions from './pages/Concessions';
 import Checkout from './pages/Checkout';
 import { Failed, Success } from './pages/Result';
 import MyTickets from './pages/MyTickets';
+import Profile from './pages/Profile';
 import { movies, movieThemes } from './data';
 import type { CSSProperties } from 'react';
 
@@ -75,6 +76,16 @@ function Routes() {
   else if (path === '/booking/checkout') page = <Checkout />;
   else if (path === '/result/success') page = <Success />;
   else if (path === '/result/failed') page = <Failed reason={query.get('reason') || 'error'} />;
+  else if (path === '/profile')
+    page = user ? (
+      <Profile />
+    ) : (
+      <Notice
+        text="Đăng nhập để xem hồ sơ CineHub của bạn."
+        to={login('/profile')}
+        cta="Đăng nhập"
+      />
+    );
   else if (path === '/my-tickets')
     page = user ? (
       <MyTickets />

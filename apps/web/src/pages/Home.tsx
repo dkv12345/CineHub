@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { cinemas, dayInfo, movies, movieThemes } from '../data';
+import { cinemas, dayInfo, movies, movieThemes, promotions } from '../data';
 import type { Movie } from '../data';
 import type { CSSProperties } from 'react';
 import { go, Link } from '../router';
-import { btnGhost, btnPrimary, Icon } from '../components/ui';
+import { btnBookTicket, btnGhost, btnPrimary, Icon } from '../components/ui';
 import { useStore } from '../store';
 import type { MovieRecommendation } from '../services/recommendationsApi';
 import { fetchRecommendations } from '../services/recommendationsApi';
 
-const slides = movies.slice(0, 3);
+const slides = [
+  ...movies.slice(0, 3).map((movie) => ({ type: 'movie' as const, key: String(movie.id), movie })),
+  ...promotions.map((promotion) => ({ type: 'promotion' as const, key: promotion.id, promotion })),
+];
 
 function Hero() {
   const [i, setI] = useState(0);
@@ -26,83 +29,101 @@ function Hero() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
-      aria-label="Phim nổi bật"
+      aria-label="Phim nổi bật và ưu đãi"
     >
-      {slides.map((m, n) => (
+      {slides.map((slide, n) => (
         <div
-          key={m.id}
+          key={slide.key}
           aria-hidden={n !== i}
           style={
-            {
-              '--film-accent': movieThemes[m.themeKey || 'space'].accent,
-              '--film-highlight': movieThemes[m.themeKey || 'space'].highlight,
-              '--film-display': movieThemes[m.themeKey || 'space'].fontFamily,
-            } as CSSProperties
+            slide.type === 'movie'
+              ? ({
+                  '--film-accent': movieThemes[slide.movie.themeKey || 'space'].accent,
+                  '--film-highlight': movieThemes[slide.movie.themeKey || 'space'].highlight,
+                  '--film-display': movieThemes[slide.movie.themeKey || 'space'].fontFamily,
+                } as CSSProperties)
+              : undefined
           }
           className={`absolute inset-0 transition-opacity duration-700 ${n === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
         >
-          <img
-            src={m.backdrop}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-80"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,#0b0d11_0%,rgba(11,13,17,.75)_37%,rgba(11,13,17,.1)_72%),linear-gradient(0deg,#0b0d11_0%,transparent_45%)]" />
-          <div className="dark-film-content relative mx-auto flex min-h-[600px] max-w-[1400px] items-center px-5 pb-24 pt-16 md:px-9">
-            <div className="max-w-[660px]">
-              <div className="mb-5 flex items-center gap-3 text-sm font-bold film-highlight">
-                <span className="h-px w-8 bg-[var(--film-highlight)]" />{' '}
-                {m.studio || m.country || 'Phim hot tuần này'}
+          {slide.type === 'movie' ? (
+            <>
+              <img
+                src={slide.movie.backdrop}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover opacity-80"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,#0b0d11_0%,rgba(11,13,17,.75)_37%,rgba(11,13,17,.1)_72%),linear-gradient(0deg,#0b0d11_0%,transparent_45%)]" />
+              <div className="dark-film-content relative mx-auto flex min-h-[600px] max-w-[1400px] items-center px-5 pb-24 pt-16 md:px-9">
+                <div className="max-w-[660px]">
+                  <div className="mb-5 flex items-center gap-3 text-sm font-bold film-highlight">
+                    <span className="h-px w-8 bg-[var(--film-highlight)]" />{' '}
+                    {slide.movie.studio || slide.movie.country || 'Phim hot tuần này'}
+                  </div>
+                  <h1 className="film-title text-6xl sm:text-7xl md:text-[96px]">
+                    {slide.movie.title.toUpperCase()}
+                  </h1>
+                  <div className="mt-6 flex flex-wrap items-center gap-4 text-sm font-semibold text-white/75">
+                    <span className="rounded bg-white px-1.5 py-0.5 text-xs text-black">
+                      {slide.movie.age}
+                    </span>
+                    <span>2026</span>
+                    <span>{slide.movie.duration}</span>
+                    <span>{slide.movie.genre}</span>
+                    <span className="text-white">
+                      <b className="film-highlight">★</b> {slide.movie.rating}/10
+                    </span>
+                  </div>
+                  <p className="mt-3 text-xs font-semibold text-white/55">
+                    Đạo diễn <b className="text-white/80">{slide.movie.director}</b>
+                    <span className="mx-2 text-white/20">·</span>Diễn viên{' '}
+                    <b className="text-white/80">{slide.movie.cast}</b>
+                  </p>
+                  <p className="mt-2 text-xs font-bold text-white/55">
+                    {slide.movie.country || 'Quốc tế'}
+                    {slide.movie.studio ? ` · ${slide.movie.studio}` : ''}
+                  </p>
+                  <p className="mt-5 max-w-[540px] text-[15px] leading-7 text-white/55">
+                    {slide.movie.synopsis}
+                  </p>
+                  <div className="mt-8 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => {
+                        trackMovie(slide.movie.id);
+                        go(`/showtimes?movie=${slide.movie.id}`);
+                      }}
+                      className={btnBookTicket}
+                    >
+                      Đặt vé <Icon name="arrow" size={18} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        trackMovie(slide.movie.id, 34);
+                        go(`/movie/${slide.movie.id}?trailer=1`);
+                      }}
+                      className={btnGhost}
+                    >
+                      <Icon name="play" size={17} /> Xem trailer
+                    </button>
+                    <button
+                      onClick={() => go(`/movie/${slide.movie.id}`)}
+                      className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-black/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                    >
+                      Xem chi tiết
+                    </button>
+                  </div>
+                </div>
               </div>
-              <h1 className="film-title text-6xl sm:text-7xl md:text-[96px]">
-                {m.title.toUpperCase()}
-              </h1>
-              <div className="mt-6 flex flex-wrap items-center gap-4 text-sm font-semibold text-white/75">
-                <span className="rounded bg-white px-1.5 py-0.5 text-xs text-black">{m.age}</span>
-                <span>2026</span>
-                <span>{m.duration}</span>
-                <span>{m.genre}</span>
-                <span className="text-white">
-                  <b className="film-highlight">★</b> {m.rating}/10
-                </span>
-              </div>
-              <p className="mt-3 text-xs font-semibold text-white/55">
-                Đạo diễn <b className="text-white/80">{m.director}</b>
-                <span className="mx-2 text-white/20">·</span>Diễn viên{' '}
-                <b className="text-white/80">{m.cast}</b>
-              </p>
-              <p className="mt-2 text-xs font-bold text-white/55">
-                {m.country || 'Quốc tế'}
-                {m.studio ? ` · ${m.studio}` : ''}
-              </p>
-              <p className="mt-5 max-w-[540px] text-[15px] leading-7 text-white/55">{m.synopsis}</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button
-                  onClick={() => {
-                    trackMovie(m.id);
-                    go(`/showtimes?movie=${m.id}`);
-                  }}
-                  className={btnPrimary}
-                >
-                  Đặt vé <Icon name="arrow" size={18} />
-                </button>
-                <button
-                  onClick={() => {
-                    trackMovie(m.id, 34);
-                    go(`/movie/${m.id}?trailer=1`);
-                  }}
-                  className={btnGhost}
-                >
-                  <Icon name="play" size={17} /> Xem trailer
-                </button>
-                <button
-                  onClick={() => go(`/movie/${m.id}`)}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-black/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-                >
-                  Xem chi tiết
-                </button>
-              </div>
+            </>
+          ) : (
+            <div className="absolute inset-0 overflow-hidden bg-[#090b0e]">
+              <img
+                src={slide.promotion.image}
+                alt={slide.promotion.title}
+                className="h-full w-full object-cover"
+              />
             </div>
-          </div>
+          )}
         </div>
       ))}
       <div className="absolute bottom-8 right-5 z-10 flex items-center gap-3 md:right-9">
@@ -114,9 +135,9 @@ function Hero() {
           <Icon name="chevronL" size={18} />
         </button>
         <div className="flex gap-2">
-          {slides.map((m, n) => (
+          {slides.map((slide, n) => (
             <button
-              key={m.id}
+              key={slide.key}
               onClick={() => setI(n)}
               aria-label={`Slide ${n + 1}`}
               className={`h-1.5 rounded-full transition-all ${n === i ? 'w-8 bg-[#e50914]' : 'w-3 bg-white/30'}`}
@@ -278,7 +299,7 @@ export default function Home() {
   const [tab, setTab] = useState<'now' | 'soon'>('now');
   const [catalogFilter, setCatalogFilter] = useState('all');
   const [shelf, setShelf] = useState<'history' | 'collection' | 'trending'>('history');
-  const { user, collections, toggleCollection, recentMovies, watchProgress, trackMovie } =
+  const { user, collections, toggleCollection, recentMovies, watchProgress, trackMovie, orders } =
     useStore();
   const [recommended, setRecommended] = useState<MovieRecommendation[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
@@ -490,8 +511,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-[1400px] gap-5 px-5 py-14 md:px-9 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="glass-panel h-fit rounded-2xl p-3">
+      <section className="mx-auto grid max-w-[1400px] gap-5 px-5 py-14 md:px-9 lg:grid-cols-[220px_minmax(0,1fr)] lg:grid-rows-[auto_auto]">
+        <aside className="glass-panel h-fit rounded-2xl p-3 lg:col-start-1 lg:row-start-2">
           <p className="px-3 pb-3 pt-2 text-[10px] font-extrabold uppercase tracking-[.16em] text-white/35">
             Thư viện của bạn
           </p>
@@ -516,8 +537,8 @@ export default function Home() {
             </button>
           ))}
         </aside>
-        <div className="min-w-0">
-          <div className="mb-5 flex items-end justify-between gap-4">
+        <div className="min-w-0 lg:contents">
+          <div className="mb-5 flex items-end justify-between gap-4 lg:col-start-2 lg:row-start-1">
             <div>
               <p className="text-xs font-extrabold uppercase text-[#f5b50a]">CineHub của bạn</p>
               <h2 className="mt-1 text-2xl font-extrabold">
@@ -531,7 +552,7 @@ export default function Home() {
             <span className="text-xs text-white/35">{shelfItems.length} phim</span>
           </div>
           {shelfItems.length ? (
-            <div className="scrollbar-hide -mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3">
+            <div className="scrollbar-hide -mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3 lg:col-start-2 lg:row-start-2">
               {shelfItems.map((m) => (
                 <article
                   key={m.id}
@@ -580,7 +601,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="glass-panel flex min-h-48 flex-col items-start justify-center rounded-2xl px-6 py-8">
+            <div className="glass-panel flex min-h-48 flex-col items-start justify-center rounded-2xl px-6 py-8 lg:col-start-2 lg:row-start-2">
               <p className="text-sm font-bold">
                 {shelf === 'collection' ? 'Bộ sưu tập đang trống' : 'Chưa có hoạt động gần đây'}
               </p>

@@ -3,7 +3,13 @@ import type { ReactNode } from 'react';
 import { dayInfo, PRICE } from './data';
 import type { Concession } from './services/concessionsApi';
 
-export type User = { name: string; email: string } | null;
+export type User = {
+  uid?: string;
+  name: string;
+  email: string;
+  photoURL?: string;
+  provider?: 'google' | 'email';
+} | null;
 export type SeatZone = 'normal' | 'vip' | 'sweetbox';
 export type Booking = {
   movieId: number | string | null;
@@ -47,6 +53,7 @@ export type Order = {
   total: number;
   method: string;
   status: 'upcoming' | 'past';
+  purchasedAt?: number;
 };
 
 const empty: Booking = {
@@ -59,6 +66,23 @@ const empty: Booking = {
   seatTypes: {},
   combos: {},
   expiresAt: null,
+};
+
+const accountStorageKey = (user: NonNullable<User> | null) =>
+  user
+    ? `cinehub:account:${encodeURIComponent(user.uid || user.email.toLowerCase())}`
+    : 'cinehub:guest';
+
+const readStored = <T,>(key: string, fallback: T): T => {
+  const value = localStorage.getItem(key);
+  if (value === null) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    localStorage.removeItem(key);
+    return fallback;
+  }
 };
 
 const seedOrders: Order[] = [
@@ -117,6 +141,7 @@ export const combosTotal = (b: Booking, concessions: Concession[]) =>
 
 type Ctx = {
   user: User;
+  authLoading: boolean;
   login: (u: NonNullable<User>) => void;
   logout: () => void;
   booking: Booking;
@@ -141,25 +166,49 @@ export const useStore = () => useContext(C);
 
 export function Provider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
+  const [authLoading] = useState(false);
   const [booking, setBooking] = useState<Booking>(empty);
   const [concessions, setConcessions] = useState<Concession[]>([]);
   const [orders, setOrders] = useState<Order[]>(seedOrders);
   const [lastOrder, setLast] = useState<Order | null>(null);
-  const [notified, setNotified] = useState<(number | string)[]>([]);
-  const [collections, setCollections] = useState<(number | string)[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('cinehub:collection') || '[]') as (number | string)[];
-    } catch {
-      return [];
-    }
-  });
-  const [recentMovies, setRecentMovies] = useState<(number | string)[]>([]);
-  const [watchProgress, setWatchProgress] = useState<Record<string | number, number>>({});
+  const [notified, setNotified] = useState<(number | string)[]>(() =>
+    readStored('cinehub:guest:notified', []),
+  );
+  const [collections, setCollections] = useState<(number | string)[]>(() =>
+    readStored('cinehub:guest:collection', readStored('cinehub:collection', [])),
+  );
+  const [recentMovies, setRecentMovies] = useState<(number | string)[]>(() =>
+    readStored('cinehub:guest:recent', []),
+  );
+  const [watchProgress, setWatchProgress] = useState<Record<string | number, number>>(() =>
+    readStored('cinehub:guest:progress', {}),
+  );
+
+  const activateUser = (nextUser: User) => {
+    const key = accountStorageKey(nextUser);
+    setUser(nextUser);
+    setOrders(readStored(`${key}:orders`, nextUser ? [] : seedOrders));
+    setLast(null);
+    setNotified(readStored(`${key}:notified`, []));
+    setCollections(
+      readStored(`${key}:collection`, nextUser ? [] : readStored('cinehub:collection', [])),
+    );
+    setRecentMovies(readStored(`${key}:recent`, []));
+    setWatchProgress(readStored(`${key}:progress`, {}));
+  };
+
+  useEffect(() => {
+    const key = accountStorageKey(user);
+    localStorage.setItem(`${key}:orders`, JSON.stringify(orders));
+    localStorage.setItem(`${key}:notified`, JSON.stringify(notified));
+    localStorage.setItem(`${key}:collection`, JSON.stringify(collections));
+    localStorage.setItem(`${key}:recent`, JSON.stringify(recentMovies));
+    localStorage.setItem(`${key}:progress`, JSON.stringify(watchProgress));
+  }, [user, orders, notified, collections, recentMovies, watchProgress]);
 
   const toggleCollection = (id: number | string) =>
     setCollections((items) => {
       const next = items.includes(id) ? items.filter((item) => item !== id) : [id, ...items];
-      localStorage.setItem('cinehub:collection', JSON.stringify(next));
       return next;
     });
   const trackMovie = useCallback((id: number | string, progress = 8) => {
@@ -169,8 +218,9 @@ export function Provider({ children }: { children: ReactNode }) {
 
   const value: Ctx = {
     user,
-    login: setUser,
-    logout: () => setUser(null),
+    authLoading,
+    login: activateUser,
+    logout: () => activateUser(null),
     booking,
     patch: (p) => setBooking((b) => ({ ...b, ...p })),
     startBooking: (p) => {
@@ -210,6 +260,7 @@ export function Provider({ children }: { children: ReactNode }) {
         total: ticketsTotal(booking) + combosTotal(booking, concessions),
         method,
         status: 'upcoming',
+        purchasedAt: Date.now(),
       };
       setOrders((x) => [o, ...x]);
       setLast(o);
