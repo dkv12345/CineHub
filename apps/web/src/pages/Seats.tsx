@@ -4,8 +4,8 @@ import { fmt, hash, movies, PRICE } from '../data';
 import { ticketsTotal, useStore } from '../store';
 import type { SeatZone } from '../store';
 import { btnPrimary, HoldTimer, Icon, Modal, Steps } from '../components/ui';
-import SeatMap2D, { layoutForCinema } from '../components/SeatMap2D';
-import type { SeatCell } from '../components/SeatMap2D';
+import SeatMap3D, { layoutForCinema } from '../components/SeatMap3D';
+import type { SeatCell } from '../components/SeatMap3D';
 const SeatPOVScene = lazy(() => import('../components/SeatPOVScene'));
 
 const MAX = 6;
@@ -110,11 +110,11 @@ export default function Seats() {
               Chọn ghế để xem góc nhìn tại vị trí đó
             </p>
           </div>
-          <SeatMap2D layout={layout} seats={seats} onChoose={chooseSeat} />
+          <SeatMap3D layout={layout} seats={seats} onChoose={chooseSeat} />
           <div className="mt-5 flex flex-wrap justify-center gap-x-6 gap-y-3 border-t border-[#6e675c]/15 pt-5 text-xs text-[#5c5954]">
             <span className="flex items-center gap-2">
               <i className="h-4 w-5 rounded-md border border-[#7046c8] bg-[#8054d7]" />
-              Thường {fmt(PRICE.normal)}
+              Thường {fmt(PRICE.regular)}
             </span>
             <span className="flex items-center gap-2">
               <i className="h-4 w-5 rounded-md border border-[#c48848] bg-[#dca762]" />

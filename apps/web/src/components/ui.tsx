@@ -223,7 +223,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         onMouseDown={(e) => e.stopPropagation()}
-        className={`glass-panel relative w-full ${wide ? 'max-w-[860px]' : 'max-w-[400px]'} rounded-3xl p-6 shadow-2xl`}
+        className={`glass-panel relative max-h-[calc(100dvh-2rem)] w-full overflow-y-auto ${wide ? 'max-w-[860px]' : 'max-w-[400px]'} rounded-3xl p-6 shadow-2xl`}
       >
         <button
           onClick={onClose}

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { avatar, movies } from '../data';
-import type { Movie, AIRecommendation } from '../data';
 import { go, Link } from '../router';
 import { useStore } from '../store';
 import { Icon } from './ui';
+import { askCineBot, resetCineBotSession } from '../services/chatbotApi';
+import type { ChatReply } from '../services/chatbotApi';
 
 export function Header({ path }: { path: string }) {
   const { user, logout } = useStore();
@@ -209,39 +210,21 @@ export function Footer() {
   );
 }
 
-type Msg = { from: 'bot' | 'me'; text: string; recommendations?: Movie[] };
-const answer = (t: string): Omit<Msg, 'from'> => {
-  const s = t.toLowerCase();
-  if (/giá|bao nhiêu|vé/.test(s))
-    return {
-      text: 'Ghế thường 90.000₫, ghế VIP 120.000₫. Bạn có thể xem giá chính xác ở bước chọn ghế.',
-    };
-  if (/hoàn|hủy|huỷ/.test(s))
-    return {
-      text: 'Vé đã thanh toán có thể hoàn trước giờ chiếu 2 tiếng. Bạn vào Vé của tôi để gửi yêu cầu.',
-    };
-  if (/hot|gợi ý|phim|gia đình|bạo lực/.test(s))
-    return {
-      text: 'Mình chọn ra 3 phim đang được đánh giá cao. Chạm vào poster để xem chi tiết và lịch chiếu nhé.',
-      recommendations: movies
-        .filter((m) => m.status === 'now')
-        .sort((a, b) => b.rating - a.rating)
-        .slice(0, 3),
-    };
-  if (/thanh toán|vnpay|zalo/.test(s))
-    return {
-      text: 'CineHub hỗ trợ VNPay và ZaloPay. Ghế được giữ 15 phút trong lúc bạn thanh toán.',
-    };
-  return {
-    text: 'Mình chưa hiểu rõ ý bạn. Bạn thử hỏi về giá vé, phim hot, thanh toán hoặc hoàn vé nhé.',
-  };
+type Msg = {
+  from: 'bot' | 'me';
+  text: string;
+  response?: ChatReply;
+  error?: boolean;
 };
 
 export function Chatbot({ lift }: { lift?: boolean }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [msgs, setMsgs] = useState<Msg[]>([
-    { from: 'bot', text: 'Xin chào, mình là CineBot. Mình có thể giúp gì cho bạn?' },
+    {
+      from: 'bot',
+      text: 'Chào bạn, mình là CineBot. Mình có thể tra phim, lịch chiếu và giá vé theo dữ liệu CineHub.',
+    },
   ]);
   const [typing, setTyping] = useState(false);
   const end = useRef<HTMLDivElement>(null);
@@ -255,102 +238,212 @@ export function Chatbot({ lift }: { lift?: boolean }) {
     return () => window.removeEventListener('cinehub:open-chat', reveal);
   }, []);
 
-  const send = (t: string) => {
+  const send = async (t: string) => {
     if (!t.trim() || typing) return;
     setMsgs((m) => [...m, { from: 'me', text: t }]);
     setText('');
     setTyping(true);
-    setTimeout(() => {
-      setMsgs((m) => [...m, { from: 'bot', ...answer(t) }]);
+    try {
+      const response = await askCineBot(t);
+      setMsgs((m) => [...m, { from: 'bot', text: response.reply, response }]);
+    } catch (error) {
+      setMsgs((m) => [
+        ...m,
+        {
+          from: 'bot',
+          text:
+            error instanceof Error ? error.message : 'CineBot đang gặp sự cố. Vui lòng thử lại.',
+          error: true,
+        },
+      ]);
+    } finally {
       setTyping(false);
-    }, 600);
+    }
   };
 
   return (
     <div className={`fixed right-5 z-[60] ${lift ? 'bottom-28' : 'bottom-5'}`}>
       {open && (
-        <div className="glass-panel chat-panel mb-3 flex h-[440px] w-[min(360px,calc(100vw-40px))] flex-col overflow-hidden rounded-2xl shadow-2xl">
-          <div className="flex items-center gap-3 bg-[#e50914] px-4 py-3">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20">
-              <Icon name="chat" size={17} />
-            </span>
-            <div className="flex-1">
-              <b className="block text-sm">CineBot</b>
-              <small className="text-white/75">Trợ lý AI · trả lời ngay</small>
+        <div className="chat-panel mb-4 flex h-[min(680px,calc(100dvh-120px))] w-[min(410px,calc(100vw-32px))] flex-col overflow-hidden rounded-[26px] border border-white/20 bg-[#10131b] shadow-[0_28px_100px_rgba(0,0,0,.7)] ring-1 ring-black/40">
+          <div className="relative overflow-hidden border-b border-white/10 bg-[linear-gradient(120deg,#7f1325,#df1830_55%,#9e2445)] px-5 py-4">
+            <div className="absolute -right-8 -top-12 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative flex items-center gap-3">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl border border-white/20 bg-white/15 shadow-lg">
+                <Icon name="sparkles" size={21} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <b className="block text-base tracking-tight">CineBot</b>
+                <small className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/80">
+                  <i className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_#6ee7b7]" />
+                  DB-first · Gemini tuỳ chọn
+                </small>
+              </div>
+              <button
+                onClick={() => {
+                  if (typing) return;
+                  resetCineBotSession();
+                  setMsgs([
+                    {
+                      from: 'bot',
+                      text: 'Cuộc trò chuyện mới đã bắt đầu. Mình có thể giúp bạn tìm phim và lịch chiếu.',
+                    },
+                  ]);
+                }}
+                disabled={typing}
+                className="rounded-lg border border-white/15 px-2.5 py-2 text-[10px] font-semibold text-white/80 transition hover:bg-white/10 disabled:opacity-40"
+              >
+                Cuộc trò chuyện mới
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Đóng chat"
+                className="rounded-xl border border-white/15 bg-black/10 p-2 text-white/80 transition hover:bg-white/15 hover:text-white"
+              >
+                <Icon name="close" size={18} />
+              </button>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Đóng chat"
-              className="rounded-full p-1.5 hover:bg-white/15"
-            >
-              <Icon name="close" size={18} />
-            </button>
           </div>
-          <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
+          <div
+            className="flex-1 space-y-4 overflow-y-auto bg-[radial-gradient(ellipse_at_top_right,rgba(137,32,55,.18),transparent_55%)] p-4"
+            aria-live="polite"
+          >
             {msgs.map((m, i) => (
-              <div key={i}>
+              <div key={i} className="space-y-2">
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-5 ${m.from === 'me' ? 'ml-auto rounded-br-sm bg-[#e50914]' : 'rounded-bl-sm bg-white/8'}`}
+                  className={`max-w-[88%] rounded-2xl border px-4 py-3 text-[13px] leading-5 shadow-sm ${m.from === 'me' ? 'ml-auto rounded-br-md border-[#f04459]/50 bg-[linear-gradient(135deg,#b9142d,#e32640)] text-white' : `rounded-bl-md border-white/10 bg-[#202530] text-white/90 ${m.error ? 'border-rose-400/30 text-rose-100' : ''}`}`}
                 >
                   {m.text}
                 </div>
-                {m.recommendations?.map((movie) => (
-                  <Link
-                    key={movie.id}
-                    to={`/movie/${movie.id}`}
-                    className="mt-2 flex items-center gap-3 rounded-lg border border-white/8 bg-white/[.03] p-2.5 hover:border-white/20"
-                  >
-                    <img src={movie.poster} alt="" className="h-14 w-10 rounded object-cover" />
-                    <span className="min-w-0">
-                      <b className="block truncate text-xs">{movie.title}</b>
-                      <small className="text-[#f5b50a]">★ {movie.rating} · Đang chiếu</small>
-                      <small className="mt-1 block text-[10px] text-white/40">{movie.genre}</small>
+                {m.response && (
+                  <div className="ml-1 max-w-[90%] space-y-2">
+                    <span className="inline-flex rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-semibold text-white/55">
+                      {m.response.responseSource === 'gemini'
+                        ? 'Gemini · DB context'
+                        : 'Dữ liệu CineHub'}
                     </span>
-                  </Link>
-                ))}
+                    {m.response.aiNotice && (
+                      <p className="text-[11px] text-amber-200/80">{m.response.aiNotice}</p>
+                    )}
+                    {m.response.diagnostic && (
+                      <p className="rounded-lg border border-amber-300/15 bg-amber-300/[.06] p-2 text-[11px] text-amber-100/80">
+                        {m.response.diagnostic}
+                      </p>
+                    )}
+                    {m.response.movie && (
+                      <Link
+                        to={`/movie/${m.response.movie.id}`}
+                        className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.06] p-2.5 transition hover:border-[#f5b50a]/40"
+                      >
+                        {m.response.movie.posterUrl && (
+                          <img
+                            src={m.response.movie.posterUrl}
+                            alt=""
+                            className="h-14 w-10 rounded-md object-cover"
+                          />
+                        )}
+                        <span className="min-w-0">
+                          <b className="block truncate text-xs">{m.response.movie.title}</b>
+                          <small className="mt-1 block text-[10px] text-white/50">
+                            {m.response.movie.genres.join(' · ')}
+                          </small>
+                        </span>
+                        <Icon name="chevron" size={15} />
+                      </Link>
+                    )}
+                    {m.response.movies.map((movie) => (
+                      <Link
+                        key={movie.id}
+                        to={`/movie/${movie.id}`}
+                        className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.06] p-2.5 transition hover:border-[#f5b50a]/40"
+                      >
+                        {movie.posterUrl && (
+                          <img
+                            src={movie.posterUrl}
+                            alt=""
+                            className="h-14 w-10 rounded-md object-cover"
+                          />
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <b className="block truncate text-xs">{movie.title}</b>
+                          <small className="mt-1 block text-[10px] text-white/50">
+                            {movie.genres.join(' · ')}
+                          </small>
+                        </span>
+                        <Icon name="chevron" size={15} />
+                      </Link>
+                    ))}
+                    {m.response.showtimes.map((showtime) => (
+                      <Link
+                        key={showtime.id}
+                        to={`/showtimes?movie=${showtime.movie.id}`}
+                        className="block rounded-xl border border-white/10 bg-white/[.06] p-3 transition hover:border-[#f5b50a]/40"
+                      >
+                        <span className="flex items-center justify-between gap-3">
+                          <b className="text-sm text-[#f5b50a]">
+                            {showtime.time} · {showtime.date}
+                          </b>
+                          <small className="text-[10px] text-white/55">{showtime.format}</small>
+                        </span>
+                        <span className="mt-1 block truncate text-xs font-semibold">
+                          {showtime.movie.title}
+                        </span>
+                        <small className="mt-1 block truncate text-[10px] text-white/50">
+                          {showtime.cinema.name}
+                        </small>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {typing && (
-              <div className="w-fit rounded-2xl rounded-bl-sm bg-white/8 px-4 py-3 text-xs text-white/50">
-                CineBot đang tìm phim...
+              <div className="w-fit rounded-2xl rounded-bl-md border border-white/10 bg-[#202530] px-4 py-3 text-xs text-white/65">
+                CineBot đang tra dữ liệu...
               </div>
             )}
             <div ref={end} />
           </div>
-          <div className="flex flex-wrap gap-2 px-4 pb-2">
-            {['Giá vé', 'Phim hot', 'Hoàn vé'].map((c) => (
+          <div className="flex gap-2 overflow-x-auto px-4 pb-3">
+            {['Phim nào đang chiếu?', 'Suất chiếu tối nay', 'Giá vé'].map((suggestion) => (
               <button
-                key={c}
-                onClick={() => send(c)}
-                className="rounded-full border border-white/12 px-3 py-1 text-[11px] font-semibold text-white/60 hover:bg-white/8"
+                key={suggestion}
+                onClick={() => void send(suggestion)}
+                disabled={typing}
+                className="shrink-0 rounded-full border border-white/15 bg-white/[.06] px-3 py-2 text-[11px] font-semibold text-white/75 transition hover:border-[#f5b50a]/50 hover:bg-[#f5b50a]/10 hover:text-white disabled:opacity-40"
               >
-                {c}
+                {suggestion}
               </button>
             ))}
           </div>
-          <div className="flex gap-2 border-t border-white/8 p-3">
+          <form
+            className="flex gap-2 border-t border-white/10 bg-black/20 p-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void send(text);
+            }}
+          >
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && send(text)}
               aria-label="Tin nhắn"
-              placeholder="Nhập câu hỏi..."
-              className="min-w-0 flex-1 rounded-full bg-white/6 px-4 py-2.5 text-sm outline-none placeholder:text-white/30"
+              placeholder="Hỏi phim, suất chiếu, giá vé..."
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#1b202a] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#f5b50a]/60"
             />
             <button
-              onClick={() => send(text)}
+              type="submit"
+              disabled={typing || !text.trim()}
               aria-label="Gửi"
-              className="grid h-10 w-10 place-items-center rounded-full bg-[#e50914]"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e50914] text-white shadow-[0_5px_18px_rgba(229,9,20,.3)] transition hover:bg-[#ff2632] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Icon name="send" size={17} />
             </button>
-          </div>
+          </form>
         </div>
       )}
       <button
         onClick={() => setOpen(!open)}
         aria-label="Mở chatbot AI"
-        className="ml-auto grid h-14 w-14 place-items-center rounded-full bg-[#e50914] shadow-[0_12px_35px_rgba(229,9,20,.4)] transition hover:scale-105"
+        className="relative ml-auto grid h-14 w-14 place-items-center rounded-full border border-white/35 bg-[linear-gradient(145deg,#ff4857,#c60018)] text-white shadow-[0_12px_35px_rgba(229,9,20,.58),0_0_0_7px_rgba(229,9,20,.12)] transition hover:scale-105 hover:shadow-[0_14px_42px_rgba(229,9,20,.72),0_0_0_9px_rgba(229,9,20,.15)]"
       >
         <Icon name={open ? 'close' : 'chat'} size={24} />
       </button>

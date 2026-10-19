@@ -17,6 +17,12 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().optional(),
+  GEMINI_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
+  GEMINI_EMBEDDING_DIMS: z.coerce.number().int().positive().default(768),
+  GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(20000),
+  MONGODB_DB: z.string().default('cinehub'),
 });
 
 export const env = schema.parse(process.env);

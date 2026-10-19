@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { combos, fmt, movies } from '../data';
+import { fmt, movies } from '../data';
 import { go } from '../router';
 import { combosTotal, seatPrice, seatTypeFor, ticketsTotal, useStore } from '../store';
 import { btnPrimary, HoldTimer, Icon, Steps } from '../components/ui';
@@ -15,7 +15,7 @@ const methods = [
 ];
 
 export default function Checkout() {
-  const { booking, place } = useStore();
+  const { booking, place, concessions } = useStore();
   const [method, setMethod] = useState('VNPay');
   const [busy, setBusy] = useState(false);
   const m = movies.find((v) => String(v.id) === String(booking.movieId)) || {
@@ -25,8 +25,8 @@ export default function Checkout() {
     age: booking.movieAge || 'T13',
   };
   const tickets = ticketsTotal(booking),
-    food = combosTotal(booking);
-  const items = combos.filter((c) => booking.combos[c.id]);
+    food = combosTotal(booking, concessions);
+  const items = concessions.filter((c) => booking.combos[c.id]);
 
   const pay = () => {
     setBusy(true);

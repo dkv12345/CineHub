@@ -5,6 +5,8 @@ import type { CSSProperties } from 'react';
 import { go, Link } from '../router';
 import { btnGhost, btnPrimary, Icon } from '../components/ui';
 import { useStore } from '../store';
+import type { MovieRecommendation } from '../services/recommendationsApi';
+import { fetchRecommendations } from '../services/recommendationsApi';
 
 const slides = movies.slice(0, 3);
 
@@ -278,6 +280,32 @@ export default function Home() {
   const [shelf, setShelf] = useState<'history' | 'collection' | 'trending'>('history');
   const { user, collections, toggleCollection, recentMovies, watchProgress, trackMovie } =
     useStore();
+  const [recommended, setRecommended] = useState<MovieRecommendation[]>([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState('');
+  useEffect(() => {
+    if (!user) {
+      setRecommended([]);
+      setRecommendationsLoading(false);
+      setRecommendationsError('');
+      return;
+    }
+    const controller = new AbortController();
+    setRecommendationsLoading(true);
+    setRecommendationsError('');
+    fetchRecommendations(recentMovies, collections, controller.signal)
+      .then(setRecommended)
+      .catch((cause: unknown) => {
+        if (controller.signal.aborted) return;
+        setRecommendationsError(
+          cause instanceof Error ? cause.message : 'Không thể tải gợi ý phim.',
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setRecommendationsLoading(false);
+      });
+    return () => controller.abort();
+  }, [collections, recentMovies, user]);
   const filterOptions = [
     ['all', 'Tất cả'],
     ['ghibli', 'Studio Ghibli'],
@@ -300,7 +328,7 @@ export default function Home() {
     .filter((m) => m.status === 'now')
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 10);
-  const recommended = trending.slice(0, 3);
+  const popularPreview = trending.slice(0, 3);
   const shelfMovies =
     shelf === 'collection'
       ? collections
@@ -373,7 +401,7 @@ export default function Home() {
             <h2 className="mt-2 text-2xl font-extrabold">Dành riêng cho bạn</h2>
             <p className="mt-2 max-w-sm text-sm leading-6 text-white/45">
               {user
-                ? `Gợi ý tuần này dành cho ${user.name}.`
+                ? `Gợi ý theo phim bạn đã xem và lưu, ${user.name}.`
                 : 'Khám phá những bộ phim hợp gu của bạn.'}
             </p>
             {!user && (
@@ -386,32 +414,70 @@ export default function Home() {
             )}
           </div>
           {user ? (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {recommended.map((m) => (
-                <article key={m.id} className="flex min-w-0 gap-3 border-l border-white/10 pl-4">
-                  <img
-                    src={m.poster}
-                    alt={`Poster ${m.title}`}
-                    className="h-24 w-16 shrink-0 rounded-md object-cover"
-                  />
-                  <div className="min-w-0 py-1">
-                    <h3 className="line-clamp-2 text-sm font-extrabold">{m.title}</h3>
-                    <p className="mt-1 text-xs film-highlight">
-                      ★ {m.rating} · {m.country || 'Quốc tế'}
-                    </p>
+            <div>
+              {recommendationsLoading && (
+                <p className="text-sm text-white/50">Đang tìm phim hợp gu...</p>
+              )}
+              {recommendationsError && (
+                <p role="alert" className="text-sm text-rose-200">
+                  {recommendationsError}
+                </p>
+              )}
+              {!recommendationsLoading && !recommendationsError && recommended.length === 0 && (
+                <p className="text-sm text-white/50">
+                  Chưa có đủ lịch sử để cá nhân hoá; đây là những phim đang được quan tâm.
+                </p>
+              )}
+              <div className="mt-2 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {(recommended.length ? recommended : popularPreview).map((m) => {
+                  const movieId = 'matchReason' in m ? m.id : m.id;
+                  const title = m.title;
+                  const poster = 'matchReason' in m ? m.posterUrl : m.poster;
+                  const reason =
+                    'matchReason' in m
+                      ? m.matchReason
+                      : `${m.genre.split(',')[0]} · Đang được yêu thích`;
+                  const age = 'matchReason' in m ? m.ageRating : m.age;
+                  return (
                     <Link
-                      to={`/movie/${m.id}`}
-                      className="mt-3 inline-block text-xs font-bold text-white/50 hover:text-white"
+                      key={movieId}
+                      to={`/movie/${movieId}`}
+                      onClick={() => trackMovie(movieId)}
+                      className="group flex min-w-0 gap-3 rounded-2xl border border-white/10 bg-white/[.045] p-3 transition hover:border-[#f5b50a]/45 hover:bg-white/[.08]"
                     >
-                      Xem gợi ý <Icon name="chevron" size={12} />
+                      {poster ? (
+                        <img
+                          src={poster}
+                          alt={`Poster ${title}`}
+                          className="h-28 w-[74px] shrink-0 rounded-lg object-cover shadow-lg"
+                        />
+                      ) : (
+                        <div className="grid h-28 w-[74px] shrink-0 place-items-center rounded-lg bg-white/10">
+                          <Icon name="film" />
+                        </div>
+                      )}
+                      <div className="min-w-0 py-1">
+                        <h3 className="line-clamp-2 text-sm font-extrabold group-hover:text-[#f5b50a]">
+                          {title}
+                        </h3>
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/45">
+                          {reason}
+                        </p>
+                        <p className="mt-2 text-[11px] font-bold text-white/65">
+                          {age || 'Phim chiếu rạp'}
+                        </p>
+                        <span className="mt-3 inline-flex items-center text-xs font-bold text-[#f5b50a]">
+                          Xem phim <Icon name="chevron" size={13} />
+                        </span>
+                      </div>
                     </Link>
-                  </div>
-                </article>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {recommended.map((m) => (
+              {popularPreview.map((m) => (
                 <span
                   key={m.id}
                   className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/50"

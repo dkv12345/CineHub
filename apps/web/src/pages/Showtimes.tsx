@@ -250,7 +250,7 @@ export default function Showtimes({
 
   // Handle slot pick
   const pickSession = (session: GalaxySession) => {
-    trackMovie(Number(session.movie.id) || 1);
+    trackMovie(session.movie.id);
     startBooking({
       movieId: session.movie.id,
       movieTitle: session.movie.name,

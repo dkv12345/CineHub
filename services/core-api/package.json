@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "embed:movies": "node --env-file=../../.env scripts/embed-movies.js",
     "test": "vitest run"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "helmet": "^8.0.0",
     "ioredis": "^5.5.0",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.21.0",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",
     "swagger-ui-express": "^5.0.1",

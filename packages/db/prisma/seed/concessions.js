@@ -5,18 +5,6 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GALAXY_FILE = path.resolve(__dirname, '../../../../data/seed/galaxy_concessions.json');
 
-// Món lẻ do CineHub tự đặt (Galaxy chỉ trả về combo). Giá là giá MÔ PHỎNG.
-// [externalId, name, category, price, description]
-const CINEHUB_EXTRAS = [
-  ['CINEHUB-POPCORN-M', 'Bắp rang bơ vừa', 'POPCORN', 45000, 'Bắp rang bơ vị ngọt, cỡ vừa'],
-  ['CINEHUB-POPCORN-L', 'Bắp rang bơ lớn', 'POPCORN', 59000, 'Bắp rang bơ vị ngọt, cỡ lớn'],
-  ['CINEHUB-POPCORN-CHEESE', 'Bắp phô mai lớn', 'POPCORN', 69000, 'Bắp phủ bột phô mai, cỡ lớn'],
-  ['CINEHUB-PEPSI-M', 'Pepsi cỡ vừa', 'DRINK', 35000, 'Pepsi mát lạnh 22oz'],
-  ['CINEHUB-PEPSI-L', 'Pepsi cỡ lớn', 'DRINK', 39000, 'Pepsi mát lạnh 32oz'],
-  ['CINEHUB-WATER', 'Nước suối', 'DRINK', 20000, 'Nước suối đóng chai 500ml'],
-  ['CINEHUB-SNACK-PREMIUM', 'Snack Premium', 'SNACK', 35000, 'Một gói snack Premium tuỳ chọn'],
-];
-
 // 4 combo giả do bản seed cũ tạo (không có externalId) -> tắt đi, không xoá để an toàn FK
 const LEGACY_MOCK_NAMES = [
   'Combo Solo Classic',
@@ -54,21 +42,6 @@ function fromGalaxyPackage(pkg, index) {
   };
 }
 
-function fromExtra([externalId, name, category, price, description], index) {
-  return {
-    externalId,
-    name,
-    description,
-    category,
-    imageUrl: null,
-    price,
-    minSeats: 0,
-    maxSeats: 99,
-    cinemaApply: [],
-    sortOrder: 100 + index,
-  };
-}
-
 export async function seedConcessions(prisma, chainId) {
   let galaxyItems = [];
   if (fs.existsSync(GALAXY_FILE)) {
@@ -77,8 +50,6 @@ export async function seedConcessions(prisma, chainId) {
   } else {
     console.warn(`   [WARN] Không thấy ${GALAXY_FILE}, bỏ qua combo Galaxy.`);
   }
-  const items = [...galaxyItems, ...CINEHUB_EXTRAS.map(fromExtra)];
-
   // Dùng để cảnh báo nếu cinemaApply chứa mã rạp không có trong DB
   const cinemas = await prisma.cinema.findMany({
     where: { chainId },
@@ -87,7 +58,7 @@ export async function seedConcessions(prisma, chainId) {
   const knownCodes = new Set(cinemas.map((c) => c.externalId));
   const unknownCodes = new Set();
 
-  for (const item of items) {
+  for (const item of galaxyItems) {
     for (const code of item.cinemaApply) {
       if (!knownCodes.has(code)) unknownCodes.add(code);
     }
@@ -103,10 +74,14 @@ export async function seedConcessions(prisma, chainId) {
     where: { chainId, externalId: null, name: { in: LEGACY_MOCK_NAMES } },
     data: { isActive: false },
   });
+  const retiredExtras = await prisma.concession.updateMany({
+    where: { chainId, externalId: { startsWith: 'CINEHUB-' } },
+    data: { isActive: false },
+  });
 
   console.log(
-    `   -> Upserted ${items.length} concessions (${galaxyItems.length} Galaxy + ${CINEHUB_EXTRAS.length} CineHub), ` +
-      `retired ${retired.count} legacy mock combos.`,
+    `   -> Upserted ${galaxyItems.length} Galaxy concessions, retired ${retired.count} legacy mock combos ` +
+      `and ${retiredExtras.count} CineHub extras.`,
   );
   if (unknownCodes.size > 0) {
     console.warn(
