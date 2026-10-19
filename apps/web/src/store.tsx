@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
-import { combos, dayInfo, PRICE } from './data';
+import { dayInfo, PRICE } from './data';
+import type { Concession } from './services/concessionsApi';
 
 export type User = {
   uid?: string;
@@ -131,12 +132,12 @@ export const seatTypeFor = (seat: string, zone?: SeatZone) =>
   (seat === 'E7' || seat === 'E8' ? 'sweetbox' : seat.charCodeAt(0) - 65 >= 5 ? 'vip' : 'normal');
 export const seatPrice = (seat: string, zone?: SeatZone) => {
   const type = seatTypeFor(seat, zone);
-  return type === 'sweetbox' ? PRICE.sweetbox : type === 'vip' ? PRICE.vip : PRICE.normal;
+  return type === 'sweetbox' ? PRICE.sweetbox : type === 'vip' ? PRICE.vip : PRICE.regular;
 };
 export const ticketsTotal = (b: Booking) =>
   b.seats.reduce((s, x) => s + seatPrice(x, b.seatTypes[x]), 0);
-export const combosTotal = (b: Booking) =>
-  combos.reduce((s, c) => s + (b.combos[c.id] || 0) * c.price, 0);
+export const combosTotal = (b: Booking, concessions: Concession[]) =>
+  concessions.reduce((sum, item) => sum + (b.combos[item.id] || 0) * item.price, 0);
 
 type Ctx = {
   user: User;
@@ -147,6 +148,8 @@ type Ctx = {
   patch: (p: Partial<Booking>) => void;
   startBooking: (p: Partial<Booking>) => void;
   reset: () => void;
+  concessions: Concession[];
+  setConcessions: (items: Concession[]) => void;
   orders: Order[];
   lastOrder: Order | null;
   place: (method: string) => Order;
@@ -165,9 +168,8 @@ export function Provider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
   const [authLoading] = useState(false);
   const [booking, setBooking] = useState<Booking>(empty);
-  const [orders, setOrders] = useState<Order[]>(() =>
-    readStored('cinehub:guest:orders', seedOrders),
-  );
+  const [concessions, setConcessions] = useState<Concession[]>([]);
+  const [orders, setOrders] = useState<Order[]>(seedOrders);
   const [lastOrder, setLast] = useState<Order | null>(null);
   const [notified, setNotified] = useState<(number | string)[]>(() =>
     readStored('cinehub:guest:notified', []),
@@ -209,10 +211,10 @@ export function Provider({ children }: { children: ReactNode }) {
       const next = items.includes(id) ? items.filter((item) => item !== id) : [id, ...items];
       return next;
     });
-  const trackMovie = (id: number | string, progress = 8) => {
+  const trackMovie = useCallback((id: number | string, progress = 8) => {
     setRecentMovies((items) => [id, ...items.filter((item) => item !== id)].slice(0, 10));
     setWatchProgress((items) => ({ ...items, [id]: Math.max(items[id] || 0, progress) }));
-  };
+  }, []);
 
   const value: Ctx = {
     user,
@@ -221,8 +223,16 @@ export function Provider({ children }: { children: ReactNode }) {
     logout: () => activateUser(null),
     booking,
     patch: (p) => setBooking((b) => ({ ...b, ...p })),
-    startBooking: (p) => setBooking({ ...empty, ...p, expiresAt: Date.now() + 15 * 60 * 1000 }),
-    reset: () => setBooking(empty),
+    startBooking: (p) => {
+      setConcessions([]);
+      setBooking({ ...empty, ...p, expiresAt: Date.now() + 15 * 60 * 1000 });
+    },
+    reset: () => {
+      setConcessions([]);
+      setBooking(empty);
+    },
+    concessions,
+    setConcessions,
     orders,
     lastOrder,
     place: (method) => {
@@ -244,10 +254,10 @@ export function Provider({ children }: { children: ReactNode }) {
         time: booking.time,
         dateLabel: booking.dateLabel,
         seats: booking.seats,
-        items: combos
+        items: concessions
           .filter((c) => booking.combos[c.id])
           .map((c) => ({ name: c.name, qty: booking.combos[c.id] })),
-        total: ticketsTotal(booking) + combosTotal(booking),
+        total: ticketsTotal(booking) + combosTotal(booking, concessions),
         method,
         status: 'upcoming',
         purchasedAt: Date.now(),

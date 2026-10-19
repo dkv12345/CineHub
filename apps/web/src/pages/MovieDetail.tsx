@@ -1,10 +1,38 @@
 import { useEffect, useState } from 'react';
 import { movies, seedReviews } from '../data';
+import type { Movie } from '../data';
 import { go } from '../router';
 import { useStore } from '../store';
 import { btnBookTicket, btnGhost, btnPrimary, Icon, Modal, Stars } from '../components/ui';
 import { Link } from '../router';
 import { getYouTubeEmbedUrl } from '../services/sessionsApi';
+import { fetchMovieById } from '../services/moviesApi';
+
+function toMovie(movie: Awaited<ReturnType<typeof fetchMovieById>>): Movie | null {
+  if (!movie) return null;
+  const duration = movie.durationMin;
+  const releaseDate = movie.releaseDate ? new Date(movie.releaseDate) : null;
+  return {
+    id: movie.id,
+    title: movie.title,
+    genre: movie.genres.join(', ') || 'Điện ảnh',
+    duration: duration ? `${Math.floor(duration / 60)}h ${duration % 60}m` : 'Đang cập nhật',
+    director: movie.directors.join(', ') || 'Đang cập nhật',
+    cast: movie.cast.join(', ') || 'Đang cập nhật',
+    age: movie.ageRating || 'T13',
+    rating: movie.rating,
+    votes: movie.ratingCount,
+    poster: movie.posterUrl || '',
+    backdrop: movie.backdropUrl || movie.posterUrl || '',
+    status: movie.status === 'NOW_SHOWING' ? 'now' : 'soon',
+    release: releaseDate
+      ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'UTC' }).format(releaseDate)
+      : 'Đang cập nhật',
+    synopsis: movie.synopsis || '',
+    country: movie.country || undefined,
+    trailer: movie.trailerUrl || undefined,
+  };
+}
 
 export default function MovieDetail({
   id,
@@ -13,7 +41,11 @@ export default function MovieDetail({
   id: number | string;
   autoPlayTrailer?: boolean;
 }) {
-  const m = movies.find((x) => String(x.id) === String(id));
+  const localMovie = movies.find((x) => String(x.id) === String(id));
+  const [databaseMovie, setDatabaseMovie] = useState<Movie | null>(null);
+  const [movieLoading, setMovieLoading] = useState(!localMovie);
+  const [movieError, setMovieError] = useState('');
+  const m = localMovie || databaseMovie;
   const { user, notified, toggleNotify, trackMovie } = useStore();
   const [tab, setTab] = useState<'info' | 'reviews'>('info');
   const [trailer, setTrailer] = useState(autoPlayTrailer);
@@ -22,13 +54,34 @@ export default function MovieDetail({
   const [text, setText] = useState('');
   const [msg, setMsg] = useState('');
   useEffect(() => {
-    trackMovie(Number(id) || 1, 12);
-  }, [id]);
+    if (localMovie) {
+      setDatabaseMovie(null);
+      setMovieLoading(false);
+      setMovieError('');
+      return;
+    }
+    const controller = new AbortController();
+    setMovieLoading(true);
+    setMovieError('');
+    fetchMovieById(String(id), controller.signal)
+      .then((movie) => setDatabaseMovie(toMovie(movie)))
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setMovieError(error instanceof Error ? error.message : 'Không thể tải thông tin phim.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setMovieLoading(false);
+      });
+    return () => controller.abort();
+  }, [id, localMovie]);
+  useEffect(() => {
+    trackMovie(id, 12);
+  }, [id, trackMovie]);
 
   if (!m)
     return (
       <main className="grid min-h-[60vh] place-items-center text-white/50">
-        Không tìm thấy phim.{' '}
+        {movieLoading ? 'Đang tải thông tin phim...' : movieError || 'Không tìm thấy phim.'}{' '}
         <Link to="/home" className="ml-2 font-bold text-[#ff4d57]">
           Về trang chủ
         </Link>
