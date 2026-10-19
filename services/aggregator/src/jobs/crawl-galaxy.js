@@ -1,3 +1,4 @@
+import '../config.js';
 import { prisma } from '@cinehub/db';
 import { fetchSessions } from '../galaxyClient.js';
 import { openRaw, saveRaw } from '../saveRaw.js';
@@ -6,7 +7,15 @@ import { upsertCinema, upsertAuditorium, upsertMovie, upsertShowtime } from '../
 
 async function main() {
   const chain = await prisma.cinemaChain.findUniqueOrThrow({ where: { code: 'GALAXY' } });
-  const { client, col } = await openRaw();
+  let mongoClient = null;
+  let rawCol = null;
+  try {
+    const raw = await openRaw();
+    mongoClient = raw.client;
+    rawCol = raw.col;
+  } catch (err) {
+    console.warn('[WARN] MongoDB not reachable, skipping raw archiving:', err.message);
+  }
   const startedAt = new Date();
 
   try {
@@ -14,7 +23,9 @@ async function main() {
     const sessions = await fetchSessions();
     console.log(`[INFO] Fetched ${sessions.length} sessions from Galaxy API`);
 
-    await saveRaw(col, 'session', sessions, (s) => s.id);
+    if (rawCol) {
+      await saveRaw(rawCol, 'session', sessions, (s) => s.id);
+    }
 
     const cinemas = new Map();
     const movies = new Map();
@@ -61,7 +72,7 @@ async function main() {
     console.error('[ERROR] Crawl job failed:', error);
     process.exit(1);
   } finally {
-    await client.close();
+    if (mongoClient) await mongoClient.close();
     await prisma.$disconnect();
   }
 }

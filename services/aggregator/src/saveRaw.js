@@ -3,8 +3,9 @@ import { MongoClient } from 'mongodb';
 import { mongoUri } from './config.js';
 
 export async function openRaw() {
-  const client = new MongoClient(mongoUri);
+  const client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 2000 });
   await client.connect();
+
   const col = client.db().collection('crawl_raw_items');
   await col.createIndex({ source: 1, kind: 1, externalId: 1, contentHash: 1 }, { unique: true });
   await col.createIndex({ fetchedAt: 1 }, { expireAfterSeconds: 30 * 24 * 3600 });

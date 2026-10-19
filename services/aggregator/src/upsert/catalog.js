@@ -11,12 +11,25 @@ function movieStatus(startDate, endDate, today = new Date()) {
 
 export async function upsertCinema(chain, c) {
   const addr = parseAddress(c.address);
-  const province = await prisma.province.findUnique({
+  let province = await prisma.province.findUnique({
     where: { nameNormalized: addr.provinceNormalized },
   });
 
   if (!province) {
-    throw new Error(`Chưa có tỉnh "${addr.provinceNormalized}" trong seed (rạp ${c.code})`);
+    const code = addr.provinceNormalized.slice(0, 4).toUpperCase();
+    const name = addr.provinceNormalized
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    province = await prisma.province.upsert({
+      where: { code },
+      update: {},
+      create: {
+        code,
+        name,
+        nameNormalized: addr.provinceNormalized,
+      },
+    });
   }
 
   const ward = addr.ward
