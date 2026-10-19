@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fetchSessions } from '../services/aggregator/src/galaxyClient.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -383,6 +384,32 @@ export function getShows(movieId: number | string, cinemaIdx: number, dayOffset:
   return [...t2, ...t3, ...imax].sort((a, b) => a.time.localeCompare(b.time));
 }
 
+export const promotions = [
+  {
+    id: 'trai-buon-nguoi',
+    title: 'Ưu đãi Trại Buôn Người',
+    image:
+      'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773875/banner4_trai_buon_nguoi_1782x904.png',
+  },
+  {
+    id: 'shopeepay',
+    title: 'Ưu đãi ShopeePay',
+    image:
+      'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773846/banner3_shopeepay_1782x904.png',
+  },
+  {
+    id: 'momo',
+    title: 'Ưu đãi MoMo',
+    image: 'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773846/banner2_momo_1782x904.png',
+  },
+  {
+    id: 'joydrops',
+    title: 'Ưu đãi JoyDrops',
+    image:
+      'https://res.cloudinary.com/j9hczbcv/image/upload/v1791773846/banner1_joydrops_1782x904.png',
+  },
+];
+
 export const seedReviews = [
   {
     name: 'Minh Anh',
@@ -420,63 +447,97 @@ console.log('[SUCCESS] Generated apps/web/src/data.ts with 43 movies & 31 cinema
 const movieMapByExt = new Map(d.movies.map((m) => [m.externalId, m]));
 const cinemaMapByExt = new Map(d.cinemas.map((c) => [c.externalId, c]));
 
-const sessionsList = d.showtimes.map((s, idx) => {
-  const m = movieMapByExt.get(s.movieExternalId) || d.movies[0];
-  const c = cinemaMapByExt.get(s.cinemaExternalId) || d.cinemas[0];
+console.log('[INFO] Fetching live showtimes from Galaxy Cinema API...');
+let liveSessions = [];
+try {
+  liveSessions = await fetchSessions();
+  console.log(`[SUCCESS] Fetched ${liveSessions.length} live showtimes directly from Galaxy API!`);
+} catch (e) {
+  console.warn(
+    '[WARN] Could not fetch live showtimes, falling back to date-shifted seed data:',
+    e.message,
+  );
+}
 
-  const date = new Date(s.startTime);
-  const hours = String((date.getUTCHours() + 7) % 24).padStart(2, '0');
-  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-  const showTime = `${hours}:${minutes}`;
+let sessionsList = [];
+if (liveSessions.length > 0) {
+  sessionsList = liveSessions.map((s, idx) => {
+    const totalSeat = s.totalSeat || 120 + ((idx * 13) % 70);
+    const bookedSeat = s.bookedSeat || Math.floor(totalSeat * (0.15 + ((idx * 17) % 45) / 100));
+    return {
+      ...s,
+      totalSeat,
+      bookedSeat,
+    };
+  });
+} else {
+  // Date shift fallback: shift show dates relative to TODAY so UI never shows old dates
+  const today = new Date();
+  const todayMid = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  const firstSeedDate = new Date(d.showtimes[0].localDate + 'T00:00:00Z');
+  const dayOffsetMs = todayMid.getTime() - firstSeedDate.getTime();
+  const dayOffsetDays = Math.round(dayOffsetMs / (24 * 3600 * 1000));
 
-  const totalSeat = 120 + ((idx * 13) % 70);
-  const bookedSeat = Math.floor(totalSeat * (0.15 + ((idx * 17) % 45) / 100));
+  sessionsList = d.showtimes.map((s, idx) => {
+    const m = movieMapByExt.get(s.movieExternalId) || d.movies[0];
+    const c = cinemaMapByExt.get(s.cinemaExternalId) || d.cinemas[0];
 
-  return {
-    id: s.externalId,
-    showDate: s.localDate,
-    showTime: showTime,
-    screenName: s.auditoriumName,
-    totalSeat: totalSeat,
-    bookedSeat: bookedSeat,
-    caption: s.captionMode === 'DUBBED' ? 'voice' : 'sub',
-    version: s.versionCode || '2d',
-    movieFormat: s.formatRaw || '2D Phụ Đề',
-    movie: {
-      id: m.externalId,
-      name: m.title,
-      age: (m.ageRating || '13').replace('T', ''),
-      duration: m.durationMin || 115,
-      startDate: m.releaseDate ? `${m.releaseDate} 00:00:00` : '2026-10-01 00:00:00',
-      endDate: m.endDate ? `${m.endDate} 00:00:00` : '2026-11-30 00:00:00',
-      createdAt: '2026-09-24 15:00:00',
-      imageLandscape: m.backdropUrl || m.posterUrl,
-      imagePortrait: m.posterUrl,
-      slug: m.slug,
-      trailer: m.trailerUrl || 'https://www.youtube.com/watch?v=NSrioJtAiEU',
-      rate: movieSourceMap[m.externalId]?.sourceScore
-        ? Number(movieSourceMap[m.externalId].sourceScore)
-        : 8.5,
-      totalVotes: movieSourceMap[m.externalId]?.sourceVotes || 250,
-      views: 1800,
-      order: idx,
-    },
-    cinema: {
-      id: c.externalId,
-      code: c.externalId,
-      name: c.name,
-      latitude: String(c.latitude || '10.773390'),
-      longitude: String(c.longitude || '106.693290'),
-      address: c.address,
-      phone: c.phone || '1900 2224',
-      cityId: c.sourceCityId,
-      imageLandscape: c.imageUrl,
-      imagePortrait: c.thumbnailUrl,
-      imageUrls: c.galleryUrls || [],
-      order: c.sortOrder || 0,
-    },
-  };
-});
+    const origDate = new Date(s.startTime);
+    origDate.setUTCDate(origDate.getUTCDate() + dayOffsetDays);
+    const shiftedLocalDate = origDate.toISOString().slice(0, 10);
+    const hours = String((origDate.getUTCHours() + 7) % 24).padStart(2, '0');
+    const minutes = String(origDate.getUTCMinutes()).padStart(2, '0');
+    const showTime = `${hours}:${minutes}`;
+
+    const totalSeat = 120 + ((idx * 13) % 70);
+    const bookedSeat = Math.floor(totalSeat * (0.15 + ((idx * 17) % 45) / 100));
+
+    return {
+      id: s.externalId,
+      showDate: shiftedLocalDate,
+      showTime: showTime,
+      screenName: s.auditoriumName,
+      totalSeat: totalSeat,
+      bookedSeat: bookedSeat,
+      caption: s.captionMode === 'DUBBED' ? 'voice' : 'sub',
+      version: s.versionCode || '2d',
+      movieFormat: s.formatRaw || '2D Phụ Đề',
+      movie: {
+        id: m.externalId,
+        name: m.title,
+        age: (m.ageRating || '13').replace('T', ''),
+        duration: m.durationMin || 115,
+        startDate: m.releaseDate ? `${m.releaseDate} 00:00:00` : '2026-10-01 00:00:00',
+        endDate: m.endDate ? `${m.endDate} 00:00:00` : '2026-11-30 00:00:00',
+        createdAt: '2026-09-24 15:00:00',
+        imageLandscape: m.backdropUrl || m.posterUrl,
+        imagePortrait: m.posterUrl,
+        slug: m.slug,
+        trailer: m.trailerUrl || 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+        rate: movieSourceMap[m.externalId]?.sourceScore
+          ? Number(movieSourceMap[m.externalId].sourceScore)
+          : 8.5,
+        totalVotes: movieSourceMap[m.externalId]?.sourceVotes || 250,
+        views: 1800,
+        order: idx,
+      },
+      cinema: {
+        id: c.externalId,
+        code: c.externalId,
+        name: c.name,
+        latitude: String(c.latitude || '10.773390'),
+        longitude: String(c.longitude || '106.693290'),
+        address: c.address,
+        phone: c.phone || '1900 2224',
+        cityId: c.sourceCityId,
+        imageLandscape: c.imageUrl,
+        imagePortrait: c.thumbnailUrl,
+        imageUrls: c.galleryUrls || [],
+        order: c.sortOrder || 0,
+      },
+    };
+  });
+}
 
 const cityMapData = {
   '599535ea-1ea2-4393-9b5a-3ba3a807f363': { name: 'TP. Hồ Chí Minh', region: 'Miền Nam' },
