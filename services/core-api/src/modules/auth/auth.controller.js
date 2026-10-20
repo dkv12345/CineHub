@@ -8,8 +8,8 @@ import { AppError } from '../../lib/errors.js';
  * @param {import('express').NextFunction} _next
  *
  * Specification for student implementation:
- * 1. Read validated registration data from `req.valid.body`.
- * 2. Invoke `authService.registerUser(req.valid.body)`.
+ * 1. Read validated registration data from `_req.valid.body`.
+ * 2. Invoke `authService.registerUser(_req.valid.body)`.
  * 3. Respond with HTTP 201 Created and { data: { user } }.
  */
 export async function register(_req, _res, _next) {
@@ -25,15 +25,15 @@ export async function register(_req, _res, _next) {
  * @param {import('express').NextFunction} _next
  *
  * Specification for student implementation:
- * 1. Extract email and password from `req.valid.body`.
- * 2. Extract client metadata: `req.headers['user-agent']`, `req.ip`.
+ * 1. Extract email and password from `_req.valid.body`.
+ * 2. Extract client metadata: `_req.headers['user-agent']`, `_req.ip`.
  * 3. Invoke `authService.loginUser(...)`.
  * 4. Set HTTP-only cookie for refresh token:
- *    res.cookie('refreshToken', result.refreshToken, {
+ *    _res.cookie('refreshToken', result.refreshToken, {
  *      httpOnly: true,
- *      secure: env.NODE_ENV === 'production',
+ *      secure: process.env.NODE_ENV === 'production',
  *      sameSite: 'strict',
- *      path: '/api/auth',
+ *      path: '/api',
  *      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
  *    });
  * 5. Respond with HTTP 200 OK and { data: { user: result.user, accessToken: result.accessToken } }.
@@ -44,17 +44,17 @@ export async function login(_req, _res, _next) {
 }
 
 /**
- * Handles token refresh request using cookie or request body.
+ * Handles token refresh request using cookie or request body (PUT /refresh-token).
  *
  * @param {import('express').Request} _req
  * @param {import('express').Response} _res
  * @param {import('express').NextFunction} _next
  *
  * Specification for student implementation:
- * 1. Retrieve refresh token from `req.cookies.refreshToken` or `req.valid?.body?.refreshToken`.
+ * 1. Retrieve refresh token from `_req.cookies?.refreshToken` or `_req.valid?.body?.refreshToken`.
  * 2. If token is missing, throw new AppError(401, 'UNAUTHORIZED', 'Refresh token required').
  * 3. Invoke `authService.refreshSession(...)`.
- * 4. Update HTTP-only cookie with new refresh token.
+ * 4. Update HTTP-only cookie with new rotated refresh token.
  * 5. Respond with HTTP 200 OK and { data: { user: result.user, accessToken: result.accessToken } }.
  */
 export async function refreshToken(_req, _res, _next) {
@@ -72,7 +72,7 @@ export async function refreshToken(_req, _res, _next) {
  * Specification for student implementation:
  * 1. Retrieve refresh token from cookie or body.
  * 2. Invoke `authService.logoutUser({ refreshToken })`.
- * 3. Clear cookie: `res.clearCookie('refreshToken', { path: '/api/auth' })`.
+ * 3. Clear cookie: `_res.clearCookie('refreshToken', { path: '/api' })`.
  * 4. Respond with HTTP 200 OK and { message: 'Logged out successfully' }.
  */
 export async function logout(_req, _res, _next) {
@@ -88,11 +88,64 @@ export async function logout(_req, _res, _next) {
  * @param {import('express').NextFunction} _next
  *
  * Specification for student implementation:
- * 1. Read authenticated userId from `req.user.id`.
- * 2. Invoke `authService.getCurrentUser(req.user.id)`.
+ * 1. Read authenticated userId from `_req.user.id`.
+ * 2. Invoke `authService.getCurrentUser(_req.user.id)`.
  * 3. Respond with HTTP 200 OK and { data: { user } }.
  */
 export async function getMe(_req, _res, _next) {
   // SKELETON: To be implemented by student
   _next(new AppError(501, 'NOT_IMPLEMENTED', 'GetMe handler not implemented yet'));
+}
+
+/**
+ * Handles Google OAuth login request from client.
+ *
+ * @param {import('express').Request} _req
+ * @param {import('express').Response} _res
+ * @param {import('express').NextFunction} _next
+ *
+ * Specification for student implementation:
+ * 1. Extract `idToken` from `_req.valid.body`.
+ * 2. Extract metadata: `_req.headers['user-agent']`, `_req.ip`.
+ * 3. Invoke `authService.loginWithGoogle({ idToken, userAgent, ipAddress })`.
+ * 4. Set HTTP-only refresh token cookie.
+ * 5. Respond with HTTP 200 OK and { data: { user: result.user, accessToken: result.accessToken } }.
+ */
+export async function loginWithGoogle(_req, _res, _next) {
+  // SKELETON: To be implemented by student
+  _next(new AppError(501, 'NOT_IMPLEMENTED', 'Google login handler not implemented yet'));
+}
+
+/**
+ * Handles password reset request dispatch.
+ *
+ * @param {import('express').Request} _req
+ * @param {import('express').Response} _res
+ * @param {import('express').NextFunction} _next
+ *
+ * Specification for student implementation:
+ * 1. Extract `email` from `_req.valid.body`.
+ * 2. Invoke `authService.forgotPassword({ email })`.
+ * 3. Respond with HTTP 200 OK and { message: 'If an account exists, a reset link has been dispatched' }.
+ */
+export async function forgotPassword(_req, _res, _next) {
+  // SKELETON: To be implemented by student
+  _next(new AppError(501, 'NOT_IMPLEMENTED', 'ForgotPassword handler not implemented yet'));
+}
+
+/**
+ * Handles password reset confirmation with token.
+ *
+ * @param {import('express').Request} _req
+ * @param {import('express').Response} _res
+ * @param {import('express').NextFunction} _next
+ *
+ * Specification for student implementation:
+ * 1. Extract `token` and `newPassword` from `_req.valid.body`.
+ * 2. Invoke `authService.resetPassword({ token, newPassword })`.
+ * 3. Respond with HTTP 200 OK and { message: 'Password updated successfully' }.
+ */
+export async function resetPassword(_req, _res, _next) {
+  // SKELETON: To be implemented by student
+  _next(new AppError(501, 'NOT_IMPLEMENTED', 'ResetPassword handler not implemented yet'));
 }

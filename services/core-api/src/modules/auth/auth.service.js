@@ -111,3 +111,81 @@ export async function getCurrentUser(_userId) {
   // SKELETON: To be implemented by student
   throw new Error('Not implemented: getCurrentUser');
 }
+
+/**
+ * Authenticates user via Google OAuth ID Token (One Tap / Sign-In).
+ *
+ * @param {object} params
+ * @param {string} params.idToken - Google credential ID token from client.
+ * @param {string} [params.userAgent] - Client User-Agent header.
+ * @param {string} [params.ipAddress] - Client IP address.
+ * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
+ *
+ * Specification for student implementation:
+ * 1. Verify `idToken` using `verifyGoogleIdToken(idToken)` from `../../lib/googleOAuth.js`.
+ * 2. Query user by `googleId` in `prisma.user`.
+ * 3. Account Merging:
+ *    - If no user matches `googleId`, query by `email`.
+ *    - If user exists with same email, link Google account:
+ *      Update user setting `googleId = payload.googleId`, `emailVerifiedAt = new Date()`,
+ *      and populate `avatarUrl` if not already set.
+ * 4. Account Creation:
+ *    - If no user exists by `googleId` or `email`, insert new user:
+ *      { email, fullName: name, googleId, authProvider: 'GOOGLE', avatarUrl: picture, emailVerifiedAt: new Date(), passwordHash: null }
+ * 5. Generate accessToken and refreshToken pair (with new `familyId`).
+ * 6. Store SHA-256 hash in `prisma.refreshToken`.
+ * 7. Update `lastLoginAt = new Date()`.
+ * 8. Return { user, accessToken, refreshToken }.
+ */
+export async function loginWithGoogle(_params) {
+  // SKELETON: To be implemented by student
+  throw new Error('Not implemented: loginWithGoogle');
+}
+
+/**
+ * Initiates password reset workflow by generating and storing a reset token.
+ *
+ * @param {object} params
+ * @param {string} params.email - User email address.
+ * @returns {Promise<{ message: string }>} Status confirmation.
+ *
+ * Specification for student implementation:
+ * 1. Find user by `email` in `prisma.user`.
+ * 2. Security Best Practice: If user does not exist, return a generic success message
+ *    to prevent account enumeration attacks.
+ * 3. If user exists:
+ *    - Generate cryptographically secure random token (e.g., crypto.randomBytes(32).toString('hex')).
+ *    - Compute SHA-256 hash of the token.
+ *    - Insert record into `prisma.passwordResetToken` with { userId, tokenHash, expiresAt: Date.now() + 15m }.
+ *    - Dispatch reset email with link containing plain token (or log in dev environment).
+ * 4. Return generic confirmation message.
+ */
+export async function forgotPassword(_params) {
+  // SKELETON: To be implemented by student
+  throw new Error('Not implemented: forgotPassword');
+}
+
+/**
+ * Completes password reset workflow using verification token.
+ *
+ * @param {object} params
+ * @param {string} params.token - Plain reset token from email link.
+ * @param {string} params.newPassword - New plaintext password.
+ * @returns {Promise<{ message: string }>} Confirmation.
+ *
+ * Specification for student implementation:
+ * 1. Compute SHA-256 hash of incoming `token`.
+ * 2. Find active reset token in `prisma.passwordResetToken` where:
+ *    tokenHash === hash, usedAt === null, expiresAt > new Date().
+ * 3. If not found or expired, throw new AppError(400, 'INVALID_TOKEN', 'Reset token is invalid or expired').
+ * 4. Hash `newPassword` with bcryptjs.
+ * 5. In a database transaction:
+ *    a. Update user `passwordHash`.
+ *    b. Mark reset token `usedAt = new Date()`.
+ *    c. Revoke all active refresh tokens for this user (`revokedAt = new Date()`) to force re-login.
+ * 6. Return confirmation message.
+ */
+export async function resetPassword(_params) {
+  // SKELETON: To be implemented by student
+  throw new Error('Not implemented: resetPassword');
+}

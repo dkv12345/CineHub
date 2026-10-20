@@ -44,3 +44,34 @@ export const refreshTokenSchema = z.object({
     })
     .optional(),
 });
+
+/**
+ * Validation schema for Google OAuth authentication.
+ */
+export const googleAuthSchema = z.object({
+  body: z.object({
+    idToken: z.string().min(1, 'Google ID token is required'),
+  }),
+});
+
+/**
+ * Validation schema for requesting password reset.
+ */
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().trim().email('Invalid email address'),
+  }),
+});
+
+/**
+ * Validation schema for resetting password with a verification token.
+ */
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    token: z.string().min(1, 'Reset token is required'),
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(100, 'Password is too long'),
+  }),
+});

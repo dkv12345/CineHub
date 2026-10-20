@@ -11,6 +11,7 @@ export const routes = Router();
 
 routes.use('/health', healthRouter);
 routes.use('/auth', authRouter);
+routes.use('/v1/auth', authRouter);
 routes.use('/cinemas', cinemasRouter);
 routes.use('/concessions', concessionsRouter);
 routes.use('/chatbot', chatbotRouter);

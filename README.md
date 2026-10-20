@@ -27,7 +27,7 @@ flowchart TB
     subgraph GatewayTier["API & Domain Services (services/core-api)"]
         Router["Express 5 Router (/api)"]
         Cors["CORS Policy (Credentials & Whitelist)"]
-        AuthMW["Authentication Middleware (requireAuth)"]
+        AuthMW["Authentication Middleware (requireAuth, requireRole)"]
 
         subgraph DomainModules["Modular Monolith Domains (modules/)"]
             AuthMod["auth (routes, controller, service, schema)"]
@@ -37,11 +37,25 @@ flowchart TB
             ChatbotMod["chatbot & recommendations"]
         end
 
+        subgraph SharedLib["Shared Infrastructure (lib/)"]
+            JWT["jwt.js (Sign, Verify, Hash)"]
+            OAuth["googleOAuth.js (Google Auth Client)"]
+            Errors["errors.js (AppError)"]
+            Logger["logger.js (Pino)"]
+        end
+
         Jobs["Background Jobs (jobs/embed-movies.js)"]
 
         Router --> Cors --> AuthMW
         AuthMW --> DomainModules
+        AuthMod <--> JWT
+        AuthMod <--> OAuth
         Jobs -.-> ChatbotMod
+    end
+
+    subgraph ExternalServices["External Identity Providers & LLM"]
+        GoogleAuth["Google Identity Services (OAuth 2.0 / One Tap)"]
+        GeminiAPI["Google Gemini LLM & Embedding API"]
     end
 
     subgraph DataIngestionTier["Ingestion & Data Pipelines (services/aggregator & tools)"]
@@ -50,11 +64,13 @@ flowchart TB
     end
 
     subgraph PersistenceTier["Polyglot Persistence Tier"]
-        MySQL[("MySQL 8.4 (Prisma ORM 6 / @cinehub/db)\nTransactional Source of Truth")]
+        MySQL[("MySQL 8.4 (Prisma ORM 6 / @cinehub/db)\nTransactional Source of Truth (Users, Tokens, Bookings)")]
         Redis[("Redis 7 (Cache & Distributed Lock)\nSeat Leases & Rate Limiting")]
         Mongo[("MongoDB 7 (Document Store)\nRaw Crawler Payloads & Vector Embeddings")]
     end
 
+    OAuth <-->|ID Token Verification| GoogleAuth
+    ChatbotMod <--> GeminiAPI
     Axios <==>|HTTP / REST (Proxy /api)| Router
     DomainModules <--> MySQL
     DomainModules <--> Redis
@@ -93,7 +109,7 @@ The CineHub architecture follows domain-driven modular design principles configu
 
 ### 1.2. Polyglot Persistence Architecture
 
-- **Relational Core (MySQL 8.4 via Prisma ORM 6)**: Acts as the definitive single source of truth for all transactional business entities, including Accounts, Refresh Tokens, Bookings, Orders, Tickets, Concessions, Showtimes, Auditoriums, and Price Rule matrices. Schema integrity is strictly enforced across 39 tables and 27 enumerations.
+- **Relational Core (MySQL 8.4 via Prisma ORM 6)**: Acts as the definitive single source of truth for all transactional business entities, including Accounts, Refresh Tokens, Password Reset Tokens, Bookings, Orders, Tickets, Concessions, Showtimes, Auditoriums, and Price Rule matrices. Schema integrity is strictly enforced across 39 tables and 27 enumerations.
 - **Distributed Cache and Locking (Redis 7)**: Implements atomic seat hold reservations using Lua scripts with explicit Time-To-Live (TTL) expiration, rate limiting, and session security. Configured with Append-Only File (AOF) persistence and `noeviction` policy to guarantee lease validity.
 - **Unstructured / Document Storage (MongoDB 7)**: Retains raw immutable crawler payloads from cinema API gateways, user reviews, audit logging, and fallback embedding vector representations.
 
@@ -113,6 +129,7 @@ The CineHub architecture follows domain-driven modular design principles configu
 | **HTTP Client & Security**  | Axios with Interceptors & Queue               | Silent JWT renewal, request retry queue, withCredentials cookies               |
 | **3D Simulation Engine**    | Three.js (WebGL)                              | Procedural 3D auditorium viewport projection from selected seat coordinates    |
 | **Application Server**      | Node.js 20+ (ESM), Express 5                  | High-throughput REST API, Modular Monolith architecture                        |
+| **Authentication Services** | JWT, Refresh Token Rotation, Google OAuth 2.0 | Multi-provider authentication, secure token storage, account linking           |
 | **AI / NLP Engine**         | Google Gemini API, Natural NLP, Vector Math   | Vietnamese intent classification, cosine similarity search, generative chatbot |
 | **Database & ORM**          | MySQL 8.4, Prisma 6                           | ACID-compliant transaction processing, schema migrations, relation modeling    |
 | **Cache & Task Queue**      | Redis 7                                       | Atomic distributed locks, TTL leases, rate limiting                            |
@@ -152,6 +169,7 @@ cinehub/
 │   │   │   │   └── env.js                  # Runtime environment variable validation (Zod)
 │   │   │   ├── lib/
 │   │   │   │   ├── jwt.js                  # JWT token creation, verification and hashing utilities
+│   │   │   │   ├── googleOAuth.js          # Google OAuth2 client and token verification
 │   │   │   │   ├── errors.js               # Structured AppError class
 │   │   │   │   └── logger.js               # Pino logging configuration
 │   │   │   ├── middleware/
@@ -300,12 +318,12 @@ Once launched, access the local services at:
 
 ## 5. Authentication and Token Lifecycle Architecture
 
-CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication lifecycle designed to protect against cross-site scripting (XSS) and token theft:
+CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication lifecycle designed to protect against cross-site scripting (XSS), cross-site request forgery (CSRF), and token theft:
 
 ```
 [Client Application]                                     [Core API Server]
          |                                                        |
-         |---- 1. POST /api/auth/login -------------------------->|
+         |---- 1. POST /api/v1/auth/login ----------------------->|
          |                                                        | Validates credentials
          |<--- 2. Returns accessToken (15m) + refreshToken Cookie -| Sets HTTP-only cookie
          |                                                        |
@@ -320,7 +338,7 @@ CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication
          |<--- 6. HTTP 401 Unauthorized (code: TOKEN_EXPIRED) ----|
          |                                                        |
          | [Axios Interceptor catches 401 & queues requests]      |
-         |---- 7. POST /api/auth/refresh-token (Cookie sent) ---->|
+         |---- 7. PUT /api/v1/auth/refresh-token (Cookie sent) -->|
          |                                                        | Validates RTR Family
          |                                                        | Rotates token record
          |<--- 8. Returns new accessToken + new Cookie -----------|
@@ -333,17 +351,46 @@ CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication
 ### 5.1. Dual Token Strategy
 
 - **Access Token (Short-lived, 15 minutes)**: Signed using `JWT_ACCESS_SECRET` with algorithm `HS256`. Carries `{ sub: userId, role, email }`. Passed by the frontend in the HTTP `Authorization: Bearer <token>` header.
-- **Refresh Token (Long-lived, 7 days)**: Signed using `JWT_REFRESH_SECRET`. Stored as a SHA-256 hash in MySQL (`refresh_tokens` table) and transmitted exclusively via an HTTP-only, SameSite=Strict cookie (`path: /api/auth`).
+- **Refresh Token (Long-lived, 7 days)**: Signed using `JWT_REFRESH_SECRET`. Stored as a SHA-256 hash in MySQL (`refresh_tokens` table) and transmitted exclusively via an HTTP-only, SameSite=Strict cookie (`path: /api`).
 
 ### 5.2. Refresh Token Rotation (RTR) & Reuse Detection
 
 - Every refresh request invalidates the presenting refresh token and issues a new token pair within the same `familyId`.
 - If an attacker attempts to use an already-revoked or already-replaced refresh token, the system detects a token reuse attack, terminates the entire token family immediately, and revokes all active sessions for that family.
 
-### 5.3. Frontend Axios Interceptors & Concurrency Guard
+### 5.3. Google OAuth 2.0 Integration & Account Linking
+
+- **Client Flow**: Uses Google Sign-In or Google One Tap to acquire an ID token on the client.
+- **Backend Verification**: Dispatches `POST /api/v1/auth/google` with `{ idToken }`. Verified using `google-auth-library` (`verifyGoogleIdToken`).
+- **Account Linking & Merging**:
+  1. Searches user by `googleId`.
+  2. If not found, searches by verified `email`. If user exists with local credentials, links `googleId` and marks `emailVerifiedAt = new Date()`.
+  3. If user does not exist, registers a new account with `authProvider: 'GOOGLE'` and `passwordHash: null`.
+
+### 5.4. Password Reset Workflow
+
+- **Initiation (`POST /api/v1/auth/forgot-password`)**: Validates email, generates a cryptographically secure random token, stores its SHA-256 hash in MySQL (`password_reset_tokens` table with 15-minute expiration), and dispatches reset instructions. Always returns a generic confirmation to prevent account enumeration.
+- **Confirmation (`POST /api/v1/auth/reset-password`)**: Validates plain token against unexpired, unused hash. Hashes new password with bcryptjs (cost factor 10), updates `users.passwordHash`, marks reset token as used, and invalidates all active refresh tokens for the user across all devices.
+
+### 5.5. Frontend Axios Interceptors & Concurrency Guard
 
 - **`isRefreshing` Flag**: Prevents duplicate refresh requests when multiple concurrent asynchronous API calls receive HTTP 401 simultaneously.
 - **Promise Failed Queue (`failedQueue`)**: Holds pending resolver/rejecter callbacks. While the refresh request is in flight, incoming 401 responses are enqueued. Upon successful token renewal, all queued requests are replayed with the new Bearer token.
+
+### 5.6. Core Auth Endpoints Specification
+
+All endpoints are mounted on `/api/v1/auth` and `/api/auth`:
+
+| Method | Endpoint                       | Protection   | Description                                                 |
+| :----- | :----------------------------- | :----------- | :---------------------------------------------------------- |
+| `POST` | `/api/v1/auth/register`        | Public       | Customer account registration                               |
+| `POST` | `/api/v1/auth/login`           | Public       | Credentials login; sets HTTP-only refresh token cookie      |
+| `POST` | `/api/v1/auth/logout`          | Public       | Revokes refresh token in database and clears session cookie |
+| `PUT`  | `/api/v1/auth/refresh-token`   | Public       | Rotates refresh token and returns new access token          |
+| `GET`  | `/api/v1/auth/me`              | Bearer Token | Retrieves authenticated user profile                        |
+| `POST` | `/api/v1/auth/google`          | Public       | Authenticates Google OAuth ID token; sets session cookie    |
+| `POST` | `/api/v1/auth/forgot-password` | Public       | Dispatches password reset token                             |
+| `POST` | `/api/v1/auth/reset-password`  | Public       | Completes password reset using verification token           |
 
 ---
 
