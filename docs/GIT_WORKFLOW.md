@@ -1,39 +1,39 @@
-# Quy trinh Lam viec voi Git va GitHub - CineHub Engineering
+# Git and GitHub Workflow Specification - CineHub Engineering
 
-Tai lieu nay quy dinh quy trinh tieu chuan trong viec quan ly ma nguon, phat trien tinh nang va kiem soat phien ban theo mo hinh Feature Branch Workflow. Muc tieu nham dam bao tinh nhat quan cua lich su commit, ngan ngua xung dot ma nguon (zero conflict) va duy tri chat luong phan mem.
-
----
-
-## 1. Nguyen tac bat buoc
-
-1. Tuyet doi khong commit hoac push truc tiep len nhanh `main`.
-2. Moi tinh nang, sua loi hoac refactor phai duoc thuc hien tren mot branch rieng biet.
-3. Luon dong bo ma nguon moi nhat tu remote `main` truoc khi tao branch moi.
-4. Tuan thu chat che quy chuan dat ten commit theo dinh dang Conventional Commits.
-5. Tuyet doi khong commit thong tin nhay cam: cac file `.env`, credential, build artifact va log phai luon duoc khai bao trong `.gitignore`.
+This document establishes the official version control policy and branch lifecycle standards for the CineHub engineering team. Adherence to this specification guarantees a clean, linear commit history, prevents merge conflicts, and ensures high software reliability across the monorepo.
 
 ---
 
-## 2. So do vong doi phat trien (Task Lifecycle)
+## 1. Core Principles
+
+1. Direct commits and pushes to the `main` branch are strictly prohibited.
+2. Every feature, bug fix, or refactor must be developed in its own isolated branch.
+3. Always synchronize local `main` with the latest remote state before creating any new branch.
+4. Strictly follow the Conventional Commits specification for all commit messages.
+5. Never commit sensitive data or build artifacts. All `.env` files, credentials, logs, and dependencies must remain in `.gitignore`.
+
+---
+
+## 2. Development Lifecycle Overview
 
 ```mermaid
 graph LR
-    A[main dong bo moi nhat] --> B[Tao branch tinh nang]
-    B --> C[Lap trinh va Commit]
-    C --> D[Fetch va Rebase origin/main]
-    D --> E[Push remote va Tao Pull Request]
-    E --> F[Code Review va Merge vao main]
-    F --> G[Xoa branch cuc bo]
+    A[Synchronized main] --> B[Create Topic Branch]
+    B --> C[Develop and Commit]
+    C --> D[Fetch and Rebase origin/main]
+    D --> E[Push to Remote and Open PR]
+    E --> F[Code Review and Merge]
+    F --> G[Prune Local Branch]
     G --> A
 ```
 
 ---
 
-## 3. Quy trinh 6 buoc tieu chuan
+## 3. Standard Six-Step Workflow
 
-### Buoc 1: Dong bo nhanh main truoc khi bat dau
+### Step 1: Synchronize Local Main
 
-Truoc khi thuc hien bat ky cong viec nao, ky su phai dam bao dang dung o nhanh `main` cuc bo va da cap nhat day du cac thay doi moi nhat tu remote repository:
+Before starting work on any task, ensure that your local `main` branch is clean and up to date with the remote repository:
 
 ```bash
 git checkout main
@@ -42,133 +42,134 @@ git pull origin main
 
 ---
 
-### Buoc 2: Khoi tao branch moi cho cong viec
+### Step 2: Create a Dedicated Topic Branch
 
-Ten branch phai ngan gon, ro nghia va tuan theo quy tac tien to:
+Branch names must be concise, descriptive, and follow the standard prefix taxonomy:
 
-- `feat/<task-slug>`: Tinh nang moi (vi du: `feat/vnpay-payment`, `feat/seat-map-3d`)
-- `fix/<task-slug>`: Khac phuc loi (vi du: `fix/showtime-dates`, `fix/auth-token-refresh`)
-- `refactor/<task-slug>`: Tai cau truc ma nguon khong thay doi hanh vi he thong
-- `docs/<task-slug>`: Cap nhat tai lieu ky thuat
-- `test/<task-slug>`: Bo sung hoac sua doi kiem thu tu dong
+- `feat/<task-slug>`: New user-facing or platform features (e.g., `feat/vnpay-payment`, `feat/seat-map-3d`)
+- `fix/<task-slug>`: Defect fixes or bug remediation (e.g., `fix/showtime-dates`, `fix/auth-token-refresh`)
+- `refactor/<task-slug>`: Structural code improvements without behavioral changes
+- `docs/<task-slug>`: Documentation additions or updates
+- `test/<task-slug>`: Automated test additions or modifications
+- `chore/<task-slug>`: Build configuration, dependencies, or tooling adjustments
 
 ```bash
-git checkout -b feat/ten-task-cua-ban
+git checkout -b feat/your-task-slug
 ```
 
 ---
 
-### Buoc 3: Phat trien va tao Commit
+### Step 3: Implement Changes and Create Atomic Commits
 
-Trong qua trinh phat trien, can chia nho cac thay doi thanh cac commit co tinh nguyen tu (atomic commits):
+Break work down into cohesive, atomic commits with explicit commit messages:
 
 ```bash
 git status
 git add .
-git commit -m "feat(web): tich hop giao dien thanh toan vnpay"
+git commit -m "feat(web): integrate vnpay checkout component"
 ```
 
-Dinh dang Conventional Commits bat buoc:
+Conventional Commits standard format:
 
-- `feat(scope): mo ta ngan gon`: Tinh nang moi
-- `fix(scope): mo ta ngan gon`: Sua loi
-- `refactor(scope): mo ta ngan gon`: Tai cau truc ma nguon
-- `docs(scope): mo ta ngan gon`: Tai lieu
-- `chore(scope): mo ta ngan gon`: Cong viec cau hinh, tooling
-- `test(scope): mo ta ngan gon`: Kiem thu
+- `feat(scope): concise description`: New functionality
+- `fix(scope): concise description`: Bug remediation
+- `refactor(scope): concise description`: Code restructuring
+- `docs(scope): concise description`: Documentation adjustments
+- `chore(scope): concise description`: Dependency or build updates
+- `test(scope): concise description`: Test suite adjustments
 
-Luu y: Phan mo ta commit viet thuong toan bo chu cai va khong dat dau cham o cuoi cau.
+Rule: Subject lines must remain all-lowercase and must not terminate with a period.
 
 ---
 
-### Buoc 4: Kiem tra va ngan ngua Conflict bang Rebase (Bat buoc)
+### Step 4: Rebase Against Remote Main (Mandatory Zero-Conflict Check)
 
-Trong thoi gian phat trien tren branch rieng, cac thanh vien khac co the da merge ma nguon moi vao `main`. De dam bao lich su commit tuyen tinh va branch khong bi xung dot, phai thuc hien rebase tren `origin/main`:
+During branch development, other team members may have merged changes into `main`. To maintain a linear commit history and eliminate merge conflicts before creating a Pull Request, rebase against remote `main`:
 
 ```bash
 git fetch origin
 git rebase origin/main
 ```
 
-- Truong hop khong co xung dot: Git se thong bao `Successfully rebased and updated` ngay lap tuc.
-- Truong hop co xung dot ma nguon:
-  1. Mo trinh soan thao de kiem tra cac vung conflict.
-  2. Thong nhat giu lai doan ma dung nhat.
-  3. Danh dau file da xu ly: `git add <duong-dan-file>`.
-  4. Tiep tuc qua trinh rebase: `git rebase --continue`.
-  5. Tuyet doi khong dung `git rebase --skip` neu chua hieu ro thay doi.
+- If no conflicts occur: Git will output `Successfully rebased and updated`.
+- If a conflict occurs:
+  1. Inspect the conflicting files highlighted in your editor.
+  2. Resolve the conflicts by selecting the correct code version.
+  3. Stage the resolved files: `git add <file-path>`.
+  4. Continue the rebase: `git rebase --continue`.
+  5. Never execute `git rebase --skip` unless you fully understand the consequences.
 
 ---
 
-### Buoc 5: Day branch len Remote va Khoi tao Pull Request (PR)
+### Step 5: Push Branch and Open a Pull Request
 
-Sau khi rebase thanh cong tren `origin/main`:
+Once rebased cleanly on top of `origin/main`:
 
 ```bash
-git push -u origin feat/ten-task-cua-ban
+git push -u origin feat/your-task-slug
 ```
 
-Quy trinh tren GitHub:
+GitHub PR procedure:
 
-1. Truy cap repository tren GitHub, chon `Compare & pull request`.
-2. Dien tieu de va ban mo ta PR chi tiet theo template (van de ton dong, giai phap ky thuat, ket qua kiem thu).
-3. Gan reviewers chiu trach nhiem xem xet ma nguon.
-4. Sau khi duoc phe duyet va vuot qua toan bo bo kiem tra CI/CD, tien hanh merge vao `main`.
+1. Navigate to the repository on GitHub and click `Compare & pull request`.
+2. Provide a descriptive title and fill out the Pull Request template (overview, technical decisions, test verification).
+3. Assign designated reviewers.
+4. Ensure all continuous integration (CI) status checks pass before merging.
 
 ---
 
-### Buoc 6: Don dep Branch va Chuan bi Task tiep theo
+### Step 6: Post-Merge Branch Pruning
 
-Sau khi PR da duoc merge vao `main` tren GitHub, branch tinh nang da hoan thanh nhiem vu. Can xoa branch cuc bo de giu repository luon sach se:
+Once the Pull Request is merged into `main` on GitHub, delete the local topic branch to keep your workspace organized:
 
 ```bash
 git checkout main
 git pull origin main
-git branch -d feat/ten-task-cua-ban
+git branch -d feat/your-task-slug
 git fetch --prune
 ```
 
-Sau buoc nay, moi truong cuc bo da tro ve trang thai chuan nhat. Lap lai Buoc 1 va Buoc 2 de bat dau cong viec tiep theo.
+Your local environment is now synchronized with `main`. Repeat Step 1 and Step 2 to begin the next task.
 
 ---
 
-## 4. Bang tham chieu lenh nhanh (Cheat Sheet)
+## 4. Command Quick Reference
 
-| Muc dich thao tac            | Cau lenh Git                                                                    |
-| :--------------------------- | :------------------------------------------------------------------------------ |
-| Bat dau task moi             | `git checkout main && git pull origin main && git checkout -b feat/<task-slug>` |
-| Kiem tra trang thai          | `git status`                                                                    |
-| Tao commit                   | `git add . && git commit -m "feat(scope): mo ta"`                               |
-| Kiem tra va chong conflict   | `git fetch origin && git rebase origin/main`                                    |
-| Day branch len remote        | `git push -u origin <branch-name>`                                              |
-| Xoa branch sau khi merge     | `git checkout main && git pull origin main && git branch -d <branch-name>`      |
-| Xoa cac tham chieu remote cu | `git fetch --prune`                                                             |
-| Kiem tra danh sach branch    | `git branch -a`                                                                 |
+| Operational Goal                  | Git Command                                                                     |
+| :-------------------------------- | :------------------------------------------------------------------------------ |
+| Start a new task                  | `git checkout main && git pull origin main && git checkout -b feat/<task-slug>` |
+| Inspect workspace status          | `git status`                                                                    |
+| Create atomic commit              | `git add . && git commit -m "feat(scope): message"`                             |
+| Synchronize and prevent conflicts | `git fetch origin && git rebase origin/main`                                    |
+| Publish branch to remote          | `git push -u origin <branch-name>`                                              |
+| Clean up branch post-merge        | `git checkout main && git pull origin main && git branch -d <branch-name>`      |
+| Prune stale remote tracking refs  | `git fetch --prune`                                                             |
+| List local and remote branches    | `git branch -a`                                                                 |
 
 ---
 
-## 5. Xu ly cac truong hop ngoai le
+## 5. Emergency Runbook and Edge Cases
 
-### 1. Vo tinh viet code khi dang dung o nhanh main (chua commit)
+### 1. Uncommitted work started on main by mistake
 
-Chuyen toan bo phan code dang sua sang mot branch moi ngay lap tuc:
+Transfer all uncommitted working tree modifications to a new topic branch immediately:
 
 ```bash
-git checkout -b feat/ten-task-moi
+git checkout -b feat/new-task-name
 ```
 
-### 2. Huy bo toan bo cac thay doi cuc bo chua duoc commit
+### 2. Discard all uncommitted local modifications
 
-Khoi phuc trang thai sach cua working tree:
+Reset the working tree to the last committed state:
 
 ```bash
 git restore .
 ```
 
-### 3. Gap thong bao loi khi xoa branch cuc bo
+### 3. Deleting a branch rejected by Git (`error: The branch ... is not fully merged`)
 
-Neu branch da duoc merge tren GitHub nhung Git cuc bo canh bao `error: The branch ... is not fully merged` do rebase/squash merge, dung co `-D` de xoa dut diem:
+If the changes have already been squashed or rebased and merged into `main` on GitHub, force-delete the local reference:
 
 ```bash
-git branch -D feat/ten-branch-cu
+git branch -D feat/old-branch-name
 ```
