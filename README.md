@@ -1,291 +1,426 @@
-# 🎬 CineHub – Nền Tảng Đặt Vé Xem Phim Toàn Quốc (Full-stack Monorepo)
+# CineHub Platform - Enterprise Monorepo Specification
 
-> **CineHub** là nền tảng đặt vé xem phim trực tuyến hiện đại, hỗ trợ tra cứu lịch chiếu trực tiếp, chọn ghế trực quan với mô phỏng góc nhìn phòng chiếu **3D POV (Three.js)**, tích hợp **Trợ lý AI & Gợi ý phim cá nhân hóa (Google Gemini + Vector Search)**, combo bắp nước (Concessions), và đồng bộ dữ liệu thực tế từ **Galaxy Cinema** (43 phim, 31 rạp, hơn 3.500 suất chiếu) trên kiến trúc cơ sở dữ liệu Polyglot (MySQL + Redis + MongoDB).
+## Overview
 
----
+CineHub is an enterprise-grade digital cinema ticketing and reservation platform built on a distributed monorepo architecture. The system provides real-time showtime aggregation, 3D Point-of-View (POV) auditorium seating simulation using WebGL/Three.js, an intelligent Vietnamese natural language processing and recommendation engine powered by Google Gemini and vector retrieval, and a multi-tiered concurrency control pipeline designed to eliminate double-booking anomalies under high-throughput conditions.
 
-## 📑 Mục lục
-
-1. [Tính năng nổi bật](#1-tính-năng-nổi-bật)
-2. [Công nghệ sử dụng & Kiến trúc hệ thống](#2-công-nghệ-sử-dụng--kiến-trúc-hệ-thống)
-3. [Cấu trúc thư mục Monorepo](#3-cấu-trúc-thư-mục-monorepo)
-4. [Bảng cổng dịch vụ (Port Mapping)](#4-bảng-cổng-dịch-vụ-port-mapping)
-5. [Hướng dẫn cài đặt & Chạy dự án (Quickstart)](#5-hướng-dẫn-cài-đặt--chạy-dự-án-quickstart)
-6. [Bảng lệnh NPM Scripts](#6-bảng-lệnh-npm-scripts)
-7. [Quản lý Cơ sở dữ liệu (Prisma, Seed, Studio)](#7-quản-lý-cơ-sở-dữ-liệu-prisma-seed-studio)
-8. [Quy chuẩn Git & Làm việc nhóm (Git Workflow)](#8-quy-chuẩn-git--làm-việc-nhóm-git-workflow)
-9. [Xử lý sự cố thường gặp (Troubleshooting)](#9-xử-lý-sự-cố-thường-gặp-troubleshooting)
+The platform integrates directly with live commercial cinema provider datasets (Galaxy Cinema catalog covering 43 active movies, 31 complexes nationwide, and 3,500+ daily sessions) and operates over a polyglot persistence tier composed of MySQL 8.4, Redis 7, and MongoDB 7.
 
 ---
 
-## 1. 🌟 Tính năng nổi bật
+## Table of Contents
 
-- 🎟️ **Tra cứu lịch chiếu thông minh & Đặt vé đa rạp:** Đồng bộ trực tiếp hơn 3.500 suất chiếu thực tế từ Galaxy Cinema toàn quốc. Tìm kiếm và lọc theo tỉnh thành, cụm rạp, định dạng (2D, 3D, IMAX) và phụ đề/lồng tiếng.
-- 💺 **Mô phỏng góc nhìn phòng chiếu 3D POV:** Sử dụng Three.js mô phỏng chân thực tầm nhìn từ vị trí từng ghế ngồi (Standard, VIP, Sweetbox) hướng lên màn chiếu lớn trước khi đưa ra quyết định đặt vé.
-- 🤖 **Trợ lý ảo AI & Gợi ý phim thông minh:** Tích hợp mô hình ngôn ngữ **Google Gemini** kết hợp **Natural NLP (Tiếng Việt)** và **In-memory Vector Search** để tư vấn phim, tra cứu giá vé, rạp chiếu và đề xuất phim theo sở thích người dùng. Chi tiết xem tại [Tài liệu AI Chatbot](docs/ai/chatbot-and-recommendations.md).
-- 🍿 **Chọn Combo Bắp Nước (Concessions):** Đặt trước bắp rang bơ, nước ngọt và các combo ưu đãi đi kèm vé với tính toán tổng tiền động.
-- 👤 **Trang Cá nhân & Vé của tôi:** Quản lý thông tin tài khoản, xem lại danh sách vé đã mua kèm mã QR check-in tiện lợi, lưu trữ riêng biệt theo từng tài khoản (Account Isolation).
-- ⚡ **Chống Double-Booking Đa Lớp:** Kết hợp khóa phân tán Redis (Redis Lock + Lua Script giữ ghế nguyên tử trong 15 phút) cùng cơ chế Database Transaction & Optimistic Locking trên MySQL.
-- 🔄 **Cập nhật Live Showtimes 1-Click:** Lệnh `npm run sync:live` tự động vượt rào bảo mật API Galaxy, lấy toàn bộ suất chiếu mới nhất từ ngày hôm nay mà không bị đóng băng ngày cũ.
-
----
-
-## 2. 🛠 Công nghệ sử dụng & Kiến trúc hệ thống
-
-| Phân hệ              | Công nghệ / Thư viện                                | Vai trò & Mục đích                                                                               |
-| :------------------- | :-------------------------------------------------- | :----------------------------------------------------------------------------------------------- |
-| **Monorepo**         | **NPM Workspaces**                                  | Quản lý thống nhất Frontend, Backend Services và Shared Packages trong một kho mã nguồn duy nhất |
-| **Frontend**         | **React 19 + Vite + Tailwind CSS v4 + Three.js**    | Giao diện hiện đại, tối ưu hiệu năng cao, hỗ trợ Dark Mode điện ảnh và mô phỏng phòng chiếu 3D   |
-| **Backend API**      | **Node.js 20+ (ESM) + Express 5**                   | RESTful API chuẩn mực, xử lý đặt vé, xác thực người dùng (JWT/OAuth2), quản lý rạp và phim       |
-| **AI & NLP**         | **Google Gemini API + Natural NLP + Vector Search** | Xử lý ngôn ngữ tự nhiên tiếng Việt, vector embeddings tra cứu thông tin phim và trợ lý ảo        |
-| **CSDL Quan hệ**     | **MySQL 8.4 + Prisma ORM 6**                        | Nguồn sự thật duy nhất (Single Source of Truth) với 39 bảng quan hệ chặt chẽ và 27 ENUMs         |
-| **Cache & Lock**     | **Redis 7 (AOF + Noeviction)**                      | Tăng tốc đọc dữ liệu, quản lý phiên giữ ghế tạm thời (15 phút) chống trùng lặp vé qua Lua script |
-| **Crawler & NoSQL**  | **MongoDB 7**                                       | Lưu trữ payload crawl thô từ Galaxy Cinema, reviews và vector embeddings dự phòng                |
-| **Xác thực dữ liệu** | **Zod (`@cinehub/shared`)**                         | Schema validation dùng chung xuyên suốt giữa Frontend và Backend                                 |
-| **Chất lượng mã**    | **ESLint 9, Prettier, Husky, Commitlint, Vitest**   | Đảm bảo phong cách code nhất quán, tự động kiểm tra định dạng và chuẩn Conventional Commits      |
+1. [Architectural Overview & Core Decisions](#1-architectural-overview--core-decisions)
+2. [Monorepo Workspace Topology](#2-monorepo-workspace-topology)
+3. [Network Topology & Service Port Allocations](#3-network-topology--service-port-allocations)
+4. [Infrastructure Requirements & Local Setup](#4-infrastructure-requirements--local-setup)
+5. [Operational Scripts & Command Reference](#5-operational-scripts--command-reference)
+6. [Data Tier Management & Migration Workflows](#6-data-tier-management--migration-workflows)
+7. [Concurrency Control & Seat Lease Protocol](#7-concurrency-control--seat-lease-protocol)
+8. [Data Ingestion Pipeline (Crawler Architecture)](#8-data-ingestion-pipeline-crawler-architecture)
+9. [AI Assistant & Recommendation Engine Architecture](#9-ai-assistant--recommendation-engine-architecture)
+10. [Engineering Standards & Git Governance](#10-engineering-standards--git-governance)
+11. [Troubleshooting & Operational Runbook](#11-troubleshooting--operational-runbook)
 
 ---
 
-## 3. 📂 Cấu trúc thư mục Monorepo
+## 1. Architectural Overview & Core Decisions
+
+The CineHub architecture follows domain-driven modular design principles configured as an NPM Monorepo. Key architectural decisions include:
+
+### 1.1. Monorepo Topology
+
+- **NPM Workspaces**: Centralized dependency resolution, single lockfile integrity, and zero-overhead workspace package resolution (`@cinehub/db`, `@cinehub/shared`, `@cinehub/core-api`, `@cinehub/web`, `@cinehub/aggregator`).
+
+### 1.2. Polyglot Persistence Architecture
+
+- **Relational Core (MySQL 8.4 via Prisma ORM 6)**: Acts as the definitive single source of truth for all transactional business entities, including Accounts, Bookings, Orders, Tickets, Concessions, Showtimes, Auditoriums, and Price Rule matrices. Schema integrity is strictly enforced across 39 tables and 27 enumerations.
+- **Distributed Cache & Locking (Redis 7)**: Implements atomic seat hold reservations using Lua scripts with explicit Time-To-Live (TTL) expiration, rate limiting, and asynchronous job queuing via BullMQ. Configured with Append-Only File (AOF) persistence and `noeviction` policy to guarantee lease validity.
+- **Unstructured / Document Storage (MongoDB 7)**: Retains raw immutable crawler payloads from cinema API gateways, user reviews, audit logging, and fallback embedding vector representations.
+
+### 1.3. Concurrency & Transaction Isolation
+
+- Seat selection under high load implements a multi-tier reservation protocol:
+  1. Distributed atomic lease in Redis (`SET resource_key token NX EX 900`).
+  2. Transactional validation in MySQL (`READ COMMITTED` isolation with row-level locks).
+  3. Pre-checkout lease validation ensuring no order placement can occur past lease expiration.
+
+### 1.4. Technology Matrix
+
+| Layer                       | Technology                                    | Operational Function                                                           |
+| :-------------------------- | :-------------------------------------------- | :----------------------------------------------------------------------------- |
+| **Workspace Orchestration** | NPM Workspaces                                | Workspace coordination, shared dependencies, unified tooling                   |
+| **Client Application**      | React 19, Vite, Tailwind CSS v4               | Single-page application, responsive layout, reactive state machine             |
+| **3D Simulation Engine**    | Three.js (WebGL)                              | Procedural 3D auditorium viewport projection from selected seat coordinates    |
+| **Application Server**      | Node.js 20+ (ESM), Express 5                  | High-throughput REST API, route validation, middleware security pipeline       |
+| **AI / NLP Engine**         | Google Gemini API, Natural NLP, Vector Math   | Vietnamese intent classification, cosine similarity search, generative chatbot |
+| **Database & ORM**          | MySQL 8.4, Prisma 6                           | ACID-compliant transaction processing, schema migrations, relation modeling    |
+| **Cache & Task Queue**      | Redis 7, BullMQ                               | Atomic distributed locks, TTL leases, background cleanup jobs                  |
+| **Validation Layer**        | Zod (`@cinehub/shared`)                       | End-to-end runtime type safety shared across client and server tiers           |
+| **Static Analysis & QA**    | ESLint 9, Prettier, Husky, Commitlint, Vitest | Continuous code linting, formatting enforcement, automated unit test suites    |
+
+---
+
+## 2. Monorepo Workspace Topology
 
 ```
 cinehub/
 ├── apps/
-│   └── web/                   # Frontend React (Vite + Tailwind v4 + Three.js POV Scene)
+│   └── web/                                # Client Frontend Application (React 19 + Vite)
 │       ├── src/
-│       │   ├── components/    # Layout, Navbar, Footer, SeatMap3D, UI Components
-│       │   ├── pages/         # Home, Movies, Showtimes, Seats, Concessions, Checkout, Profile, MyTickets
-│       │   ├── services/      # API clients: sessionsApi, chatbotApi, concessionsApi, moviesApi...
-│       │   └── store.tsx      # Quản lý trạng thái giỏ vé, auth và user state
+│       │   ├── components/                 # Atomic UI primitives, layout wrappers, SeatMap3D
+│       │   ├── pages/                      # Route controllers: Home, Showtimes, Seats, Checkout, Profile
+│       │   ├── services/                   # Typed API consumption clients (sessionsApi, chatbotApi, etc.)
+│       │   └── store.tsx                   # Client state management with localStorage account isolation
+│       └── test/                           # Component and UI regression tests
 ├── services/
-│   ├── core-api/              # Backend chính (Express 5 REST API)
+│   ├── core-api/                           # Primary Application Server (Express 5 REST API)
 │   │   ├── src/
-│   │   │   ├── modules/       # Auth, Movies, Cinemas, Showtimes, Booking, Concessions, Chatbot, Recommendations
-│   │   │   └── middleware/    # Auth, Validation, Error Handling
-│   │   └── test/              # Unit & Integration tests cho Core API
-│   ├── aggregator/            # Crawler & Adapter Galaxy Cinema (Security Handshake, ETL, Catalog Upsert)
-│   └── worker/                # Worker BullMQ xử lý nhả ghế hết hạn và gửi email
+│   │   │   ├── modules/                    # Domain modules (auth, movies, cinemas, booking, chatbot)
+│   │   │   ├── middleware/                 # Security, JWT authentication, rate limiting, error handling
+│   │   │   └── lib/                        # Cryptographic helpers, QR generation, vector mathematics
+│   │   └── test/                           # Domain integration and controller unit test suites
+│   ├── aggregator/                         # Ingestion Worker & Cinema Data Pipeline
+│   │   ├── src/
+│   │   │   ├── adapters/                   # Cinema provider data normalization mappers
+│   │   │   ├── jobs/                       # Scheduled crawl jobs (crawl-galaxy.js)
+│   │   │   └── upsert/                     # Idempotent catalog upsert operations into relational schema
+│   │   └── test/                           # Ingestion and mapper contract test suites
+│   └── worker/                             # Background Queue Worker (BullMQ)
+│       └── src/jobs/                       # Expired seat lease reclamation, email dispatch, outbox pattern
 ├── packages/
-│   ├── db/                    # Prisma schema v3 (39 models), migrations, seed scripts, Prisma Client
-│   └── shared/                # Zod validation schemas, business constants và error codes dùng chung
+│   ├── db/                                 # Relational Database Package
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma               # Enterprise Prisma schema (39 models, 27 enums)
+│   │   │   ├── migrations/                 # Version-controlled SQL migration history
+│   │   │   └── seed/                       # Normalized seed scripts (movies, auditoriums, concessions)
+│   │   └── src/index.js                    # Singleton PrismaClient export
+│   └── shared/                             # Universal Shared Library
+│       └── src/                            # Zod schemas, HTTP error codes, domain business constants
 ├── data/
-│   ├── seed/                  # Bộ dữ liệu mẫu chuẩn hoá (galaxy_normalized_v3.json)
-│   └── raw/                   # Dữ liệu crawl thô từ nhà rạp (đã gitignore)
+│   └── seed/                               # Frozen baseline catalog datasets (galaxy_normalized_v3.json)
 ├── docs/
-│   ├── GIT_WORKFLOW.md        # Cẩm nang quy trình làm việc Git chuẩn cho cả team (Không conflict)
-│   ├── ai/                    # Tài liệu kiến trúc AI Chatbot & Hybrid Recommendation System
-│   └── database/              # Thiết kế CSDL v3, schema diagram, migration notes
+│   ├── GIT_WORKFLOW.md                     # Team Git governance, feature branch lifecycle, rebase standards
+│   ├── ai/                                 # AI chatbot NLP pipeline and vector recommendation specification
+│   └── database/                           # Physical database architecture documentation and schema diagrams
 ├── scripts/
-│   └── sync-data.js           # Script đồng bộ trực tiếp 3.500+ suất chiếu mới vào web và DB
-├── .env.example               # Mẫu khai báo biến môi trường chuẩn
-├── docker-compose.yml         # Hạ tầng CSDL: MySQL 8.4, Redis 7, MongoDB 7
-└── package.json               # Cấu hình NPM Workspaces & kịch bản lệnh Monorepo
+│   └── sync-data.js                        # Direct live data synchronization utility for client and database
+├── .env.example                            # Canonical environment variable specification
+├── docker-compose.yml                      # Production-mirrored local service orchestration definition
+├── eslint.config.js                        # Flat ESLint rules configuration across monorepo boundaries
+├── commitlint.config.js                    # Commit message standard rules (Conventional Commits)
+└── package.json                            # Root orchestration scripts and workspace manifests
 ```
 
 ---
 
-## 4. 🔌 Bảng cổng dịch vụ (Port Mapping)
+## 3. Network Topology & Service Port Allocations
 
-| Dịch vụ            | Cổng mặc định | Địa chỉ URL / Tham chiếu                                             | Mô tả                             |
-| :----------------- | :------------ | :------------------------------------------------------------------- | :-------------------------------- |
-| **Frontend Web**   | `5173`        | [http://localhost:5173](http://localhost:5173)                       | Giao diện người dùng CineHub      |
-| **Core API**       | `4000`        | [http://localhost:4000/api/health](http://localhost:4000/api/health) | Backend RESTful API               |
-| **Prisma Studio**  | `5555`        | [http://localhost:5555](http://localhost:5555)                       | Giao diện quản trị CSDL trực quan |
-| **MySQL Database** | `3306`        | `localhost:3306` (`cinehub_root`)                                    | CSDL quan hệ chính                |
-| **Redis Cache**    | `6379`        | `localhost:6379`                                                     | Quản lý khóa ghế & bộ nhớ đệm     |
-| **MongoDB**        | `27017`       | `localhost:27017`                                                    | CSDL tài liệu NoSQL & raw payload |
+The default local development topology requires the following network port allocations:
 
----
-
-## 5. 🚀 Hướng dẫn cài đặt & Chạy dự án (Quickstart)
-
-### Yêu cầu tiên quyết
-
-- **Node.js**: Phiên bản `>= 20.0.0` (Khuyên dùng `nvm use`).
-- **NPM**: Phiên bản `>= 10.0.0`.
-- **Docker & Docker Compose** (Hoặc MySQL 8.4 cài đặt trực tiếp trên máy).
-- **Git**: Quản lý phiên bản mã nguồn.
+| Service Identity           | Network Endpoint        | Transport / Protocol    | Access Role                                 |
+| :------------------------- | :---------------------- | :---------------------- | :------------------------------------------ |
+| **Frontend Web**           | `http://localhost:5173` | HTTP / WebSockets (HMR) | End-user interactive web interface          |
+| **Core API Gateway**       | `http://localhost:4000` | HTTP / JSON REST        | Primary RESTful application services        |
+| **Prisma Studio**          | `http://localhost:5555` | HTTP / Web GUI          | Administrative relational data explorer     |
+| **MySQL Engine**           | `localhost:3306`        | TCP / MySQL Protocol    | Relational persistence engine               |
+| **Redis Cache**            | `localhost:6379`        | TCP / RESP              | In-memory distributed lock and caching tier |
+| **MongoDB Document Store** | `localhost:27017`       | TCP / MongoDB Wire      | Unstructured ingest document storage        |
 
 ---
 
-### Quy trình 6 bước khởi động nhanh:
+## 4. Infrastructure Requirements & Local Setup
 
-#### Bước 1: Clone repo và mở thư mục
+### 4.1. Runtime Prerequisites
+
+- **Node.js**: Version `>= 20.0.0` (Active LTS recommended, e.g., v20.x or v22.x).
+- **NPM**: Version `>= 10.0.0`.
+- **Docker Engine & Docker Compose**: Version `>= 24.0.0` (or native local instances of MySQL 8.4, Redis 7, MongoDB 7).
+- **Git**: Version `>= 2.38.0`.
+
+### 4.2. Step-by-Step Initial Bootstrapping
+
+#### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/dkv12345/CineHub.git
 cd CineHub
 ```
 
-#### Bước 2: Cài đặt Dependencies toàn bộ Monorepo
+#### Step 2: Install Workspace Dependencies
+
+Execute installation from the monorepo root. This automatically resolves symlinks across internal workspace packages and generates the Prisma Client bindings:
 
 ```bash
 npm install
 ```
 
-_(Lệnh này tự động liên kết các workspace `apps/*`, `services/*`, `packages/*` và tạo sẵn Prisma Client)._
+#### Step 3: Initialize Environment Variables
 
-#### Bước 3: Tạo file cấu hình môi trường
+Generate the local configuration file from the template:
 
 ```bash
 cp .env.example .env
 ```
 
-_(Nếu cần tuỳ chỉnh cổng hoặc tài khoản MySQL, chỉnh sửa trực tiếp trong file `.env` vừa tạo)._
+Ensure database credentials match your target infrastructure. Default connection string:
 
-#### Bước 4: Khởi động Cơ sở hạ tầng (Database Services)
+```env
+DATABASE_URL=mysql://root:cinehub_root@localhost:3306/cinehub
+REDIS_URL=redis://localhost:6379
+MONGODB_URI=mongodb://cinehub:cinehub_pw@localhost:27017/cinehub?authSource=admin
+```
 
-- **Cách A (Khuyên dùng - Dùng Docker):**
-  ```bash
-  npm run infra:up
-  ```
-- **Cách B (Nếu bạn đã cài sẵn MySQL trên macOS/Linux):**
-  Đảm bảo dịch vụ MySQL đang chạy trên cổng `3306` và mật khẩu khớp với `DATABASE_URL` trong `.env`.
+#### Step 4: Provision Containerized Infrastructure
 
-#### Bước 5: Khởi tạo Database & Nạp dữ liệu mẫu (Seed)
+Launch the database, caching, and document storage containers in detached mode:
 
 ```bash
-# Áp dụng migration CSDL
-npm run db:migrate
+npm run infra:up
+```
 
-# Nạp dữ liệu khởi tạo (Phim, rạp, phòng chiếu, loại ghế, bảng giá)
+Verify container operational health:
+
+```bash
+docker compose ps
+```
+
+#### Step 5: Execute Database Migrations and Seed Master Data
+
+Apply relational schema migrations and populate baseline catalogs (cinemas, rooms, pricing rules, concessions, seat layouts, and movies):
+
+```bash
+npm run db:migrate
 npm run db:seed
 ```
 
-#### Bước 6: Khởi chạy dự án
+#### Step 6: Start Full-Stack Development Environment
+
+Launch both the Core API service and the Client Frontend application concurrently:
 
 ```bash
 npm run dev
 ```
 
-Bây giờ bạn có thể trải nghiệm ngay:
-
-- 🌐 **Giao diện Web:** Mở trình duyệt tại **[http://localhost:5173](http://localhost:5173)**
-- 🔍 **Trang Lịch chiếu:** Xem tại **[http://localhost:5173/showtimes](http://localhost:5173/showtimes)**
-- 📊 **Quản lý CSDL (Prisma Studio):** Chạy `npm run db:studio` và truy cập **[http://localhost:5555](http://localhost:5555)**
+- Client application: `http://localhost:5173`
+- Backend health endpoint: `http://localhost:4000/api/health`
 
 ---
 
-## 6. 📜 Bảng lệnh NPM Scripts
+## 5. Operational Scripts & Command Reference
 
-Mọi kịch bản lệnh đều được chạy thuận tiện từ thư mục gốc Monorepo:
+All orchestration commands are managed from the root `package.json`:
 
-| Lệnh                   | Ý nghĩa & Mô tả chi tiết                                                                        |
-| :--------------------- | :---------------------------------------------------------------------------------------------- |
-| `npm run dev`          | Khởi chạy song song cả Core API (`:4000`) và Frontend Web (`:5173`)                             |
-| `npm run dev:web`      | Chỉ khởi chạy riêng Frontend Vite Dev Server                                                    |
-| `npm run dev:api`      | Chỉ khởi chạy riêng Core API kèm tính năng tự động reload (`--watch`)                           |
-| `npm run sync:live`    | **Cập nhật nhanh 3.500+ suất chiếu mới nhất** từ Galaxy Cinema trực tiếp lên giao diện Frontend |
-| `npm run crawl:galaxy` | Chạy job crawler lưu toàn diện vào CSDL MySQL và đồng bộ sang Frontend                          |
-| `npm run infra:up`     | Bật các container Docker ngầm (MySQL, Redis, MongoDB)                                           |
-| `npm run infra:down`   | Dừng các container cơ sở hạ tầng (dữ liệu vẫn an toàn trong Docker Volumes)                     |
-| `npm run db:migrate`   | Áp dụng các thay đổi Prisma Schema vào CSDL MySQL                                               |
-| `npm run db:seed`      | Nạp dữ liệu mẫu ban đầu từ `galaxy_normalized_v3.json`                                          |
-| `npm run db:studio`    | Mở giao diện web quản trị cơ sở dữ liệu Prisma Studio trên cổng `5555`                          |
-| `npm run db:validate`  | Kiểm tra cú pháp và tính hợp lệ của file `schema.prisma`                                        |
-| `npm run lint`         | Chạy ESLint kiểm tra cú pháp và chất lượng mã nguồn                                             |
-| `npm run format`       | Tự động định dạng toàn bộ mã nguồn theo chuẩn Prettier                                          |
-| `npm test`             | Chạy bộ kiểm thử tự động (Unit & Integration tests) qua Vitest                                  |
+| Script Command         | Execution Context   | Description                                                            |
+| :--------------------- | :------------------ | :--------------------------------------------------------------------- |
+| `npm run dev`          | Monorepo Root       | Concurrently runs `@cinehub/core-api` and `@cinehub/web`               |
+| `npm run dev:api`      | `services/core-api` | Launches Core API with file-watch auto-reload (`node --watch`)         |
+| `npm run dev:web`      | `apps/web`          | Launches Vite development server with Hot Module Replacement           |
+| `npm run sync:live`    | Root Utility        | Fetches live Galaxy Cinema sessions and syncs frontend datasets        |
+| `npm run crawl:galaxy` | Aggregator Service  | Crawls Galaxy API, upserts MySQL entities, and syncs frontend client   |
+| `npm run infra:up`     | Docker Engine       | Boots containerized MySQL, Redis, and MongoDB in detached mode         |
+| `npm run infra:down`   | Docker Engine       | Halts all containers while preserving data volumes                     |
+| `npm run db:migrate`   | `@cinehub/db`       | Executes Prisma schema migration on the target relational database     |
+| `npm run db:seed`      | `@cinehub/db`       | Runs comprehensive database seeding script                             |
+| `npm run db:studio`    | `@cinehub/db`       | Starts local Prisma Studio web interface on port 5555                  |
+| `npm run db:validate`  | `@cinehub/db`       | Validates Prisma schema syntax and relation constraints                |
+| `npm run lint`         | Monorepo Root       | Runs ESLint across all workspaces adhering to flat configuration       |
+| `npm run format`       | Monorepo Root       | Formats codebase adhering to enterprise Prettier specifications        |
+| `npm test`             | Monorepo Root       | Executes unit and integration test suites via Vitest across workspaces |
 
 ---
 
-## 7. 🗄 Quản lý Cơ sở dữ liệu (Prisma, Seed, Studio)
+## 6. Data Tier Management & Migration Workflows
 
-- **Vị trí file Schema chính:** [packages/db/prisma/schema.prisma](packages/db/prisma/schema.prisma)
-- **Script nạp dữ liệu Seed:** [packages/db/prisma/seed.js](packages/db/prisma/seed.js)
-- **Truy cập Prisma Client:** Mọi dịch vụ và script backend sử dụng chung package:
-  ```js
-  import { prisma } from '@cinehub/db';
-  ```
+Relational data modeling is centralized within the `@cinehub/db` package.
 
-### Quy trình khi sửa đổi Schema CSDL:
+### 6.1. Schema Modification Procedure
 
-1. Chỉnh sửa mô hình bảng trong `packages/db/prisma/schema.prisma`.
-2. Tạo và áp dụng migration mới:
+When extending or altering entities in `packages/db/prisma/schema.prisma`:
+
+1. Apply the schema change locally and generate a named SQL migration:
    ```bash
-   npm run db:migrate -- --name mo_ta_thay_doi
+   npm run db:migrate -- --name <migration_name_snake_case>
    ```
-3. Khởi tạo lại Prisma Client:
+2. Re-generate Prisma Client bindings across all consuming workspaces:
    ```bash
    npm run generate -w @cinehub/db
    ```
-4. Commit cả file `schema.prisma` và thư mục `packages/db/prisma/migrations/` vào Git.
+3. Commit both `schema.prisma` and the newly generated SQL file under `packages/db/prisma/migrations/`.
+
+### 6.2. Master Data Ingestion & Seeding
+
+The database seeder (`packages/db/prisma/seed.js`) provides an idempotent ingestion routine covering:
+
+- Seat types: `STANDARD`, `VIP`, `SWEETBOX` with respective dimension and capacity metrics.
+- Ticket tier matrices: Adult, Student, Child, Member.
+- Cinema chains: Master entities for Galaxy Cinema, CGV, Lotte Cinema, and BHD Star.
+- Full provincial administrative taxonomy across 12 Vietnamese municipal regions.
+- Auditorium layout geometry, seat map matrix generation, and dynamic concession pricing.
 
 ---
 
-## 8. 🌿 Quy chuẩn Git & Làm việc nhóm (Git Workflow)
+## 7. Concurrency Control & Seat Lease Protocol
 
-Để toàn bộ thành viên làm việc trơn tru, **không bao giờ bị xung đột code (conflict)**, dự án áp dụng mô hình Feature Branch Workflow tiêu chuẩn:
+To prevent overselling and double-booking during peak ticket sale intervals, CineHub enforces an atomic reservation lifecycle:
 
-> 📘 **Xem tài liệu chi tiết đầy đủ tại:** [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)
+```
+[Client Request: Select Seat]
+             |
+             v
+   [Check Redis Lock via Lua]
+      |                 |
+(Lock Exists)     (Lock Available)
+      |                 |
+      v                 v
+[Reject 409 Conflict] [Acquire Lease: SET seat:{id} token NX EX 900]
+                        |
+                        v
+              [Display Hold State on Client]
+                        |
+            [Checkout: Within 15 Min?]
+               /                 \
+            (Yes)                (No / TTL Expired)
+             /                     \
+            v                       v
+[MySQL Transaction Commit]  [Redis Key Eviction: Seat Released]
+[Insert Ticket & Order]
+[Release Redis Lock]
+```
 
-### Tóm tắt 5 bước chuẩn khi làm 1 Task:
+1. **Lease Acquisition**: When a user selects a seat, an atomic Redis key is set with a 15-minute lease:
+   `KEY: seat:{showtime_id}:{seat_id}`, `VALUE: {user_id}:{timestamp}`, `TTL: 900s`.
+2. **Atomic Verification**: Any concurrent selection attempts fail immediately at the Redis tier prior to touching relational database storage.
+3. **Checkout Validation**: During order creation, the server validates lease ownership within an ACID-compliant MySQL transaction.
+4. **Lease Release / Expiration**: Upon successful payment, the seat status transitions to `BOOKED` in MySQL and the Redis key is deleted. If the session expires without payment, Redis TTL expiration automatically returns the seat to available inventory.
 
-1. **Trước khi làm:** Cập nhật `main` mới nhất:
+---
+
+## 8. Data Ingestion Pipeline (Crawler Architecture)
+
+The data aggregator (`services/aggregator`) handles automated ingestion from external cinema provider APIs.
+
+### 8.1. Anti-Blocking & Security Handshake
+
+External cinema APIs (specifically Galaxy Cinema) implement web application firewall rules requiring specific session tokens:
+
+- **Handshake Phase**: Executes an initial manual redirect handshake with `/api/v2/mobile/cinemas` using an enterprise client identifier (`clientid: 3da4eba4-94dd-4e74-bc25-38e89a01fe07`) and unified browser User-Agent to acquire a signed `muid_mly` session cookie.
+- **Data Pull Phase**: Dispatches requests to `/api/v2/mobile/sessions2` with the active session cookie, retrieving 3,500+ active sessions across 31 complexes nationwide.
+
+### 8.2. Resilient Upsert Architecture
+
+- **Missing Entity Auto-Resolution**: When an incoming session references an unseeded province or municipality (e.g., Ben Tre, Can Tho), the upsert pipeline automatically generates the corresponding `Province` record on-the-fly rather than aborting the pipeline.
+- **Decoupled MongoDB Archiving**: Raw payload storage into MongoDB is wrapped with a 2-second timeout and graceful degradation; if MongoDB is unavailable, relational MySQL catalog ingestion continues uninterrupted.
+
+---
+
+## 9. AI Assistant & Recommendation Engine Architecture
+
+CineHub incorporates an AI orchestration module (`services/core-api/src/modules/chatbot`) delivering conversational support and personalized recommendations.
+
+### 9.1. Natural Language Processing Pipeline
+
+1. **Normalization & Tokenization**: Incoming queries in Vietnamese undergo diacritic-sensitive and diacritic-insensitive normalization, punctuation stripping, and tokenization.
+2. **Intent Classification**: Evaluates user queries across 8 distinct intent categories (`BOOKING_GUIDE`, `SHOWTIMES_QUERY`, `CINEMA_LOCATIONS`, `TICKET_PRICING`, `CONCESSIONS_INFO`, `RECOMMENDATIONS`, `GENERAL_CINEMA_FAQ`, `FALLBACK`).
+3. **Entity Extraction**: Recognizes cinema names, movie titles, target dates (`hom nay`, `ngay mai`, specific weekdays), and format qualifiers (`2D`, `3D`, `IMAX`).
+
+### 9.2. Hybrid Retrieval Mechanism
+
+- **Vector Search**: Computes cosine similarity scores between user preference vectors and normalized movie synopsis embeddings.
+- **Deterministic Semantic Fallback**: Operates locally without external API latency when common inquiries (pricing rules, cinema addresses, operating hours) are detected.
+- **LLM Synthesis**: When complex inquiries or open-ended advice are requested, the engine structures context-augmented prompts and queries Google Gemini for natural, helpful responses.
+
+---
+
+## 10. Engineering Standards & Git Governance
+
+The engineering organization strictly adheres to the Feature Branch Workflow. **Direct commits or pushes to the `main` branch are strictly prohibited.**
+
+> Detailed operational runbook available at: [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)
+
+### 10.1. Commit Standards (Conventional Commits)
+
+All commit messages are validated via Husky and Commitlint:
+
+- `feat(scope): message`: New user-facing or platform functionality
+- `fix(scope): message`: Bug fix or defect remediation
+- `refactor(scope): message`: Code improvement without behavioral change
+- `docs(scope): message`: Documentation addition or modification
+- `chore(scope): message`: Dependency updates, tooling, or environment configuration
+- `test(scope): message`: Unit, integration, or end-to-end test suite adjustments
+
+_Rule: Subject lines must remain lowercase and must not terminate with a period._
+
+### 10.2. Standard Five-Step Task Lifecycle
+
+1. **Synchronize Main**: Always start from the latest remote state:
    ```bash
    git checkout main && git pull origin main
    ```
-2. **Tạo nhánh mới cho task:**
+2. **Create Topic Branch**:
    ```bash
-   git checkout -b feat/ten-tinh-nang
+   git checkout -b <type>/<task-slug>
    ```
-3. **Code và Commit thường xuyên:**
+3. **Develop & Commit**: Stage and commit cohesive logical units:
    ```bash
-   git add . && git commit -m "feat(web): mo ta tinh nang"
+   git add . && git commit -m "feat(module): explicit description"
    ```
-4. **Chống conflict trước khi push:**
+4. **Rebase Against Remote Main (Zero Conflict Guarantee)**:
    ```bash
    git fetch origin && git rebase origin/main
    ```
-5. **Đẩy lên GitHub và tạo Pull Request (PR):**
+5. **Publish & Open Pull Request**:
    ```bash
-   git push -u origin feat/ten-tinh-nang
+   git push -u origin <type>/<task-slug>
    ```
-6. **Sau khi PR được merge:** Quay về `main`, kéo code mới và xoá nhánh cũ trên máy:
+6. **Post-Merge Cleanup**:
    ```bash
-   git checkout main && git pull origin main && git branch -d feat/ten-tinh-nang
+   git checkout main && git pull origin main && git branch -d <type>/<task-slug>
    ```
 
 ---
 
-## 9. 🛠 Xử lý sự cố thường gặp (Troubleshooting)
+## 11. Troubleshooting & Operational Runbook
 
-### 1. Suất chiếu trên giao diện web bị hiện ngày cũ
+### 11.1. Client UI Displays Outdated Showtimes
 
-- **Nguyên nhân:** Dữ liệu mẫu tĩnh trước đó bị đóng băng ngày cũ.
-- **Khắc phục:** Mở Terminal và chạy lệnh sau để tải 3.500+ suất chiếu mới nhất từ hôm nay:
+- **Root Cause**: Client fallback dataset contains static show dates from previous testing windows.
+- **Remediation**: Execute direct live synchronization to ingest today's current showtimes from Galaxy Cinema:
   ```bash
   npm run sync:live
   ```
 
-### 2. Lỗi `Environment variable not found: DATABASE_URL`
+### 11.2. Missing Environment File
 
-- **Nguyên nhân:** Chưa sao chép file cấu hình `.env` ở thư mục gốc.
-- **Khắc phục:** Chạy `cp .env.example .env`.
+- **Symptom**: `Environment variable not found: DATABASE_URL`.
+- **Remediation**: Copy the environment specification template:
+  ```bash
+  cp .env.example .env
+  ```
 
-### 3. Lỗi chiếm cổng `EADDRINUSE: address already in use :::3306`
+### 11.3. Port 3306 Conflict (`EADDRINUSE`)
 
-- **Nguyên nhân:** Máy tính của bạn đang chạy sẵn dịch vụ MySQL local khác.
-- **Khắc phục:**
-  - Nếu muốn dùng MySQL của Docker: Đổi cổng sang `3307:3306` trong `docker-compose.yml` và cập nhật `DATABASE_URL` trong `.env` thành `localhost:3307`.
-  - Hoặc tắt service MySQL nội bộ trên máy: `brew services stop mysql` (macOS) hoặc `sudo systemctl stop mysql` (Linux).
+- **Symptom**: Local MySQL service conflicts with Docker container port 3306.
+- **Remediation**:
+  - Option 1 (Docker remapping): In `docker-compose.yml`, change ports to `"3307:3306"` and update `DATABASE_URL` in `.env` to `localhost:3307`.
+  - Option 2 (Native service termination): Stop the native daemon via `brew services stop mysql` (macOS) or `sudo systemctl stop mysql` (Linux).
 
-### 4. Lỗi `@prisma/client did not initialize yet`
+### 11.4. Prisma Client Out of Sync
 
-- **Khắc phục:** Chạy lệnh sinh client:
+- **Symptom**: Error indicating `@prisma/client did not initialize yet` or missing generated types.
+- **Remediation**:
   ```bash
   npm run generate -w @cinehub/db
   ```
 
-### 5. Husky hooks báo lỗi quyền thực thi trên macOS/Linux
+### 11.5. Git Hooks Execution Permission Failure
 
-- **Khắc phục:** Cấp quyền chạy file cho thư mục `.husky`:
+- **Symptom**: Permission denied when executing `.husky/pre-commit` or `.husky/commit-msg`.
+- **Remediation**:
   ```bash
   chmod +x .husky/*
   ```
 
 ---
 
-<p align="center">
-  <b>CineHub Monorepo</b> – Phát triển với ❤️ bởi đội ngũ kỹ sư CineHub.
-</p>
+_CineHub Enterprise Architecture - Internal Technical Documentation._
