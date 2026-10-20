@@ -5,9 +5,13 @@ coverage/
 .env
 .env.*
 !.env.example
+*.local
 data/raw/
+.husky/_
+.turbo/
 *.log
 .DS_Store
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+

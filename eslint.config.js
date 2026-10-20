@@ -11,7 +11,7 @@ export default tseslint.config(
       'data/raw/**',
       'data/seed/**',
       'docs/**',
-      'scripts/**',
+      'tools/**',
       'coverage/**',
     ],
   },
@@ -39,6 +39,44 @@ export default tseslint.config(
     rules: {
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@cinehub/db', '@cinehub/db/*'],
+              message:
+                'Presentation tier (apps/web) must not access database tier (@cinehub/db) directly.',
+            },
+            {
+              group: [
+                '@cinehub/core-api',
+                '@cinehub/core-api/*',
+                '@cinehub/aggregator',
+                '@cinehub/aggregator/*',
+              ],
+              message:
+                'Presentation tier (apps/web) must not import internal backend services directly.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/**/*.{js,mjs,ts}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@cinehub/web', '@cinehub/core-api', '@cinehub/aggregator'],
+              message: 'Shared packages must not import from higher-level apps or services.',
+            },
+          ],
+        },
+      ],
     },
   },
 );
