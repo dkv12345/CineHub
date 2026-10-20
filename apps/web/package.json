@@ -12,6 +12,7 @@
   "dependencies": {
     "@cinehub/shared": "*",
     "@types/three": "^0.186.0",
+    "axios": "^1.20.0",
     "dayjs": "^1.11.13",
     "lucide-react": "^1.16.0",
     "qrcode.react": "^4.2.0",
