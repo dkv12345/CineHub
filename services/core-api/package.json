@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "embed:movies": "node --env-file=../../.env scripts/embed-movies.js",
+    "embed:movies": "node --env-file=../../.env src/jobs/embed-movies.js",
     "test": "vitest run"
   },
   "dependencies": {

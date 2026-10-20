@@ -6,7 +6,7 @@ import {
   EMBEDDING_MODEL,
   embedText,
   getCollection,
-} from '../src/modules/chatbot/chatbot.vector.js';
+} from '../modules/chatbot/chatbot.vector.js';
 
 const force = process.argv.includes('--force');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
