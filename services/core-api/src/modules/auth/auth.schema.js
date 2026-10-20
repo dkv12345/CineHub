@@ -1,0 +1,46 @@
+import { z } from 'zod';
+
+/**
+ * Validation schema for user registration.
+ */
+export const registerSchema = z.object({
+  body: z.object({
+    email: z.string().trim().email('Invalid email address'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(100, 'Password is too long'),
+    fullName: z
+      .string()
+      .trim()
+      .min(2, 'Full name must be at least 2 characters')
+      .max(120, 'Full name is too long'),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^(0|\+84)[0-9]{9,10}$/, 'Invalid phone number format')
+      .optional(),
+  }),
+});
+
+/**
+ * Validation schema for user login.
+ */
+export const loginSchema = z.object({
+  body: z.object({
+    email: z.string().trim().email('Invalid email address'),
+    password: z.string().min(1, 'Password is required'),
+  }),
+});
+
+/**
+ * Validation schema for refreshing authentication tokens.
+ * Refresh token can be delivered in request body or via HTTP-only cookie.
+ */
+export const refreshTokenSchema = z.object({
+  body: z
+    .object({
+      refreshToken: z.string().optional(),
+    })
+    .optional(),
+});
