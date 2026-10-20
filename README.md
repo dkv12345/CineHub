@@ -2,29 +2,88 @@
 
 ## Overview
 
-CineHub is an enterprise-grade digital cinema ticketing and reservation platform built on a distributed monorepo architecture. The system provides real-time showtime aggregation, 3D Point-of-View (POV) auditorium seating simulation using WebGL/Three.js, an intelligent Vietnamese natural language processing and recommendation engine powered by Google Gemini and vector retrieval, and a multi-tiered concurrency control pipeline designed to eliminate double-booking anomalies under high-throughput conditions.
+CineHub is an enterprise-grade digital cinema ticketing and reservation platform built on a distributed monorepo architecture. The platform provides real-time showtime aggregation, 3D Point-of-View (POV) auditorium seating simulation using WebGL/Three.js, an intelligent natural language processing and recommendation engine powered by Google Gemini and vector retrieval, and a multi-tiered concurrency control pipeline designed to eliminate double-booking anomalies under high-throughput conditions.
 
-The platform integrates directly with live commercial cinema provider datasets (Galaxy Cinema catalog covering 43 active movies, 31 complexes nationwide, and 3,500+ daily sessions) and operates over a polyglot persistence tier composed of MySQL 8.4, Redis 7, and MongoDB 7.
+The platform integrates directly with live commercial cinema provider datasets (Galaxy Cinema catalog covering active movies, complexes nationwide, and daily sessions) and operates over a polyglot persistence tier composed of MySQL 8.4, Redis 7, and MongoDB 7.
+
+---
+
+## Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph ClientTier["Client Presentation Tier (apps/web)"]
+        UI["React 19 + Vite + Tailwind CSS v4"]
+        Three["3D POV Seat Simulation (Three.js)"]
+        Axios["authorizedAxios Instance"]
+        Queue["Promise Failed Queue & isRefreshing Guard"]
+        Mocks["Isolated Mock Store (mocks/)"]
+        UI --> Three
+        UI --> Axios
+        Axios <--> Queue
+        UI -.->|VITE_USE_MOCKS=true / Fallback| Mocks
+    end
+
+    subgraph GatewayTier["API & Domain Services (services/core-api)"]
+        Router["Express 5 Router (/api)"]
+        Cors["CORS Policy (Credentials & Whitelist)"]
+        AuthMW["Authentication Middleware (requireAuth)"]
+
+        subgraph DomainModules["Modular Monolith Domains (modules/)"]
+            AuthMod["auth (routes, controller, service, schema)"]
+            CinemasMod["cinemas"]
+            MoviesMod["movies"]
+            ConcessionsMod["concessions"]
+            ChatbotMod["chatbot & recommendations"]
+        end
+
+        Jobs["Background Jobs (jobs/embed-movies.js)"]
+
+        Router --> Cors --> AuthMW
+        AuthMW --> DomainModules
+        Jobs -.-> ChatbotMod
+    end
+
+    subgraph DataIngestionTier["Ingestion & Data Pipelines (services/aggregator & tools)"]
+        Crawler["Galaxy Cinema Crawler"]
+        SyncTool["tools/sync-data.js"]
+    end
+
+    subgraph PersistenceTier["Polyglot Persistence Tier"]
+        MySQL[("MySQL 8.4 (Prisma ORM 6 / @cinehub/db)\nTransactional Source of Truth")]
+        Redis[("Redis 7 (Cache & Distributed Lock)\nSeat Leases & Rate Limiting")]
+        Mongo[("MongoDB 7 (Document Store)\nRaw Crawler Payloads & Vector Embeddings")]
+    end
+
+    Axios <==>|HTTP / REST (Proxy /api)| Router
+    DomainModules <--> MySQL
+    DomainModules <--> Redis
+    ChatbotMod <--> Mongo
+    Jobs <--> Mongo
+    Jobs <--> MySQL
+    Crawler --> MySQL
+    Crawler -.-> Mongo
+    SyncTool --> MySQL
+```
 
 ---
 
 ## Table of Contents
 
-1. [Architectural Overview & Core Decisions](#1-architectural-overview--core-decisions)
+1. [Architectural Overview and Core Decisions](#1-architectural-overview-and-core-decisions)
 2. [Monorepo Workspace Topology](#2-monorepo-workspace-topology)
-3. [Network Topology & Service Port Allocations](#3-network-topology--service-port-allocations)
-4. [Infrastructure Requirements & Local Setup](#4-infrastructure-requirements--local-setup)
-5. [Operational Scripts & Command Reference](#5-operational-scripts--command-reference)
-6. [Data Tier Management & Migration Workflows](#6-data-tier-management--migration-workflows)
-7. [Concurrency Control & Seat Lease Protocol](#7-concurrency-control--seat-lease-protocol)
-8. [Data Ingestion Pipeline (Crawler Architecture)](#8-data-ingestion-pipeline-crawler-architecture)
-9. [AI Assistant & Recommendation Engine Architecture](#9-ai-assistant--recommendation-engine-architecture)
-10. [Engineering Standards & Git Governance](#10-engineering-standards--git-governance)
-11. [Troubleshooting & Operational Runbook](#11-troubleshooting--operational-runbook)
+3. [Network Topology and Service Port Allocations](#3-network-topology-and-service-port-allocations)
+4. [Standard 4-Step Onboarding and Local Setup](#4-standard-4-step-onboarding-and-local-setup)
+5. [Authentication and Token Lifecycle Architecture](#5-authentication-and-token-lifecycle-architecture)
+6. [Operational Scripts and Command Reference](#6-operational-scripts-and-command-reference)
+7. [Data Tier Management and Migration Workflows](#7-data-tier-management-and-migration-workflows)
+8. [Concurrency Control and Seat Lease Protocol](#8-concurrency-control-and-seat-lease-protocol)
+9. [Engineering Standards and Git Governance](#9-engineering-standards-and-git-governance)
+10. [Troubleshooting and Operational Runbook](#10-troubleshooting-and-operational-runbook)
 
 ---
 
-## 1. Architectural Overview & Core Decisions
+## 1. Architectural Overview and Core Decisions
 
 The CineHub architecture follows domain-driven modular design principles configured as an NPM Monorepo. Key architectural decisions include:
 
@@ -34,11 +93,11 @@ The CineHub architecture follows domain-driven modular design principles configu
 
 ### 1.2. Polyglot Persistence Architecture
 
-- **Relational Core (MySQL 8.4 via Prisma ORM 6)**: Acts as the definitive single source of truth for all transactional business entities, including Accounts, Bookings, Orders, Tickets, Concessions, Showtimes, Auditoriums, and Price Rule matrices. Schema integrity is strictly enforced across 39 tables and 27 enumerations.
-- **Distributed Cache & Locking (Redis 7)**: Implements atomic seat hold reservations using Lua scripts with explicit Time-To-Live (TTL) expiration, rate limiting, and asynchronous job queuing via BullMQ. Configured with Append-Only File (AOF) persistence and `noeviction` policy to guarantee lease validity.
+- **Relational Core (MySQL 8.4 via Prisma ORM 6)**: Acts as the definitive single source of truth for all transactional business entities, including Accounts, Refresh Tokens, Bookings, Orders, Tickets, Concessions, Showtimes, Auditoriums, and Price Rule matrices. Schema integrity is strictly enforced across 39 tables and 27 enumerations.
+- **Distributed Cache and Locking (Redis 7)**: Implements atomic seat hold reservations using Lua scripts with explicit Time-To-Live (TTL) expiration, rate limiting, and session security. Configured with Append-Only File (AOF) persistence and `noeviction` policy to guarantee lease validity.
 - **Unstructured / Document Storage (MongoDB 7)**: Retains raw immutable crawler payloads from cinema API gateways, user reviews, audit logging, and fallback embedding vector representations.
 
-### 1.3. Concurrency & Transaction Isolation
+### 1.3. Concurrency and Transaction Isolation
 
 - Seat selection under high load implements a multi-tier reservation protocol:
   1. Distributed atomic lease in Redis (`SET resource_key token NX EX 900`).
@@ -51,11 +110,12 @@ The CineHub architecture follows domain-driven modular design principles configu
 | :-------------------------- | :-------------------------------------------- | :----------------------------------------------------------------------------- |
 | **Workspace Orchestration** | NPM Workspaces                                | Workspace coordination, shared dependencies, unified tooling                   |
 | **Client Application**      | React 19, Vite, Tailwind CSS v4               | Single-page application, responsive layout, reactive state machine             |
+| **HTTP Client & Security**  | Axios with Interceptors & Queue               | Silent JWT renewal, request retry queue, withCredentials cookies               |
 | **3D Simulation Engine**    | Three.js (WebGL)                              | Procedural 3D auditorium viewport projection from selected seat coordinates    |
-| **Application Server**      | Node.js 20+ (ESM), Express 5                  | High-throughput REST API, route validation, middleware security pipeline       |
+| **Application Server**      | Node.js 20+ (ESM), Express 5                  | High-throughput REST API, Modular Monolith architecture                        |
 | **AI / NLP Engine**         | Google Gemini API, Natural NLP, Vector Math   | Vietnamese intent classification, cosine similarity search, generative chatbot |
 | **Database & ORM**          | MySQL 8.4, Prisma 6                           | ACID-compliant transaction processing, schema migrations, relation modeling    |
-| **Cache & Task Queue**      | Redis 7, BullMQ                               | Atomic distributed locks, TTL leases, background cleanup jobs                  |
+| **Cache & Task Queue**      | Redis 7                                       | Atomic distributed locks, TTL leases, rate limiting                            |
 | **Validation Layer**        | Zod (`@cinehub/shared`)                       | End-to-end runtime type safety shared across client and server tiers           |
 | **Static Analysis & QA**    | ESLint 9, Prettier, Husky, Commitlint, Vitest | Continuous code linting, formatting enforcement, automated unit test suites    |
 
@@ -66,55 +126,80 @@ The CineHub architecture follows domain-driven modular design principles configu
 ```
 cinehub/
 ├── apps/
-│   └── web/                                # Client Frontend Application (React 19 + Vite)
+│   └── web/                                # Client Frontend Application (React 19 + Vite + TypeScript)
 │       ├── src/
-│       │   ├── components/                 # Atomic UI primitives, layout wrappers, SeatMap3D
+│       │   ├── components/                 # UI primitives, layout wrappers, SeatMap3D
+│       │   ├── lib/
+│       │   │   └── authorizedAxios.ts      # Axios instance, request/response interceptors & refresh queue
+│       │   ├── mocks/
+│       │   │   ├── data.mock.ts            # Isolated static movie/cinema datasets for tests & fallbacks
+│       │   │   └── sessions.mock.ts        # Large showtime session mock dataset (code-split on demand)
 │       │   ├── pages/                      # Route controllers: Home, Showtimes, Seats, Checkout, Profile
-│       │   ├── services/                   # Typed API consumption clients (sessionsApi, chatbotApi, etc.)
-│       │   └── store.tsx                   # Client state management with localStorage account isolation
-│       └── test/                           # Component and UI regression tests
+│       │   ├── services/
+│       │   │   ├── authApi.ts              # Authentication service client interface
+│       │   │   ├── sessionsApi.ts          # Showtime sessions client with real API & mock fallback
+│       │   │   ├── moviesApi.ts            # Movie catalog API client
+│       │   │   ├── concessionsApi.ts       # Food and beverage API client
+│       │   │   └── chatbotApi.ts           # AI assistant API client
+│       │   ├── data.ts                     # UI configuration, theme tokens, and mock re-exports
+│       │   └── store.tsx                   # Client state management
+│       └── test/                           # UI and seat simulation tests
 ├── services/
-│   ├── core-api/                           # Primary Application Server (Express 5 REST API)
+│   ├── core-api/                           # Modular Monolith Backend (Node.js ESM + Express 5)
 │   │   ├── src/
-│   │   │   ├── modules/                    # Domain modules (auth, movies, cinemas, booking, chatbot)
-│   │   │   ├── middleware/                 # Security, JWT authentication, rate limiting, error handling
-│   │   │   └── lib/                        # Cryptographic helpers, QR generation, vector mathematics
-│   │   └── test/                           # Domain integration and controller unit test suites
-│   ├── aggregator/                         # Ingestion Worker & Cinema Data Pipeline
-│   │   ├── src/
-│   │   │   ├── adapters/                   # Cinema provider data normalization mappers
-│   │   │   ├── jobs/                       # Scheduled crawl jobs (crawl-galaxy.js)
-│   │   │   └── upsert/                     # Idempotent catalog upsert operations into relational schema
-│   │   └── test/                           # Ingestion and mapper contract test suites
-│   └── worker/                             # Background Queue Worker (BullMQ)
-│       └── src/jobs/                       # Expired seat lease reclamation, email dispatch, outbox pattern
+│   │   │   ├── config/
+│   │   │   │   ├── cors.js                 # Centralized CORS policy with credentials support
+│   │   │   │   └── env.js                  # Runtime environment variable validation (Zod)
+│   │   │   ├── lib/
+│   │   │   │   ├── jwt.js                  # JWT token creation, verification and hashing utilities
+│   │   │   │   ├── errors.js               # Structured AppError class
+│   │   │   │   └── logger.js               # Pino logging configuration
+│   │   │   ├── middleware/
+│   │   │   │   ├── auth.middleware.js      # Bearer token verification and role guard middleware
+│   │   │   │   ├── errorHandler.js         # Centralized error handler and notFound handler
+│   │   │   │   └── validate.js             # Zod schema request validation middleware
+│   │   │   ├── modules/                    # Feature domains (Modular Monolith)
+│   │   │   │   ├── auth/                   # routes, controller, service, schema
+│   │   │   │   ├── cinemas/                # routes, controller, service, schema
+│   │   │   │   ├── concessions/            # routes, controller, service, schema
+│   │   │   │   ├── movies/                 # routes, controller, service, schema
+│   │   │   │   ├── chatbot/                # routes, controller, service, vector search
+│   │   │   │   └── recommendations/        # routes, controller, service
+│   │   │   ├── jobs/
+│   │   │   │   └── embed-movies.js         # Movie vector embedding generation job
+│   │   │   ├── app.js                      # Express application factory
+│   │   │   ├── routes.js                   # Root API route aggregations
+│   │   │   └── server.js                   # HTTP server entrypoint
+│   │   └── test/                           # API domain and controller unit tests
+│   └── aggregator/                         # Ingestion Worker & Cinema Data Pipeline
+│       ├── src/
+│       │   ├── adapters/                   # Cinema provider data normalization mappers
+│       │   └── jobs/                       # Scheduled crawl jobs (crawl-galaxy.js)
+│       └── test/                           # Ingestion mapper contract test suites
 ├── packages/
 │   ├── db/                                 # Relational Database Package
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma               # Enterprise Prisma schema (39 models, 27 enums)
 │   │   │   ├── migrations/                 # Version-controlled SQL migration history
-│   │   │   └── seed/                       # Normalized seed scripts (movies, auditoriums, concessions)
+│   │   │   └── seed.js                     # Seed script (cinemas, rooms, pricing rules, concessions)
 │   │   └── src/index.js                    # Singleton PrismaClient export
 │   └── shared/                             # Universal Shared Library
 │       └── src/                            # Zod schemas, HTTP error codes, domain business constants
-├── data/
-│   └── seed/                               # Frozen baseline catalog datasets (galaxy_normalized_v3.json)
+├── tools/
+│   └── sync-data.js                        # Direct live data synchronization utility
 ├── docs/
 │   ├── GIT_WORKFLOW.md                     # Team Git governance, feature branch lifecycle, rebase standards
-│   ├── ai/                                 # AI chatbot NLP pipeline and vector recommendation specification
-│   └── database/                           # Physical database architecture documentation and schema diagrams
-├── scripts/
-│   └── sync-data.js                        # Direct live data synchronization utility for client and database
+│   └── database/                           # Physical database architecture documentation
 ├── .env.example                            # Canonical environment variable specification
-├── docker-compose.yml                      # Production-mirrored local service orchestration definition
-├── eslint.config.js                        # Flat ESLint rules configuration across monorepo boundaries
+├── docker-compose.yml                      # Containerized infrastructure definition
+├── eslint.config.js                        # ESLint flat configuration enforcing module boundaries
 ├── commitlint.config.js                    # Commit message standard rules (Conventional Commits)
 └── package.json                            # Root orchestration scripts and workspace manifests
 ```
 
 ---
 
-## 3. Network Topology & Service Port Allocations
+## 3. Network Topology and Service Port Allocations
 
 The default local development topology requires the following network port allocations:
 
@@ -129,95 +214,152 @@ The default local development topology requires the following network port alloc
 
 ---
 
-## 4. Infrastructure Requirements & Local Setup
+## 4. Standard 4-Step Onboarding and Local Setup
 
-### 4.1. Runtime Prerequisites
+Follow this standardized four-step procedure to initialize and run the entire CineHub monorepo locally:
 
-- **Node.js**: Version `>= 20.0.0` (Active LTS recommended, e.g., v20.x or v22.x).
-- **NPM**: Version `>= 10.0.0`.
-- **Docker Engine & Docker Compose**: Version `>= 24.0.0` (or native local instances of MySQL 8.4, Redis 7, MongoDB 7).
-- **Git**: Version `>= 2.38.0`.
+### Prerequisites
 
-### 4.2. Step-by-Step Initial Bootstrapping
+- Node.js version `>= 20.0.0`
+- NPM version `>= 10.0.0`
+- Docker Engine and Docker Compose version `>= 24.0.0`
 
-#### Step 1: Clone the Repository
+### Preparation: Environment Configuration
 
-```bash
-git clone https://github.com/dkv12345/CineHub.git
-cd CineHub
-```
-
-#### Step 2: Install Workspace Dependencies
-
-Execute installation from the monorepo root. This automatically resolves symlinks across internal workspace packages and generates the Prisma Client bindings:
-
-```bash
-npm install
-```
-
-#### Step 3: Initialize Environment Variables
-
-Generate the local configuration file from the template:
+Before executing the onboarding steps, ensure `.env` is initialized from the example file:
 
 ```bash
 cp .env.example .env
 ```
 
-Ensure database credentials match your target infrastructure. Default connection string:
+---
 
-```env
-DATABASE_URL=mysql://root:cinehub_root@localhost:3306/cinehub
-REDIS_URL=redis://localhost:6379
-MONGODB_URI=mongodb://cinehub:cinehub_pw@localhost:27017/cinehub?authSource=admin
-```
+### Step 1: Provision Containerized Infrastructure
 
-#### Step 4: Provision Containerized Infrastructure
-
-Launch the database, caching, and document storage containers in detached mode:
+Start the containerized MySQL 8.4, Redis 7, and MongoDB 7 instances in detached mode:
 
 ```bash
 npm run infra:up
 ```
 
-Verify container operational health:
+_Alternative equivalent command:_
+
+```bash
+docker compose up -d
+```
+
+Verify that all three database containers are healthy:
 
 ```bash
 docker compose ps
 ```
 
-#### Step 5: Execute Database Migrations and Seed Master Data
+---
 
-Apply relational schema migrations and populate baseline catalogs (cinemas, rooms, pricing rules, concessions, seat layouts, and movies):
+### Step 2: Install Monorepo Dependencies
+
+Install all workspace dependencies from the root directory. This command automatically resolves workspace symlinks and configures Git hooks via Husky:
 
 ```bash
-npm run db:migrate
-npm run db:seed
+npm install
 ```
 
-#### Step 6: Start Full-Stack Development Environment
+---
 
-Launch both the Core API service and the Client Frontend application concurrently:
+### Step 3: Run Database Migrations and Seed Baseline Data
+
+Apply the Prisma relational schema migrations to MySQL and populate master records (cinema chains, auditoriums, room tiers, price rule matrices, seat maps, concessions, and movies):
+
+```bash
+npm run db:migrate && npm run db:seed
+```
+
+---
+
+### Step 4: Launch Full-Stack Development Environment
+
+Start both the Backend API server and the Frontend Vite client concurrently with live reload:
 
 ```bash
 npm run dev
 ```
 
-- Client application: `http://localhost:5173`
-- Backend health endpoint: `http://localhost:4000/api/health`
+_Alternative alias:_
+
+```bash
+npm run dev:all
+```
+
+Once launched, access the local services at:
+
+- Web Application: `http://localhost:5173`
+- Backend API Health Check: `http://localhost:4000/api/health`
+- Optional Prisma Studio: `npm run db:studio` -> `http://localhost:5555`
 
 ---
 
-## 5. Operational Scripts & Command Reference
+## 5. Authentication and Token Lifecycle Architecture
+
+CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication lifecycle designed to protect against cross-site scripting (XSS) and token theft:
+
+```
+[Client Application]                                     [Core API Server]
+         |                                                        |
+         |---- 1. POST /api/auth/login -------------------------->|
+         |                                                        | Validates credentials
+         |<--- 2. Returns accessToken (15m) + refreshToken Cookie -| Sets HTTP-only cookie
+         |                                                        |
+         |---- 3. GET /api/* (Header: Bearer accessToken) ------->|
+         |                                                        | Validates JWT Access Token
+         |<--- 4. HTTP 200 OK (Protected Data) -------------------|
+         |                                                        |
+         | [Time passes: accessToken expires]                     |
+         |                                                        |
+         |---- 5. GET /api/* (Expired accessToken) -------------->|
+         |                                                        | Detects expiration
+         |<--- 6. HTTP 401 Unauthorized (code: TOKEN_EXPIRED) ----|
+         |                                                        |
+         | [Axios Interceptor catches 401 & queues requests]      |
+         |---- 7. POST /api/auth/refresh-token (Cookie sent) ---->|
+         |                                                        | Validates RTR Family
+         |                                                        | Rotates token record
+         |<--- 8. Returns new accessToken + new Cookie -----------|
+         |                                                        |
+         | [Drains Promise queue & retries original requests]     |
+         |---- 9. Retries GET /api/* with new token ------------->|
+         |<--- 10. HTTP 200 OK (Success) -------------------------|
+```
+
+### 5.1. Dual Token Strategy
+
+- **Access Token (Short-lived, 15 minutes)**: Signed using `JWT_ACCESS_SECRET` with algorithm `HS256`. Carries `{ sub: userId, role, email }`. Passed by the frontend in the HTTP `Authorization: Bearer <token>` header.
+- **Refresh Token (Long-lived, 7 days)**: Signed using `JWT_REFRESH_SECRET`. Stored as a SHA-256 hash in MySQL (`refresh_tokens` table) and transmitted exclusively via an HTTP-only, SameSite=Strict cookie (`path: /api/auth`).
+
+### 5.2. Refresh Token Rotation (RTR) & Reuse Detection
+
+- Every refresh request invalidates the presenting refresh token and issues a new token pair within the same `familyId`.
+- If an attacker attempts to use an already-revoked or already-replaced refresh token, the system detects a token reuse attack, terminates the entire token family immediately, and revokes all active sessions for that family.
+
+### 5.3. Frontend Axios Interceptors & Concurrency Guard
+
+- **`isRefreshing` Flag**: Prevents duplicate refresh requests when multiple concurrent asynchronous API calls receive HTTP 401 simultaneously.
+- **Promise Failed Queue (`failedQueue`)**: Holds pending resolver/rejecter callbacks. While the refresh request is in flight, incoming 401 responses are enqueued. Upon successful token renewal, all queued requests are replayed with the new Bearer token.
+
+---
+
+## 6. Operational Scripts and Command Reference
 
 All orchestration commands are managed from the root `package.json`:
 
 | Script Command         | Execution Context   | Description                                                            |
 | :--------------------- | :------------------ | :--------------------------------------------------------------------- |
 | `npm run dev`          | Monorepo Root       | Concurrently runs `@cinehub/core-api` and `@cinehub/web`               |
+| `npm run dev:all`      | Monorepo Root       | Alias for `npm run dev`                                                |
 | `npm run dev:api`      | `services/core-api` | Launches Core API with file-watch auto-reload (`node --watch`)         |
 | `npm run dev:web`      | `apps/web`          | Launches Vite development server with Hot Module Replacement           |
-| `npm run sync:live`    | Root Utility        | Fetches live Galaxy Cinema sessions and syncs frontend datasets        |
-| `npm run crawl:galaxy` | Aggregator Service  | Crawls Galaxy API, upserts MySQL entities, and syncs frontend client   |
+| `npm run build`        | `apps/web`          | Compiles optimized production bundle for the client application        |
+| `npm run sync:live`    | Root Utility        | Ingests live Galaxy Cinema sessions and synchronizes database          |
+| `npm run crawl:galaxy` | Aggregator Service  | Crawls Galaxy API, upserts MySQL entities, and triggers sync           |
 | `npm run infra:up`     | Docker Engine       | Boots containerized MySQL, Redis, and MongoDB in detached mode         |
 | `npm run infra:down`   | Docker Engine       | Halts all containers while preserving data volumes                     |
 | `npm run db:migrate`   | `@cinehub/db`       | Executes Prisma schema migration on the target relational database     |
@@ -225,16 +367,16 @@ All orchestration commands are managed from the root `package.json`:
 | `npm run db:studio`    | `@cinehub/db`       | Starts local Prisma Studio web interface on port 5555                  |
 | `npm run db:validate`  | `@cinehub/db`       | Validates Prisma schema syntax and relation constraints                |
 | `npm run lint`         | Monorepo Root       | Runs ESLint across all workspaces adhering to flat configuration       |
-| `npm run format`       | Monorepo Root       | Formats codebase adhering to enterprise Prettier specifications        |
+| `npm run format`       | Monorepo Root       | Formats codebase adhering to Prettier specifications                   |
 | `npm test`             | Monorepo Root       | Executes unit and integration test suites via Vitest across workspaces |
 
 ---
 
-## 6. Data Tier Management & Migration Workflows
+## 7. Data Tier Management and Migration Workflows
 
 Relational data modeling is centralized within the `@cinehub/db` package.
 
-### 6.1. Schema Modification Procedure
+### 7.1. Schema Modification Procedure
 
 When extending or altering entities in `packages/db/prisma/schema.prisma`:
 
@@ -248,7 +390,7 @@ When extending or altering entities in `packages/db/prisma/schema.prisma`:
    ```
 3. Commit both `schema.prisma` and the newly generated SQL file under `packages/db/prisma/migrations/`.
 
-### 6.2. Master Data Ingestion & Seeding
+### 7.2. Master Data Ingestion and Seeding
 
 The database seeder (`packages/db/prisma/seed.js`) provides an idempotent ingestion routine covering:
 
@@ -260,7 +402,7 @@ The database seeder (`packages/db/prisma/seed.js`) provides an idempotent ingest
 
 ---
 
-## 7. Concurrency Control & Seat Lease Protocol
+## 8. Concurrency Control and Seat Lease Protocol
 
 To prevent overselling and double-booking during peak ticket sale intervals, CineHub enforces an atomic reservation lifecycle:
 
@@ -268,11 +410,11 @@ To prevent overselling and double-booking during peak ticket sale intervals, Cin
 [Client Request: Select Seat]
              |
              v
-   [Check Redis Lock via Lua]
-      |                 |
+    [Check Redis Lock via Lua]
+       |                 |
 (Lock Exists)     (Lock Available)
-      |                 |
-      v                 v
+       |                 |
+       v                 v
 [Reject 409 Conflict] [Acquire Lease: SET seat:{id} token NX EX 900]
                         |
                         v
@@ -296,49 +438,13 @@ To prevent overselling and double-booking during peak ticket sale intervals, Cin
 
 ---
 
-## 8. Data Ingestion Pipeline (Crawler Architecture)
-
-The data aggregator (`services/aggregator`) handles automated ingestion from external cinema provider APIs.
-
-### 8.1. Anti-Blocking & Security Handshake
-
-External cinema APIs (specifically Galaxy Cinema) implement web application firewall rules requiring specific session tokens:
-
-- **Handshake Phase**: Executes an initial manual redirect handshake with `/api/v2/mobile/cinemas` using an enterprise client identifier (`clientid: 3da4eba4-94dd-4e74-bc25-38e89a01fe07`) and unified browser User-Agent to acquire a signed `muid_mly` session cookie.
-- **Data Pull Phase**: Dispatches requests to `/api/v2/mobile/sessions2` with the active session cookie, retrieving 3,500+ active sessions across 31 complexes nationwide.
-
-### 8.2. Resilient Upsert Architecture
-
-- **Missing Entity Auto-Resolution**: When an incoming session references an unseeded province or municipality (e.g., Ben Tre, Can Tho), the upsert pipeline automatically generates the corresponding `Province` record on-the-fly rather than aborting the pipeline.
-- **Decoupled MongoDB Archiving**: Raw payload storage into MongoDB is wrapped with a 2-second timeout and graceful degradation; if MongoDB is unavailable, relational MySQL catalog ingestion continues uninterrupted.
-
----
-
-## 9. AI Assistant & Recommendation Engine Architecture
-
-CineHub incorporates an AI orchestration module (`services/core-api/src/modules/chatbot`) delivering conversational support and personalized recommendations.
-
-### 9.1. Natural Language Processing Pipeline
-
-1. **Normalization & Tokenization**: Incoming queries in Vietnamese undergo diacritic-sensitive and diacritic-insensitive normalization, punctuation stripping, and tokenization.
-2. **Intent Classification**: Evaluates user queries across 8 distinct intent categories (`BOOKING_GUIDE`, `SHOWTIMES_QUERY`, `CINEMA_LOCATIONS`, `TICKET_PRICING`, `CONCESSIONS_INFO`, `RECOMMENDATIONS`, `GENERAL_CINEMA_FAQ`, `FALLBACK`).
-3. **Entity Extraction**: Recognizes cinema names, movie titles, target dates (`hom nay`, `ngay mai`, specific weekdays), and format qualifiers (`2D`, `3D`, `IMAX`).
-
-### 9.2. Hybrid Retrieval Mechanism
-
-- **Vector Search**: Computes cosine similarity scores between user preference vectors and normalized movie synopsis embeddings.
-- **Deterministic Semantic Fallback**: Operates locally without external API latency when common inquiries (pricing rules, cinema addresses, operating hours) are detected.
-- **LLM Synthesis**: When complex inquiries or open-ended advice are requested, the engine structures context-augmented prompts and queries Google Gemini for natural, helpful responses.
-
----
-
-## 10. Engineering Standards & Git Governance
+## 9. Engineering Standards and Git Governance
 
 The engineering organization strictly adheres to the Feature Branch Workflow. **Direct commits or pushes to the `main` branch are strictly prohibited.**
 
-> Detailed operational runbook available at: [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)
+Detailed operational runbook available at: [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
 
-### 10.1. Commit Standards (Conventional Commits)
+### 9.1. Commit Standards (Conventional Commits)
 
 All commit messages are validated via Husky and Commitlint:
 
@@ -351,9 +457,9 @@ All commit messages are validated via Husky and Commitlint:
 
 _Rule: Subject lines must remain lowercase and must not terminate with a period._
 
-### 10.2. Standard Five-Step Task Lifecycle
+### 9.2. Standard Development Lifecycle
 
-1. **Synchronize Main**: Always start from the latest remote state:
+1. **Synchronize Main**:
    ```bash
    git checkout main && git pull origin main
    ```
@@ -361,28 +467,24 @@ _Rule: Subject lines must remain lowercase and must not terminate with a period.
    ```bash
    git checkout -b <type>/<task-slug>
    ```
-3. **Develop & Commit**: Stage and commit cohesive logical units:
+3. **Develop and Commit**:
    ```bash
    git add . && git commit -m "feat(module): explicit description"
    ```
-4. **Rebase Against Remote Main (Zero Conflict Guarantee)**:
+4. **Rebase Against Remote Main**:
    ```bash
    git fetch origin && git rebase origin/main
    ```
-5. **Publish & Open Pull Request**:
+5. **Publish and Open Pull Request**:
    ```bash
    git push -u origin <type>/<task-slug>
-   ```
-6. **Post-Merge Cleanup**:
-   ```bash
-   git checkout main && git pull origin main && git branch -d <type>/<task-slug>
    ```
 
 ---
 
-## 11. Troubleshooting & Operational Runbook
+## 10. Troubleshooting and Operational Runbook
 
-### 11.1. Client UI Displays Outdated Showtimes
+### 10.1. Client UI Displays Outdated Showtimes
 
 - **Root Cause**: Client fallback dataset contains static show dates from previous testing windows.
 - **Remediation**: Execute direct live synchronization to ingest today's current showtimes from Galaxy Cinema:
@@ -390,7 +492,7 @@ _Rule: Subject lines must remain lowercase and must not terminate with a period.
   npm run sync:live
   ```
 
-### 11.2. Missing Environment File
+### 10.2. Missing Environment File
 
 - **Symptom**: `Environment variable not found: DATABASE_URL`.
 - **Remediation**: Copy the environment specification template:
@@ -398,14 +500,14 @@ _Rule: Subject lines must remain lowercase and must not terminate with a period.
   cp .env.example .env
   ```
 
-### 11.3. Port 3306 Conflict (`EADDRINUSE`)
+### 10.3. Port 3306 Conflict (`EADDRINUSE`)
 
 - **Symptom**: Local MySQL service conflicts with Docker container port 3306.
 - **Remediation**:
   - Option 1 (Docker remapping): In `docker-compose.yml`, change ports to `"3307:3306"` and update `DATABASE_URL` in `.env` to `localhost:3307`.
   - Option 2 (Native service termination): Stop the native daemon via `brew services stop mysql` (macOS) or `sudo systemctl stop mysql` (Linux).
 
-### 11.4. Prisma Client Out of Sync
+### 10.4. Prisma Client Out of Sync
 
 - **Symptom**: Error indicating `@prisma/client did not initialize yet` or missing generated types.
 - **Remediation**:
@@ -413,7 +515,7 @@ _Rule: Subject lines must remain lowercase and must not terminate with a period.
   npm run generate -w @cinehub/db
   ```
 
-### 11.5. Git Hooks Execution Permission Failure
+### 10.5. Git Hooks Execution Permission Failure
 
 - **Symptom**: Permission denied when executing `.husky/pre-commit` or `.husky/commit-msg`.
 - **Remediation**:

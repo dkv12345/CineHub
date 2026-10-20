@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @cinehub/core-api\" \"npm run dev -w @cinehub/web\"",
+    "dev:all": "npm run dev",
     "dev:api": "npm run dev -w @cinehub/core-api",
     "dev:web": "npm run dev -w @cinehub/web",
     "build": "npm run build -w @cinehub/web",
