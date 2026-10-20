@@ -21,7 +21,7 @@ flowchart TB
         UI --> Three
         UI --> Axios
         Axios <--> Queue
-        UI -.->|VITE_USE_MOCKS=true / Fallback| Mocks
+        UI -.->|"VITE_USE_MOCKS=true or Fallback"| Mocks
     end
 
     subgraph GatewayTier["API & Domain Services (services/core-api)"]
@@ -64,14 +64,14 @@ flowchart TB
     end
 
     subgraph PersistenceTier["Polyglot Persistence Tier"]
-        MySQL[("MySQL 8.4 (Prisma ORM 6 / @cinehub/db)\nTransactional Source of Truth (Users, Tokens, Bookings)")]
-        Redis[("Redis 7 (Cache & Distributed Lock)\nSeat Leases & Rate Limiting")]
-        Mongo[("MongoDB 7 (Document Store)\nRaw Crawler Payloads & Vector Embeddings")]
+        MySQL[("MySQL 8.4 - Prisma ORM 6")]
+        Redis[("Redis 7 - Distributed Lock & Cache")]
+        Mongo[("MongoDB 7 - Document & Vector Store")]
     end
 
-    OAuth <-->|ID Token Verification| GoogleAuth
+    OAuth <-->|"ID Token Verification"| GoogleAuth
     ChatbotMod <--> GeminiAPI
-    Axios <==>|HTTP / REST (Proxy /api)| Router
+    Axios <-->|"HTTP REST Proxy"| Router
     DomainModules <--> MySQL
     DomainModules <--> Redis
     ChatbotMod <--> Mongo
