@@ -41,7 +41,7 @@ export function detectChatIntent(message) {
   }
   if (/\b(phim nao|phim gi|dang chieu)\b/.test(text)) return 'NOW_SHOWING';
   // Chào hỏi chỉ khi không có ý định nào khác ("chào bạn, hôm nay có phim gì" vẫn ra SHOWTIMES)
-  if (/^(xin )?(chao|hello|helo|hi|hey|alo)\b/.test(plainText(message))) return 'GREETING';
+  if (/^(xin )?(chao|hello|helo|hi|hey|alo|e)\b/.test(plainText(message))) return 'GREETING';
   return 'UNKNOWN';
 }
 
