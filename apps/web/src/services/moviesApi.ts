@@ -25,8 +25,22 @@ export async function fetchMovieById(id: string, signal?: AbortSignal) {
   }
 
   const result: { data: DatabaseMovie } = await response.json();
-  if (!result.data || result.data.id !== id) {
-    throw new Error('Dữ liệu phim từ máy chủ không hợp lệ.');
+  return result.data || null;
+}
+
+export async function fetchMovies(signal?: AbortSignal) {
+  try {
+    const response = await fetch('/api/movies', { signal });
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}`);
+    }
+    const result = await response.json();
+    if (Array.isArray(result.data) && result.data.length > 0) {
+      return result.data;
+    }
+    return [];
+  } catch (error) {
+    console.warn('API /api/movies unavailable, falling back to static catalog:', error);
+    return [];
   }
-  return result.data;
 }

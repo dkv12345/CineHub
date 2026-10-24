@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cinemas, dayInfo, movies, movieThemes, promotions } from '../data';
 import type { Movie } from '../data';
 import type { CSSProperties } from 'react';
@@ -7,21 +7,32 @@ import { btnBookTicket, btnGhost, btnPrimary, Icon } from '../components/ui';
 import { useStore } from '../store';
 import type { MovieRecommendation } from '../services/recommendationsApi';
 import { fetchRecommendations } from '../services/recommendationsApi';
+import { fetchMovies } from '../services/moviesApi';
 
-const slides = [
-  ...movies.slice(0, 3).map((movie) => ({ type: 'movie' as const, key: String(movie.id), movie })),
-  ...promotions.map((promotion) => ({ type: 'promotion' as const, key: promotion.id, promotion })),
-];
-
-function Hero() {
+function Hero({ movies }: { movies: Movie[] }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const { trackMovie } = useStore();
+
+  const slides = useMemo(
+    () => [
+      ...movies
+        .slice(0, 3)
+        .map((movie) => ({ type: 'movie' as const, key: String(movie.id), movie })),
+      ...promotions.map((promotion) => ({
+        type: 'promotion' as const,
+        key: promotion.id,
+        promotion,
+      })),
+    ],
+    [movies],
+  );
+
   useEffect(() => {
     if (paused) return;
     const t = setInterval(() => setI((x) => (x + 1) % slides.length), 6000);
     return () => clearInterval(t);
-  }, [paused]);
+  }, [paused, slides.length]);
   const step = (d: number) => setI((x) => (x + d + slides.length) % slides.length);
   return (
     <section
@@ -156,12 +167,18 @@ function Hero() {
   );
 }
 
-function QuickBooking() {
-  const showings = movies.filter((m) => m.status === 'now');
+function QuickBooking({ movies: propMovies }: { movies: Movie[] }) {
+  const showings = propMovies.filter((m) => m.status === 'now');
   const days = Array.from({ length: 7 }, (_, i) => dayInfo(i));
-  const [movieId, setMovieId] = useState(String(showings[0].id));
+  const [movieId, setMovieId] = useState(() => String(showings[0]?.id || ''));
   const [day, setDay] = useState(0);
   const [cinemaId, setCinemaId] = useState(cinemas[0].id);
+
+  useEffect(() => {
+    if (showings.length > 0 && !showings.some((m) => String(m.id) === movieId)) {
+      setMovieId(String(showings[0].id));
+    }
+  }, [showings, movieId]);
 
   return (
     <section
@@ -299,6 +316,20 @@ export default function Home() {
   const [tab, setTab] = useState<'now' | 'soon'>('now');
   const [catalogFilter, setCatalogFilter] = useState('all');
   const [shelf, setShelf] = useState<'history' | 'collection' | 'trending'>('history');
+  const [allMovies, setAllMovies] = useState<Movie[]>(movies);
+
+  useEffect(() => {
+    let active = true;
+    fetchMovies().then((data) => {
+      if (active && Array.isArray(data) && data.length > 0) {
+        setAllMovies(data);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const { user, collections, toggleCollection, recentMovies, watchProgress, trackMovie, orders } =
     useStore();
   const [recommended, setRecommended] = useState<MovieRecommendation[]>([]);
@@ -344,8 +375,8 @@ export default function Home() {
     (catalogFilter === 'western' && ['Mỹ', 'Anh'].includes(m.country || '')) ||
     (catalogFilter === 'china' && m.country === 'Trung Quốc') ||
     (catalogFilter === 'korea' && m.country === 'Hàn Quốc');
-  const list = movies.filter((m) => m.status === tab && matchesCatalog(m));
-  const trending = [...movies]
+  const list = allMovies.filter((m) => m.status === tab && matchesCatalog(m));
+  const trending = [...allMovies]
     .filter((m) => m.status === 'now')
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 10);
@@ -357,15 +388,15 @@ export default function Home() {
         ? recentMovies
         : trending.map((m) => m.id);
   const shelfItems = shelfMovies
-    .map((id) => movies.find((m) => m.id === id))
+    .map((id) => allMovies.find((m) => m.id === id))
     .filter((m): m is Movie => !!m);
 
   return (
     <main>
       <div className="relative">
-        <Hero />
+        <Hero movies={allMovies} />
         <div className="relative z-20 mx-auto -mt-12 max-w-[1400px] px-5 md:px-9">
-          <QuickBooking />
+          <QuickBooking movies={allMovies} />
         </div>
       </div>
       <section className="mx-auto max-w-[1400px] px-5 pt-16 md:px-9">

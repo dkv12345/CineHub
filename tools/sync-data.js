@@ -1,10 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import { fetchSessions } from '../services/aggregator/src/galaxyClient.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
+dotenv.config({ path: path.resolve(rootDir, '.env') });
+import { prisma } from '@cinehub/db';
+
 const jsonPath = path.join(rootDir, 'data/seed/galaxy_normalized_v3.json');
 
 if (!fs.existsSync(jsonPath)) {
@@ -119,72 +123,172 @@ function formatReleaseDate(dStr) {
   return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dStr;
 }
 
-const moviesList = d.movies.map((m, idx) => {
-  const genresStr = (movieGenresMap[m.externalId] || ['Hành động', 'Kịch tính']).join(', ');
-  const directorStr = (movieDirectorsMap[m.externalId] || ['Đang cập nhật']).join(', ');
-  const castStr = (movieCastsMap[m.externalId] || ['Đang cập nhật']).slice(0, 5).join(', ');
-  const source = movieSourceMap[m.externalId];
-  const rating = source?.sourceScore ? Number(source.sourceScore) : 8.2 + (idx % 15) * 0.1;
-  const votes = source?.sourceVotes ? Number(source.sourceVotes) : 100 + ((idx * 37) % 800);
-  const views = votes * 8 + idx * 133;
-  const themeKey = getThemeKey(m.title, genresStr);
-  const isNow = m.status === 'NOW_SHOWING';
+let moviesList = [];
+let cinemasList = [];
 
-  return {
-    id: m.externalId,
-    title: m.title,
-    genre: genresStr,
-    duration: formatDuration(m.durationMin),
-    director: directorStr,
-    cast: castStr,
-    age: m.ageRating || 'T13',
-    rating: Number(rating.toFixed(1)),
-    votes: votes,
-    views: views,
-    poster:
-      m.posterUrl ||
-      'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=900&auto=format&fit=crop&q=80',
-    backdrop:
-      m.backdropUrl ||
-      m.posterUrl ||
-      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1800&auto=format&fit=crop&q=80',
-    status: isNow ? 'now' : 'soon',
-    release: formatReleaseDate(m.releaseDate),
-    startDate: m.releaseDate ? `${m.releaseDate} 00:00:00` : '2026-10-01 00:00:00',
-    endDate: m.endDate ? `${m.endDate} 00:00:00` : '2026-11-30 00:00:00',
-    slug: m.slug,
-    trailer: m.trailerUrl || 'https://www.youtube.com/watch?v=NSrioJtAiEU',
-    themeKey: themeKey,
-    country: m.country || 'Việt Nam',
-    synopsis:
-      m.synopsis ||
-      'Bộ phim hấp dẫn mang đến những trải nghiệm điện ảnh đặc sắc tại các phòng chiếu hiện đại của CineHub.',
-  };
-});
-
-const provincesMap = {};
-for (const p of d.provinces) {
-  provincesMap[p.code] = p.name;
+let dbMovies = [];
+let dbCinemas = [];
+try {
+  dbMovies = await prisma.movie.findMany({
+    where: { deletedAt: null },
+    include: {
+      genres: { select: { genre: { select: { name: true, slug: true } } } },
+      credits: {
+        orderBy: { billingOrder: 'asc' },
+        select: { role: true, person: { select: { fullName: true } } },
+      },
+      sources: true,
+    },
+    orderBy: [{ releaseDate: 'desc' }, { createdAt: 'desc' }],
+  });
+  dbCinemas = await prisma.cinema.findMany({
+    where: { isActive: true },
+    include: { province: true, ward: true },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+  });
+  console.log(
+    `[INFO] Connected to Database: loaded ${dbMovies.length} movies & ${dbCinemas.length} cinemas`,
+  );
+} catch (err) {
+  console.warn('[WARN] Database query failed, falling back to seed JSON file:', err.message);
 }
 
-const cinemasList = d.cinemas.map((c, idx) => {
-  const provName = provincesMap[c.provinceCode] || 'TP. Hồ Chí Minh';
-  const wardName = c.wardName || 'Trung tâm';
-  return {
-    id: c.externalId,
-    brand: 'Galaxy',
-    name: c.name,
-    area: `${wardName} · ${provName}`,
-    dist: `${(idx * 0.7 + 1.2).toFixed(1)} km`.replace('.', ','),
-    code: c.externalId,
-    address: c.address,
-    phone: c.phone || '19002224',
-    cityId: c.sourceCityId,
-    imageUrl: c.imageUrl,
-    thumbnailUrl: c.thumbnailUrl,
-    galleryUrls: c.galleryUrls || [],
-  };
-});
+if (dbMovies.length > 0) {
+  moviesList = dbMovies.map((m, idx) => {
+    const genreNames = m.genres.map((g) => g.genre.name);
+    const genresStr = genreNames.length > 0 ? genreNames.join(', ') : 'Hành động, Kịch tính';
+    const directors = m.credits.filter((c) => c.role === 'DIRECTOR').map((c) => c.person.fullName);
+    const cast = m.credits.filter((c) => c.role === 'ACTOR').map((c) => c.person.fullName);
+    const source = m.sources[0];
+    const rating = source?.sourceScore ? Number(source.sourceScore) : Number(m.ratingAvg) || 8.2;
+    const votes = source?.sourceVotes ? Number(source.sourceVotes) : m.ratingCount || 150;
+    const views = votes * 8 + idx * 133;
+    const isNow = m.status === 'NOW_SHOWING';
+    const externalId = source?.externalId || m.slug;
+
+    return {
+      id: externalId,
+      title: m.title,
+      genre: genresStr,
+      duration: formatDuration(m.durationMin),
+      director: directors.length > 0 ? directors.join(', ') : 'Đang cập nhật',
+      cast: cast.length > 0 ? cast.slice(0, 5).join(', ') : 'Đang cập nhật',
+      age: m.ageRating || 'T13',
+      rating: Number(rating.toFixed(1)),
+      votes: votes,
+      views: views,
+      poster:
+        m.posterUrl ||
+        'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=900&auto=format&fit=crop&q=80',
+      backdrop:
+        m.backdropUrl ||
+        m.posterUrl ||
+        'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1800&auto=format&fit=crop&q=80',
+      status: isNow ? 'now' : 'soon',
+      release: formatReleaseDate(m.releaseDate ? m.releaseDate.toISOString().slice(0, 10) : null),
+      startDate: m.releaseDate
+        ? `${m.releaseDate.toISOString().slice(0, 10)} 00:00:00`
+        : '2026-10-01 00:00:00',
+      endDate: m.endDate
+        ? `${m.endDate.toISOString().slice(0, 10)} 00:00:00`
+        : '2026-12-31 00:00:00',
+      slug: m.slug,
+      trailer: m.trailerUrl || 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+      themeKey: getThemeKey(m.title, genresStr),
+      country: m.country || 'Việt Nam',
+      synopsis:
+        m.synopsis ||
+        'Bộ phim hấp dẫn mang đến những trải nghiệm điện ảnh đặc sắc tại các phòng chiếu hiện đại của CineHub.',
+    };
+  });
+} else {
+  moviesList = d.movies.map((m, idx) => {
+    const genresStr = (movieGenresMap[m.externalId] || ['Hành động', 'Kịch tính']).join(', ');
+    const directorStr = (movieDirectorsMap[m.externalId] || ['Đang cập nhật']).join(', ');
+    const castStr = (movieCastsMap[m.externalId] || ['Đang cập nhật']).slice(0, 5).join(', ');
+    const source = movieSourceMap[m.externalId];
+    const rating = source?.sourceScore ? Number(source.sourceScore) : 8.2 + (idx % 15) * 0.1;
+    const votes = source?.sourceVotes ? Number(source.sourceVotes) : 100 + ((idx * 37) % 800);
+    const views = votes * 8 + idx * 133;
+    const themeKey = getThemeKey(m.title, genresStr);
+    const isNow = m.status === 'NOW_SHOWING';
+
+    return {
+      id: m.externalId,
+      title: m.title,
+      genre: genresStr,
+      duration: formatDuration(m.durationMin),
+      director: directorStr,
+      cast: castStr,
+      age: m.ageRating || 'T13',
+      rating: Number(rating.toFixed(1)),
+      votes: votes,
+      views: views,
+      poster:
+        m.posterUrl ||
+        'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=900&auto=format&fit=crop&q=80',
+      backdrop:
+        m.backdropUrl ||
+        m.posterUrl ||
+        'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1800&auto=format&fit=crop&q=80',
+      status: isNow ? 'now' : 'soon',
+      release: formatReleaseDate(m.releaseDate),
+      startDate: m.releaseDate ? `${m.releaseDate} 00:00:00` : '2026-10-01 00:00:00',
+      endDate: m.endDate ? `${m.endDate} 00:00:00` : '2026-11-30 00:00:00',
+      slug: m.slug,
+      trailer: m.trailerUrl || 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+      themeKey: themeKey,
+      country: m.country || 'Việt Nam',
+      synopsis:
+        m.synopsis ||
+        'Bộ phim hấp dẫn mang đến những trải nghiệm điện ảnh đặc sắc tại các phòng chiếu hiện đại của CineHub.',
+    };
+  });
+}
+
+if (dbCinemas.length > 0) {
+  cinemasList = dbCinemas.map((c, idx) => {
+    const provName = c.province?.name || 'TP. Hồ Chí Minh';
+    const wardName = c.ward?.name || 'Trung tâm';
+    return {
+      id: c.externalId || c.id,
+      brand: 'Galaxy',
+      name: c.name,
+      area: `${wardName} · ${provName}`,
+      dist: `${(idx * 0.7 + 1.2).toFixed(1)} km`.replace('.', ','),
+      code: c.externalId || c.id,
+      address: c.address,
+      phone: c.phone || '19002224',
+      cityId: c.sourceCityId,
+      imageUrl: c.imageUrl,
+      thumbnailUrl: c.thumbnailUrl,
+      galleryUrls: c.galleryUrls || [],
+    };
+  });
+} else {
+  const provincesMap = {};
+  for (const p of d.provinces) {
+    provincesMap[p.code] = p.name;
+  }
+  cinemasList = d.cinemas.map((c, idx) => {
+    const provName = provincesMap[c.provinceCode] || 'TP. Hồ Chí Minh';
+    const wardName = c.wardName || 'Trung tâm';
+    return {
+      id: c.externalId,
+      brand: 'Galaxy',
+      name: c.name,
+      area: `${wardName} · ${provName}`,
+      dist: `${(idx * 0.7 + 1.2).toFixed(1)} km`.replace('.', ','),
+      code: c.externalId,
+      address: c.address,
+      phone: c.phone || '19002224',
+      cityId: c.sourceCityId,
+      imageUrl: c.imageUrl,
+      thumbnailUrl: c.thumbnailUrl,
+      galleryUrls: c.galleryUrls || [],
+    };
+  });
+}
 
 // Write apps/web/src/data.ts
 const dataTs = `export const avatar = 'https://images.unsplash.com/photo-1615454138525-01a2abbf5437?auto=format&fit=crop&w=200&q=85';
@@ -441,7 +545,9 @@ export interface AIRecommendation {
 `;
 
 fs.writeFileSync(path.join(rootDir, 'apps/web/src/data.ts'), dataTs, 'utf-8');
-console.log('[SUCCESS] Generated apps/web/src/data.ts with 43 movies & 31 cinemas');
+console.log(
+  `[SUCCESS] Generated apps/web/src/data.ts with ${moviesList.length} movies & ${cinemasList.length} cinemas`,
+);
 
 // Map sessions for sessionsApi.ts
 const movieMapByExt = new Map(d.movies.map((m) => [m.externalId, m]));
@@ -632,6 +738,17 @@ export const rawGalaxyApiResponse: GalaxyApiResponse = {
 };
 
 export async function fetchGalaxySessions(): Promise<GalaxyApiResponse> {
+  try {
+    const res = await fetch('/api/sessions');
+    if (res.ok) {
+      const data: GalaxyApiResponse = await res.json();
+      if (data?.data?.result && data.data.result.length > 0) {
+        return data;
+      }
+    }
+  } catch (error) {
+    console.warn('API /api/sessions unavailable, using embedded database snapshot:', error);
+  }
   return rawGalaxyApiResponse;
 }
 
