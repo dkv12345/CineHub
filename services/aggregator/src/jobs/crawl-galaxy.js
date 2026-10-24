@@ -9,6 +9,7 @@ async function main() {
   const chain = await prisma.cinemaChain.findUniqueOrThrow({ where: { code: 'GALAXY' } });
   let mongoClient = null;
   let rawCol = null;
+
   try {
     const raw = await openRaw();
     mongoClient = raw.client;
@@ -16,6 +17,7 @@ async function main() {
   } catch (err) {
     console.warn('[WARN] MongoDB not reachable, skipping raw archiving:', err.message);
   }
+
   const startedAt = new Date();
 
   try {
@@ -49,24 +51,36 @@ async function main() {
     console.log('[INFO] Upserting showtimes and auditoriums...');
     const audCache = new Map();
     let done = 0;
+    let skipped = 0;
+
     for (const s of sessions) {
-      const m = mapSession(s, { durationMin: s.movie?.duration });
-      const cinema = cinemaRows.get(m.cinemaCode);
-      const movie = movieRows.get(m.movieExternalId);
+      try {
+        const m = mapSession(s, { durationMin: s.movie?.duration });
+        const cinema = cinemaRows.get(m.cinemaCode);
+        const movie = movieRows.get(m.movieExternalId);
 
-      if (!cinema || !movie) continue;
+        if (!cinema || !movie) continue;
 
-      const key = `${m.cinemaCode}|${m.auditoriumName}`;
-      if (!audCache.has(key) || m.tier !== 'STANDARD') {
-        audCache.set(key, await upsertAuditorium(cinema, m));
+        const key = `${m.cinemaCode}|${m.auditoriumName}`;
+        if (!audCache.has(key) || m.tier !== 'STANDARD') {
+          audCache.set(key, await upsertAuditorium(cinema, m));
+        }
+
+        // Thực hiện upsert showtime với try-catch riêng để tránh hỏng toàn bộ job
+        await upsertShowtime({ cinema, auditorium: audCache.get(key), movie }, m);
+        done++;
+      } catch (err) {
+        // Bỏ qua lỗi vi phạm trùng lịch chiếu (P2002) và tiếp tục suất chiếu khác
+        if (err.code === 'P2002') {
+          skipped++;
+        } else {
+          console.warn(`[WARN] Failed to upsert showtime for session ${s.id}:`, err.message);
+        }
       }
-
-      await upsertShowtime({ cinema, auditorium: audCache.get(key), movie }, m);
-      done++;
     }
 
     console.log(
-      `[SUCCESS] Completed: ${cinemas.size} cinemas, ${movies.size} movies, ${done} showtimes (${Date.now() - startedAt.getTime()}ms)`,
+      `[SUCCESS] Completed: ${cinemas.size} cinemas, ${movies.size} movies, ${done} showtimes inserted/updated (${skipped} skipped), took ${Date.now() - startedAt.getTime()}ms`,
     );
   } catch (error) {
     console.error('[ERROR] Crawl job failed:', error);

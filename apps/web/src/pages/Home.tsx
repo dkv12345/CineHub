@@ -14,145 +14,108 @@ const slides = [
 ];
 
 function Hero() {
+  // 1. Lọc chỉ lấy các slide Banner / Quảng cáo (loại bỏ slide Phim)
+  const bannerSlides = slides.filter((slide) => slide.type !== 'movie');
+
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
-  const { trackMovie } = useStore();
+
   useEffect(() => {
-    if (paused) return;
-    const t = setInterval(() => setI((x) => (x + 1) % slides.length), 6000);
+    if (paused || bannerSlides.length === 0) return;
+    const t = setInterval(() => setI((x) => (x + 1) % bannerSlides.length), 6000);
     return () => clearInterval(t);
-  }, [paused]);
-  const step = (d: number) => setI((x) => (x + d + slides.length) % slides.length);
+  }, [paused, bannerSlides.length]);
+
+  const step = (d: number) => setI((x) => (x + d + bannerSlides.length) % bannerSlides.length);
+
+  if (bannerSlides.length === 0) return null;
+
   return (
     <section
-      className="relative mx-auto min-h-[600px] max-w-[1600px] overflow-hidden"
+      className="relative mx-auto min-h-[350px] sm:min-h-[480px] md:min-h-[600px] max-w-[1600px] overflow-hidden bg-[#020617] text-[#fff]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
-      aria-label="Phim nổi bật và ưu đãi"
+      aria-label="Banner chương trình ưu đãi"
     >
-      {slides.map((slide, n) => (
+      {/* Hiển thị danh sách Banner */}
+      {bannerSlides.map((slide, n) => (
         <div
           key={slide.key}
           aria-hidden={n !== i}
-          style={
-            slide.type === 'movie'
-              ? ({
-                  '--film-accent': movieThemes[slide.movie.themeKey || 'space'].accent,
-                  '--film-highlight': movieThemes[slide.movie.themeKey || 'space'].highlight,
-                  '--film-display': movieThemes[slide.movie.themeKey || 'space'].fontFamily,
-                } as CSSProperties)
-              : undefined
-          }
-          className={`absolute inset-0 transition-opacity duration-700 ${n === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+          className={`absolute inset-0 transition-opacity duration-700 ${
+            n === i ? 'opacity-100' : 'pointer-events-none opacity-0'
+          }`}
         >
-          {slide.type === 'movie' ? (
-            <>
-              <img
-                src={slide.movie.backdrop}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover opacity-80"
-              />
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,#0b0d11_0%,rgba(11,13,17,.75)_37%,rgba(11,13,17,.1)_72%),linear-gradient(0deg,#0b0d11_0%,transparent_45%)]" />
-              <div className="dark-film-content relative mx-auto flex min-h-[600px] max-w-[1400px] items-center px-5 pb-24 pt-16 md:px-9">
-                <div className="max-w-[660px]">
-                  <div className="mb-5 flex items-center gap-3 text-sm font-bold film-highlight">
-                    <span className="h-px w-8 bg-[var(--film-highlight)]" />{' '}
-                    {slide.movie.studio || slide.movie.country || 'Phim hot tuần này'}
-                  </div>
-                  <h1 className="film-title text-6xl sm:text-7xl md:text-[96px]">
-                    {slide.movie.title.toUpperCase()}
-                  </h1>
-                  <div className="mt-6 flex flex-wrap items-center gap-4 text-sm font-semibold text-white/75">
-                    <span className="rounded bg-white px-1.5 py-0.5 text-xs text-black">
-                      {slide.movie.age}
-                    </span>
-                    <span>2026</span>
-                    <span>{slide.movie.duration}</span>
-                    <span>{slide.movie.genre}</span>
-                    <span className="text-white">
-                      <b className="film-highlight">★</b> {slide.movie.rating}/10
-                    </span>
-                  </div>
-                  <p className="mt-3 text-xs font-semibold text-white/55">
-                    Đạo diễn <b className="text-white/80">{slide.movie.director}</b>
-                    <span className="mx-2 text-white/20">·</span>Diễn viên{' '}
-                    <b className="text-white/80">{slide.movie.cast}</b>
-                  </p>
-                  <p className="mt-2 text-xs font-bold text-white/55">
-                    {slide.movie.country || 'Quốc tế'}
-                    {slide.movie.studio ? ` · ${slide.movie.studio}` : ''}
-                  </p>
-                  <p className="mt-5 max-w-[540px] text-[15px] leading-7 text-white/55">
-                    {slide.movie.synopsis}
-                  </p>
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <button
-                      onClick={() => {
-                        trackMovie(slide.movie.id);
-                        go(`/showtimes?movie=${slide.movie.id}`);
-                      }}
-                      className={btnBookTicket}
-                    >
-                      Đặt vé <Icon name="arrow" size={18} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        trackMovie(slide.movie.id, 34);
-                        go(`/movie/${slide.movie.id}?trailer=1`);
-                      }}
-                      className={btnGhost}
-                    >
-                      <Icon name="play" size={17} /> Xem trailer
-                    </button>
-                    <button
-                      onClick={() => go(`/movie/${slide.movie.id}`)}
-                      className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-black/20 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-                    >
-                      Xem chi tiết
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="absolute inset-0 overflow-hidden bg-[#090b0e]">
-              <img
-                src={slide.promotion.image}
-                alt={slide.promotion.title}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
+          <div className="absolute inset-0 overflow-hidden bg-[#020617]">
+            <img
+              src={slide.promotion?.image || (slide as any).image}
+              alt={slide.promotion?.title || (slide as any).title || 'Banner'}
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
         </div>
       ))}
-      <div className="absolute bottom-8 right-5 z-10 flex items-center gap-3 md:right-9">
+
+      {/* Nút điều hướng Slide Trước / Sau & Chấm tròn chọn trang */}
+      <div className="absolute bottom-6 right-5 z-10 flex items-center gap-3 md:bottom-8 md:right-9">
         <button
+          type="button"
           onClick={() => step(-1)}
           aria-label="Slide trước"
-          className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-black/30 hover:bg-white/10"
+          className="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-[#fff] shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
         >
           <Icon name="chevronL" size={18} />
         </button>
+
         <div className="flex gap-2">
-          {slides.map((slide, n) => (
+          {bannerSlides.map((slide, n) => (
             <button
               key={slide.key}
+              type="button"
               onClick={() => setI(n)}
               aria-label={`Slide ${n + 1}`}
-              className={`h-1.5 rounded-full transition-all ${n === i ? 'w-8 bg-[#e50914]' : 'w-3 bg-white/30'}`}
+              className={`h-2 rounded-full transition-all ${
+                n === i ? 'w-8 bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,1)]' : 'w-3 bg-white'
+              }`}
             />
           ))}
         </div>
+
         <button
+          type="button"
           onClick={() => step(1)}
           aria-label="Slide sau"
-          className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-black/30 hover:bg-white/10"
+          className="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-[#fff] shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
         >
           <Icon name="chevron" size={18} />
         </button>
       </div>
     </section>
+  );
+}
+
+const labelClass = 'min-w-0 text-xs font-black uppercase tracking-wider text-amber-300';
+const selectClass =
+  'block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-[#fff] outline-none transition [color-scheme:dark] [-webkit-text-fill-color:#fff] hover:border-white focus:border-amber-300 focus:ring-2 focus:ring-amber-400/40 disabled:cursor-not-allowed disabled:border-white/60 disabled:text-[#fff] disabled:opacity-100';
+const optionClass = 'bg-slate-900 font-black text-[#fff]';
+
+function SelectChevron() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#fff]"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   );
 }
 
@@ -165,56 +128,81 @@ function QuickBooking() {
 
   return (
     <section
-      className="glass-panel grid gap-3 rounded-2xl p-4 md:grid-cols-[1fr_1fr_1.3fr_auto] md:items-end md:p-5"
+      className="grid gap-3 rounded-2xl border-2 border-white/40 bg-slate-900 p-4 shadow-2xl shadow-black/90 ring-1 ring-white/20 backdrop-blur-2xl md:grid-cols-[1.15fr_1.15fr_.8fr_.8fr_auto] md:items-end md:p-5"
       aria-label="Đặt vé nhanh"
     >
-      <label className="min-w-0 text-xs font-bold text-white/45">
+      <label className={labelClass}>
         Chọn phim
-        <select
-          value={movieId}
-          onChange={(e) => setMovieId(e.target.value)}
-          className="glass-control mt-2 block w-full rounded-xl px-3 py-3 text-sm font-semibold text-white outline-none focus:border-[#e50914]"
-        >
-          {showings.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.title}
-            </option>
-          ))}
-        </select>
+        <div className="relative mt-2">
+          <select
+            value={movieId}
+            onChange={(e) => setMovieId(e.target.value)}
+            className={selectClass}
+          >
+            {showings.map((m) => (
+              <option key={m.id} value={m.id} className={optionClass}>
+                {m.title}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
+        </div>
       </label>
-      <label className="min-w-0 text-xs font-bold text-white/45">
-        Chọn ngày
-        <select
-          value={day}
-          onChange={(e) => setDay(Number(e.target.value))}
-          className="glass-control mt-2 block w-full rounded-xl px-3 py-3 text-sm font-semibold text-white outline-none focus:border-[#e50914]"
-        >
-          {days.map((d, i) => (
-            <option key={d.offset} value={i}>
-              {d.short} · {d.num}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="min-w-0 text-xs font-bold text-white/45">
+      <label className={labelClass}>
         Chọn rạp
-        <select
-          value={cinemaId}
-          onChange={(e) => setCinemaId(e.target.value)}
-          className="glass-control mt-2 block w-full rounded-xl px-3 py-3 text-sm font-semibold text-white outline-none focus:border-[#e50914]"
-        >
-          {cinemas.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
+        <div className="relative mt-2">
+          <select
+            value={cinemaId}
+            onChange={(e) => setCinemaId(e.target.value)}
+            className={selectClass}
+          >
+            {cinemas.map((c) => (
+              <option key={c.id} value={c.id} className={optionClass}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
+        </div>
+      </label>
+      <label className={labelClass}>
+        Chọn ngày
+        <div className="relative mt-2">
+          <select
+            value={day}
+            onChange={(e) => setDay(Number(e.target.value))}
+            className={selectClass}
+          >
+            {days.map((d, i) => (
+              <option key={d.offset} value={i} className={optionClass}>
+                {d.short} · {d.num}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
+        </div>
+      </label>
+      <label className={labelClass}>
+        Chọn suất
+        <div className="relative mt-2">
+          <select
+            value=""
+            disabled
+            aria-label="Suất chiếu sẽ khả dụng sau khi kết nối dữ liệu suất chiếu"
+            className={selectClass}
+          >
+            <option value="" className={optionClass}>
+              Chọn phim, rạp và ngày trước
             </option>
-          ))}
-        </select>
+          </select>
+          <SelectChevron />
+        </div>
       </label>
       <button
         onClick={() => go(`/showtimes?movie=${movieId}&day=${day}&cinema=${cinemaId}`)}
-        className={`${btnPrimary} w-full md:w-auto`}
+        className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-6 py-3.5 text-sm font-black text-[#fff] shadow-xl shadow-red-900/50 transition hover:brightness-125 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 md:w-auto"
       >
-        <Icon name="search" size={17} /> Tìm suất chiếu
+        <Icon name="ticket" size={17} /> Mua vé nhanh
       </button>
     </section>
   );
@@ -239,57 +227,72 @@ function Card({
     '--film-display': theme.fontFamily,
   } as CSSProperties;
   return (
-    <article className="glass-card group overflow-hidden rounded-2xl p-2" style={themeStyle}>
+    <article
+      className="group overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-xl transition hover:border-amber-400"
+      style={themeStyle}
+    >
       <div className="relative">
         <Link
           to={`/movie/${m.id}`}
           onClick={onOpen}
-          className="relative block aspect-[2/3] overflow-hidden rounded-xl bg-[#17191f]"
+          className="relative block aspect-[2/3] overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
         >
           <img
             src={m.poster}
             alt={`Poster ${m.title}`}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
-          <div className="poster-art absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/10" />
-          <span className="absolute left-3 top-3 rounded bg-white/90 px-2 py-1 text-[10px] font-black text-black">
-            {m.age}
-          </span>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/20" />
           {m.studio && (
-            <span className="absolute right-3 top-3 max-w-[70%] truncate rounded-full border border-white/35 bg-black/35 px-2.5 py-1 text-[9px] font-extrabold text-white backdrop-blur">
+            <span className="absolute left-3 top-3 max-w-[72%] truncate rounded-full border border-white/40 bg-slate-950/90 px-2.5 py-1 text-[9px] font-black text-[#fff] backdrop-blur">
               {m.studio}
             </span>
           )}
-          <div className="poster-art absolute inset-x-0 bottom-0 px-3 pb-3 pt-12 text-white">
-            <span className="film-title block text-[25px] text-white">{m.title}</span>
-            <span className="mt-1 block text-[10px] font-bold text-white/80">
-              {now ? (
-                <>
-                  <b className="film-highlight">★</b> {m.rating}/10 · {m.country || 'Quốc tế'}
-                </>
-              ) : (
-                `${m.country || 'Quốc tế'} · ${m.release}`
-              )}
+          <span className="absolute bottom-3 left-3 rounded-md border border-amber-300 bg-amber-400/30 px-2 py-0.5 text-[10px] font-black text-amber-300 shadow-lg">
+            {m.age}
+          </span>
+          {m.rating > 0 && (
+            <span className="absolute bottom-3 right-3 rounded-full border border-amber-300 bg-slate-950/95 px-2.5 py-1 text-[10px] font-black text-amber-300 backdrop-blur">
+              ⭐ {m.rating.toFixed(1)}
             </span>
-          </div>
+          )}
         </Link>
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-slate-950/90 opacity-0 backdrop-blur-[3px] transition duration-300 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+          <button
+            type="button"
+            onClick={() => go(now ? `/showtimes?movie=${m.id}` : `/movie/${m.id}`)}
+            className="inline-flex min-w-36 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-5 py-3 text-sm font-black text-[#fff] shadow-lg transition hover:brightness-125"
+          >
+            <Icon name="ticket" size={17} /> {now ? 'Mua vé' : 'Xem phim'}
+          </button>
+          <button
+            type="button"
+            onClick={() => go(`/movie/${m.id}?trailer=1`)}
+            className="inline-flex min-w-36 items-center justify-center gap-2 rounded-xl border-2 border-white bg-black/70 px-5 py-3 text-sm font-black text-[#fff] backdrop-blur transition hover:bg-white hover:text-black"
+          >
+            <Icon name="play" size={17} /> Trailer
+          </button>
+        </div>
         <button
+          type="button"
           onClick={onFavorite}
           aria-label={favorite ? `Bỏ yêu thích ${m.title}` : `Yêu thích ${m.title}`}
           aria-pressed={favorite}
-          className={`absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/55 backdrop-blur transition hover:scale-105 ${favorite ? 'text-[#e50914]' : 'text-white'}`}
+          className={`absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center rounded-full border-2 bg-slate-950/90 backdrop-blur transition hover:scale-105 ${favorite ? 'border-red-500 text-red-500' : 'border-white text-[#fff]'}`}
         >
           <Icon name="heart" size={18} />
         </button>
       </div>
       <div className="pt-4">
-        <p className="truncate text-xs text-white/45">{m.genre}</p>
-        <button
-          onClick={() => go(now ? `/showtimes?movie=${m.id}` : `/movie/${m.id}`)}
-          className={`mt-3 w-full rounded-lg py-2.5 text-sm font-extrabold transition ${now ? 'film-accent-bg text-white hover:brightness-110' : 'border border-white/30 bg-white/35 hover:bg-white/70'}`}
+        <Link
+          to={`/movie/${m.id}`}
+          onClick={onOpen}
+          className="block truncate text-sm font-black text-[#fff] transition hover:text-amber-300 group-hover:text-amber-300"
         >
-          {now ? 'Đặt vé' : 'Xem chi tiết'}
-        </button>
+          {m.title}
+        </Link>
+        <p className="mt-1 truncate text-xs font-bold text-amber-300">{m.genre}</p>
+        {!now && <p className="mt-2 text-[11px] font-black text-amber-400">{m.release}</p>}
       </div>
     </article>
   );
@@ -304,6 +307,7 @@ export default function Home() {
   const [recommended, setRecommended] = useState<MovieRecommendation[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState('');
+
   useEffect(() => {
     if (!user) {
       setRecommended([]);
@@ -327,6 +331,7 @@ export default function Home() {
       });
     return () => controller.abort();
   }, [collections, recentMovies, user]);
+
   const filterOptions = [
     ['all', 'Tất cả'],
     ['ghibli', 'Studio Ghibli'],
@@ -336,6 +341,7 @@ export default function Home() {
     ['china', 'Trung Quốc'],
     ['korea', 'Hàn Quốc'],
   ];
+
   const matchesCatalog = (m: Movie) =>
     catalogFilter === 'all' ||
     (catalogFilter === 'ghibli' && m.studio === 'Studio Ghibli') ||
@@ -344,6 +350,7 @@ export default function Home() {
     (catalogFilter === 'western' && ['Mỹ', 'Anh'].includes(m.country || '')) ||
     (catalogFilter === 'china' && m.country === 'Trung Quốc') ||
     (catalogFilter === 'korea' && m.country === 'Hàn Quốc');
+
   const list = movies.filter((m) => m.status === tab && matchesCatalog(m));
   const trending = [...movies]
     .filter((m) => m.status === 'now')
@@ -361,26 +368,34 @@ export default function Home() {
     .filter((m): m is Movie => !!m);
 
   return (
-    <main>
-      <div className="relative">
-        <Hero />
-        <div className="relative z-20 mx-auto -mt-12 max-w-[1400px] px-5 md:px-9">
-          <QuickBooking />
-        </div>
+    <main className="min-h-screen bg-[#020617] text-[#fff] selection:bg-amber-400 selection:text-black">
+      {/* 1. Banner Hero hiển thị trọn vẹn 100% */}
+      <Hero />
+
+      {/* 2. Thanh QuickBooking nằm tách biệt hoàn toàn bên dưới Hero, không che đè */}
+      <div className="relative z-10 mx-auto mt-6 max-w-[1400px] px-5 md:mt-8 md:px-9">
+        <QuickBooking />
       </div>
-      <section className="mx-auto max-w-[1400px] px-5 pt-16 md:px-9">
+
+      {/* 3. Section Top Thịnh Hành */}
+      <section className="mx-auto max-w-[1400px] px-5 pt-10 md:px-9 md:pt-14">
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-extrabold uppercase text-[#f5b50a]">
+            <p className="text-xs font-black uppercase tracking-[.2em] text-amber-400">
               Được khán giả lựa chọn
             </p>
-            <h2 className="mt-2 text-2xl font-extrabold">Top thịnh hành</h2>
+            <h2 className="mt-2 text-2xl font-black text-[#fff]">Top thịnh hành</h2>
           </div>
-          <Link to="/showtimes" className="text-xs font-bold text-white/45 hover:text-white">
+          <Link
+            to="/showtimes"
+            className="text-xs font-black text-amber-300 transition hover:text-amber-200"
+          >
             Xem lịch chiếu <Icon name="chevron" size={14} />
           </Link>
         </div>
-        <div className="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 md:mx-0 md:px-0">
+
+        {/* pl-12 md:pl-14 tạo khoảng trống lề trái cho số 1 nhô hoàn toàn ra ngoài khung */}
+        <div className="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto pb-4 pl-12 pr-6 md:-mx-9 md:pl-14 md:pr-9">
           {trending.map((m, i) => (
             <Link
               key={m.id}
@@ -392,20 +407,27 @@ export default function Home() {
                   '--film-highlight': movieThemes[m.themeKey || 'space'].highlight,
                 } as CSSProperties
               }
-              className="glass-card group relative w-[190px] shrink-0 snap-start rounded-2xl p-2 pt-3 sm:w-[220px]"
+              className="group relative w-[190px] shrink-0 snap-start rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 pt-3 shadow-xl transition hover:border-amber-400 sm:w-[220px]"
             >
-              <span className="display text-stroke absolute bottom-0 left-0 z-10 text-[112px] leading-[.78] transition group-hover:text-white">
+              {/* Số 3D nhô hẳn ra ngoài khung (-left-7) */}
+              <span
+                className={`display absolute -left-7 bottom-10 z-20 font-black leading-none text-amber-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.95)] transition-all duration-300 group-hover:scale-110 group-hover:text-amber-400 ${
+                  i >= 9 ? 'text-[100px] tracking-tighter' : 'text-[108px]'
+                }`}
+              >
                 {i + 1}
               </span>
-              <div className="ml-10 overflow-hidden rounded-lg bg-[#17191f]">
+              <div className="ml-9 overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20">
                 <img
                   src={m.poster}
                   alt={`Poster ${m.title}`}
                   className="aspect-[2/3] w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               </div>
-              <span className="mt-3 block truncate pl-10 text-sm font-extrabold">{m.title}</span>
-              <span className="film-highlight block pl-10 text-xs">
+              <span className="mt-3 block truncate pl-9 text-sm font-black text-[#fff] transition hover:text-amber-300 group-hover:text-amber-300">
+                {m.title}
+              </span>
+              <span className="block pl-9 text-xs font-black text-amber-300">
                 ★ {m.rating} · {m.country || 'Quốc tế'}
               </span>
             </Link>
@@ -413,14 +435,14 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mt-12 border-y border-white/12 bg-white/[.025] backdrop-blur-sm">
+      <section className="mt-12 border-y-2 border-white/20 bg-slate-900/90 backdrop-blur-md">
         <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-10 md:grid-cols-[.8fr_2fr] md:items-center md:px-9">
           <div>
-            <p className="flex items-center gap-2 text-xs font-extrabold uppercase film-highlight">
+            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-400">
               <Icon name="sparkles" size={16} /> CineHub AI
             </p>
-            <h2 className="mt-2 text-2xl font-extrabold">Dành riêng cho bạn</h2>
-            <p className="mt-2 max-w-sm text-sm leading-6 text-white/45">
+            <h2 className="mt-2 text-2xl font-black text-[#fff]">Dành riêng cho bạn</h2>
+            <p className="mt-2 max-w-sm text-sm font-bold leading-6 text-[#fff]">
               {user
                 ? `Gợi ý theo phim bạn đã xem và lưu, ${user.name}.`
                 : 'Khám phá những bộ phim hợp gu của bạn.'}
@@ -428,7 +450,7 @@ export default function Home() {
             {!user && (
               <Link
                 to={`/login?next=${encodeURIComponent('/home')}`}
-                className="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-[#ff4d57] hover:text-white"
+                className="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-400 transition hover:text-amber-300"
               >
                 Đăng nhập để nhận gợi ý chuẩn gu <Icon name="arrow" size={16} />
               </Link>
@@ -437,15 +459,15 @@ export default function Home() {
           {user ? (
             <div>
               {recommendationsLoading && (
-                <p className="text-sm text-white/50">Đang tìm phim hợp gu...</p>
+                <p className="text-sm font-black text-[#fff]">Đang tìm phim hợp gu...</p>
               )}
               {recommendationsError && (
-                <p role="alert" className="text-sm text-rose-200">
+                <p role="alert" className="text-sm font-black text-rose-300">
                   {recommendationsError}
                 </p>
               )}
               {!recommendationsLoading && !recommendationsError && recommended.length === 0 && (
-                <p className="text-sm text-white/50">
+                <p className="text-sm font-bold text-[#fff]">
                   Chưa có đủ lịch sử để cá nhân hoá; đây là những phim đang được quan tâm.
                 </p>
               )}
@@ -464,30 +486,30 @@ export default function Home() {
                       key={movieId}
                       to={`/movie/${movieId}`}
                       onClick={() => trackMovie(movieId)}
-                      className="group flex min-w-0 gap-3 rounded-2xl border border-white/10 bg-white/[.045] p-3 transition hover:border-[#f5b50a]/45 hover:bg-white/[.08]"
+                      className="group flex min-w-0 gap-3 rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-md transition hover:border-amber-400 hover:bg-slate-800"
                     >
                       {poster ? (
                         <img
                           src={poster}
                           alt={`Poster ${title}`}
-                          className="h-28 w-[74px] shrink-0 rounded-lg object-cover shadow-lg"
+                          className="h-28 w-[74px] shrink-0 rounded-lg object-cover shadow-md ring-1 ring-white/20"
                         />
                       ) : (
-                        <div className="grid h-28 w-[74px] shrink-0 place-items-center rounded-lg bg-white/10">
+                        <div className="grid h-28 w-[74px] shrink-0 place-items-center rounded-lg bg-slate-800">
                           <Icon name="film" />
                         </div>
                       )}
                       <div className="min-w-0 py-1">
-                        <h3 className="line-clamp-2 text-sm font-extrabold group-hover:text-[#f5b50a]">
+                        <h3 className="line-clamp-2 text-sm font-black text-[#fff] transition hover:text-amber-300 group-hover:text-amber-300">
                           {title}
                         </h3>
-                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/45">
+                        <p className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-amber-300">
                           {reason}
                         </p>
-                        <p className="mt-2 text-[11px] font-bold text-white/65">
+                        <p className="mt-2 text-[11px] font-black text-[#fff]">
                           {age || 'Phim chiếu rạp'}
                         </p>
-                        <span className="mt-3 inline-flex items-center text-xs font-bold text-[#f5b50a]">
+                        <span className="mt-3 inline-flex items-center text-xs font-black text-amber-300">
                           Xem phim <Icon name="chevron" size={13} />
                         </span>
                       </div>
@@ -501,7 +523,7 @@ export default function Home() {
               {popularPreview.map((m) => (
                 <span
                   key={m.id}
-                  className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/50"
+                  className="rounded-full border-2 border-white/60 bg-slate-800 px-3.5 py-1.5 text-xs font-black text-[#fff] shadow-sm"
                 >
                   {m.genre.split(',')[0]}
                 </span>
@@ -512,9 +534,9 @@ export default function Home() {
       </section>
 
       <section className="mx-auto grid max-w-[1400px] gap-5 px-5 py-14 md:px-9 lg:grid-cols-[220px_minmax(0,1fr)] lg:grid-rows-[auto_auto]">
-        <aside className="glass-panel h-fit rounded-2xl p-3 lg:col-start-1 lg:row-start-2">
-          <p className="px-3 pb-3 pt-2 text-[10px] font-extrabold uppercase tracking-[.16em] text-white/35">
-            Thư viện của bạn
+        <aside className="h-fit rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-xl backdrop-blur-md lg:col-start-1 lg:row-start-2">
+          <p className="px-3 pb-3 pt-2 text-[11px] font-black uppercase tracking-widest text-amber-300">
+            THƯ VIỆN CỦA BẠN
           </p>
           {(
             [
@@ -527,12 +549,18 @@ export default function Home() {
               key={key}
               onClick={() => setShelf(key)}
               aria-pressed={shelf === key}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-bold transition ${shelf === key ? 'bg-white/10 text-white' : 'text-white/45 hover:bg-white/5 hover:text-white/80'}`}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition ${
+                shelf === key
+                  ? 'border-2 border-amber-400 bg-amber-400/20 font-black text-amber-300 shadow-md'
+                  : 'border-2 border-white/40 bg-slate-800 font-black text-[#fff] shadow-md hover:bg-slate-700 hover:text-amber-300'
+              }`}
             >
               <Icon name={icon} size={17} />
               {title}
               {key === 'collection' && (
-                <span className="ml-auto text-xs text-white/35">{collections.length}</span>
+                <span className="ml-auto text-xs font-black text-amber-300">
+                  {collections.length}
+                </span>
               )}
             </button>
           ))}
@@ -540,8 +568,10 @@ export default function Home() {
         <div className="min-w-0 lg:contents">
           <div className="mb-5 flex items-end justify-between gap-4 lg:col-start-2 lg:row-start-1">
             <div>
-              <p className="text-xs font-extrabold uppercase text-[#f5b50a]">CineHub của bạn</p>
-              <h2 className="mt-1 text-2xl font-extrabold">
+              <p className="text-xs font-black uppercase tracking-wider text-amber-400">
+                CineHub của bạn
+              </p>
+              <h2 className="mt-1 text-2xl font-black text-[#fff]">
                 {shelf === 'history'
                   ? 'Xem tiếp'
                   : shelf === 'collection'
@@ -549,39 +579,41 @@ export default function Home() {
                     : 'People also liked'}
               </h2>
             </div>
-            <span className="text-xs text-white/35">{shelfItems.length} phim</span>
+            <span className="text-xs font-black text-[#fff]">{shelfItems.length} phim</span>
           </div>
           {shelfItems.length ? (
             <div className="scrollbar-hide -mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3 lg:col-start-2 lg:row-start-2">
               {shelfItems.map((m) => (
                 <article
                   key={m.id}
-                  className="glass-card group w-[150px] shrink-0 snap-start overflow-hidden rounded-2xl p-2 sm:w-[170px]"
+                  className="group w-[150px] shrink-0 snap-start overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg backdrop-blur sm:w-[170px]"
                 >
                   <Link
                     to={`/movie/${m.id}`}
                     onClick={() => trackMovie(m.id)}
-                    className="relative block aspect-[2/3] overflow-hidden rounded-xl"
+                    className="relative block aspect-[2/3] overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
                   >
                     <img
                       src={m.poster}
                       alt={`Poster ${m.title}`}
                       className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
-                    <span className="absolute right-2 top-2 rounded-full border border-white/20 bg-black/60 px-2 py-1 text-[10px] font-extrabold text-[#f5b50a] backdrop-blur">
+                    <span className="absolute right-2 top-2 rounded-full border border-amber-300 bg-slate-950/95 px-2 py-1 text-[10px] font-black text-amber-300 backdrop-blur">
                       ★ {m.rating || 'Mới'}
                     </span>
                     {shelf === 'history' && (
-                      <span className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
+                      <span className="absolute inset-x-0 bottom-0 h-1 bg-slate-800">
                         <span
-                          className="block h-full bg-[#e50914] transition-all"
+                          className="block h-full bg-red-600 transition-all"
                           style={{ width: `${watchProgress[m.id] || 8}%` }}
                         />
                       </span>
                     )}
                   </Link>
-                  <h3 className="mt-3 truncate px-1 text-xs font-extrabold">{m.title}</h3>
-                  <div className="mt-2 flex items-center justify-between px-1 pb-1 text-[10px] text-white/40">
+                  <h3 className="mt-3 truncate px-1 text-xs font-black text-[#fff] transition hover:text-amber-300 group-hover:text-amber-300">
+                    {m.title}
+                  </h3>
+                  <div className="mt-2 flex items-center justify-between px-1 pb-1 text-[10px] font-bold text-amber-300">
                     <span>
                       {shelf === 'history'
                         ? `${watchProgress[m.id] || 8}% đã xem`
@@ -592,7 +624,7 @@ export default function Home() {
                       aria-label={
                         collections.includes(m.id) ? `Bỏ lưu ${m.title}` : `Lưu ${m.title}`
                       }
-                      className={collections.includes(m.id) ? 'text-[#ff4d57]' : 'hover:text-white'}
+                      className={collections.includes(m.id) ? 'text-red-500' : 'hover:text-[#fff]'}
                     >
                       <Icon name="heart" size={15} />
                     </button>
@@ -601,18 +633,18 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="glass-panel flex min-h-48 flex-col items-start justify-center rounded-2xl px-6 py-8 lg:col-start-2 lg:row-start-2">
-              <p className="text-sm font-bold">
+            <div className="flex min-h-48 flex-col items-start justify-center rounded-2xl border-2 border-slate-700 bg-slate-900 px-6 py-8 shadow-xl backdrop-blur-md lg:col-start-2 lg:row-start-2">
+              <p className="text-sm font-extrabold text-[#fff]">
                 {shelf === 'collection' ? 'Bộ sưu tập đang trống' : 'Chưa có hoạt động gần đây'}
               </p>
-              <p className="mt-2 max-w-lg text-xs leading-5 text-white/40">
+              <p className="mt-2 max-w-lg text-xs font-bold leading-5 text-amber-300">
                 {shelf === 'collection'
                   ? 'Lưu phim yêu thích từ poster để xem lại tại đây.'
                   : 'Mở chi tiết phim hoặc xem trailer để tiếp tục theo dõi từ đây.'}
               </p>
               <button
                 onClick={() => setShelf('trending')}
-                className="mt-4 text-xs font-extrabold text-[#ff4d57] hover:text-white"
+                className="mt-4 text-xs font-black text-amber-400 hover:text-amber-300"
               >
                 Khám phá phim <Icon name="arrow" size={14} />
               </button>
@@ -622,11 +654,15 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-[1400px] px-5 py-16 md:px-9">
-        <div role="tablist" className="mb-8 flex gap-8 border-b border-white/10">
+        <div className="mb-5 flex items-center gap-3">
+          <span aria-hidden="true" className="h-7 w-1 rounded-full bg-amber-400" />
+          <h2 className="text-xl font-black uppercase tracking-wide text-[#fff]">PHIM</h2>
+        </div>
+        <div role="tablist" className="mb-8 flex gap-8 border-b-2 border-white/20">
           {(
             [
-              ['now', 'Phim đang chiếu'],
-              ['soon', 'Phim sắp chiếu'],
+              ['now', 'Đang chiếu'],
+              ['soon', 'Sắp chiếu'],
             ] as const
           ).map(([k, t]) => (
             <button
@@ -634,7 +670,11 @@ export default function Home() {
               role="tab"
               aria-selected={tab === k}
               onClick={() => setTab(k)}
-              className={`-mb-px border-b-2 pb-4 text-lg font-extrabold transition ${tab === k ? 'border-[#e50914] text-white' : 'border-transparent text-white/40 hover:text-white/70'}`}
+              className={`-mb-px border-b-[3px] pb-4 text-lg transition ${
+                tab === k
+                  ? 'border-amber-400 font-black text-amber-300'
+                  : 'border-transparent font-black text-[#fff] hover:text-amber-300'
+              }`}
             >
               {t}
             </button>
@@ -649,7 +689,11 @@ export default function Home() {
               key={key}
               onClick={() => setCatalogFilter(key)}
               aria-pressed={catalogFilter === key}
-              className={`shrink-0 rounded-full border px-4 py-2 text-xs font-extrabold transition ${catalogFilter === key ? 'film-accent-bg text-white' : 'border-[#82796d]/20 bg-white/35 text-[#686157] hover:bg-white/70'}`}
+              className={`shrink-0 rounded-full border-2 px-4 py-2 text-xs font-black transition ${
+                catalogFilter === key
+                  ? 'border-amber-300 bg-amber-400 font-black text-slate-950 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
+                  : 'border-white/60 bg-slate-800 text-[#fff] shadow-md hover:border-amber-300 hover:bg-slate-700 hover:text-amber-300'
+              }`}
             >
               {label}
             </button>
@@ -669,37 +713,23 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-[1400px] px-5 pb-14 md:px-9">
-        <div className="glass-panel flex flex-col gap-5 rounded-3xl p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div className="flex flex-col gap-5 rounded-3xl border-2 border-amber-500/50 bg-gradient-to-r from-slate-900 via-slate-900/95 to-amber-950/50 p-6 shadow-2xl backdrop-blur-xl ring-1 ring-white/20 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div>
-            <p className="text-xs font-extrabold uppercase text-[#f5b50a]">Ưu đãi thành viên</p>
-            <h2 className="mt-2 text-2xl font-extrabold">Một vé hay, thêm một niềm vui</h2>
-            <p className="mt-2 text-sm text-white/45">
-              Nhập mã <b className="text-white">CINEHUB20</b> để nhận ưu đãi 20.000₫ cho vé tiếp
-              theo.
+            <p className="text-xs font-black uppercase tracking-widest text-amber-400">
+              Ưu đãi thành viên
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-[#fff]">Một vé hay, thêm một niềm vui</h2>
+            <p className="mt-2 text-sm font-extrabold text-[#fff]">
+              Nhập mã <b className="font-black text-amber-300">CINEHUB20</b> để nhận ưu đãi 20.000₫
+              cho vé tiếp theo.
             </p>
           </div>
-          <button onClick={() => go('/showtimes')} className={btnPrimary}>
+          <button
+            onClick={() => go('/showtimes')}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-7 py-3.5 text-sm font-black text-[#fff] shadow-xl shadow-red-900/50 transition hover:brightness-125"
+          >
             Khám phá suất chiếu <Icon name="arrow" size={17} />
           </button>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-[1400px] px-5 pb-10 md:px-9">
-        <div className="flex flex-col gap-5 border-t border-white/8 pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-sm font-extrabold">Đối tác rạp chiếu</h2>
-            <p className="mt-1 text-xs text-white/35">Nhiều cụm rạp, một điểm đến.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-4">
-            {['CGV', 'LOTTE CINEMA', 'BHD STAR', 'GALAXY CINEMA'].map((name) => (
-              <span
-                key={name}
-                className="text-center text-sm font-black tracking-wide text-white/45"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
     </main>

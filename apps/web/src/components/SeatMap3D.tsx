@@ -68,15 +68,10 @@ export default function SeatMap3D({ layout, seats, onChoose }: Props) {
   const byId = new Map(seats.map((seat) => [seat.id, seat]));
 
   return (
-    <div className="seat-map-3d overflow-x-auto rounded-2xl border border-[#d9d4cb] bg-[radial-gradient(ellipse_at_top,#fdfbf6_0%,#e9e4da_75%,#d8d1c5_100%)] px-4 py-8 sm:px-7">
+    <div className="seat-map-3d overflow-x-auto bg-transparent px-2 py-2 sm:px-4">
       <div className="mx-auto w-fit min-w-max [perspective:1100px]">
-        <div className="relative mx-auto mb-10 w-[62%] [transform:rotateX(-12deg)]">
-          <div className="h-2 rounded-[50%] bg-gradient-to-r from-[#9d6860] via-[#fff5df] to-[#9d6860] shadow-[0_10px_30px_rgba(181,113,93,.45)]" />
-          <p className="mt-3 text-center text-[10px] font-black tracking-[.24em] text-[#6f6256]">
-            MÀN HÌNH
-          </p>
-        </div>
-        <div className="relative mx-auto rounded-[45%_45%_18px_18px/12%_12%_18px_18px] border-x border-[#d3c9b9] bg-[linear-gradient(180deg,rgba(255,255,255,.38),rgba(196,183,163,.2))] px-3 pb-7 pt-2 shadow-[0_26px_32px_-24px_rgba(64,48,32,.5)] [transform:rotateX(14deg)] [transform-style:preserve-3d] sm:px-5">
+        {/* Khung sàn 3D dạng trong suốt */}
+        <div className="relative mx-auto rounded-[45%_45%_18px_18px/12%_12%_18px_18px] border-x border-white/10 bg-transparent px-3 pb-7 pt-2 [transform:rotateX(14deg)] [transform-style:preserve-3d] sm:px-5">
           <div className="space-y-2 [transform-style:preserve-3d]">
             {Array.from({ length: layout.rows }, (_, rowIndex) => {
               const row = String.fromCharCode(65 + rowIndex);
@@ -86,11 +81,14 @@ export default function SeatMap3D({ layout, seats, onChoose }: Props) {
                   className="grid items-center gap-x-1.5"
                   style={{
                     gridTemplateColumns: `22px repeat(${tracks}, minmax(30px, 38px))`,
-                    transform: `translateZ(${rowIndex * 3}px) scale(${1 + rowIndex * 0.006})`,
+                    transform: `translateZ(${rowIndex - 3}px) scale(${1 + rowIndex * 0.006})`,
                     transformOrigin: 'center bottom',
                   }}
                 >
-                  <span className="text-xs font-black text-[#888176]">{row}</span>
+                  {/* Tên hàng ghế màu trắng tinh bằng inline style */}
+                  <span className="text-xs font-black" style={{ color: '#ffffff' }}>
+                    {row}
+                  </span>
                   {Array.from({ length: layout.columns }, (_, columnIndex) => {
                     const number = columnIndex + 1;
                     const zone: SeatZone =
@@ -115,15 +113,18 @@ export default function SeatMap3D({ layout, seats, onChoose }: Props) {
                       columnIndex +
                       1 +
                       layout.aislesAfter.filter((after) => columnIndex >= after).length;
+
+                    // Phối màu ghế tương phản nổi bật trên nền poster tối
                     const color = seat.sold
-                      ? 'border-[#aaa7a0] bg-[#c5c2bb] text-[#817d75]'
+                      ? 'border-slate-700 bg-slate-800/80 text-slate-500'
                       : seat.selected
-                        ? 'film-accent-bg film-accent-border text-white shadow-[0_5px_12px_color-mix(in_srgb,var(--film-accent)_28%,transparent)]'
+                        ? 'border-red-500 bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.8)]'
                         : zone === 'vip'
-                          ? 'border-[#c48848] bg-[#dca762] text-[#3b2b18]'
+                          ? 'border-[#c48848] bg-[#dca762] text-slate-950 font-black'
                           : zone === 'sweetbox'
-                            ? 'border-[#cc5c89] bg-[#e589ae] text-[#4d1930]'
+                            ? 'border-[#cc5c89] bg-[#e589ae] text-slate-950 font-black'
                             : 'border-[#7046c8] bg-[#8054d7] text-white';
+
                     return (
                       <button
                         key={id}
@@ -132,7 +133,7 @@ export default function SeatMap3D({ layout, seats, onChoose }: Props) {
                         aria-label={`Ghế ${id}, ${zone === 'vip' ? 'VIP' : zone === 'sweetbox' ? 'Sweetbox' : 'thường'}, ${seat.sold ? 'đã đặt' : seat.selected ? 'đang chọn' : 'trống'}`}
                         aria-pressed={seat.selected}
                         onClick={() => onChoose(seat)}
-                        className={`seat-cell aspect-square min-w-[30px] rounded-t-[9px] rounded-b-[5px] border text-[9px] font-extrabold shadow-[0_4px_0_rgba(45,37,30,.18),0_7px_9px_rgba(55,44,35,.12)] transition duration-150 hover:-translate-y-1 hover:shadow-[0_7px_0_rgba(45,37,30,.2),0_11px_14px_rgba(55,44,35,.18)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e50914] disabled:cursor-not-allowed disabled:opacity-70 ${color}`}
+                        className={`seat-cell aspect-square min-w-[30px] rounded-t-[9px] rounded-b-[5px] border text-[9px] font-extrabold shadow-[0_4px_6px_rgba(0,0,0,0.5)] transition duration-150 hover:-translate-y-1 hover:shadow-[0_8px_12px_rgba(0,0,0,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-40 ${color}`}
                         style={{ gridColumn: track + 2 }}
                       >
                         <span className="block -translate-y-px">{id}</span>
@@ -144,7 +145,10 @@ export default function SeatMap3D({ layout, seats, onChoose }: Props) {
             })}
           </div>
         </div>
-        <p className="mt-6 text-center text-[10px] font-semibold text-[#8b857a]">{layout.style}</p>
+
+        <p className="mt-6 text-center text-[11px] font-extrabold" style={{ color: '#fcd34d' }}>
+          {layout.style}
+        </p>
       </div>
     </div>
   );
