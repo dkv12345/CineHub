@@ -138,9 +138,13 @@ export async function getMe(req, res) {
  * 4. Set HTTP-only refresh token cookie.
  * 5. Respond with HTTP 200 OK and { data: { user: result.user, accessToken: result.accessToken } }.
  */
-export async function loginWithGoogle(_req, _res, _next) {
-  // SKELETON: To be implemented by student
-  _next(new AppError(501, 'NOT_IMPLEMENTED', 'Google login handler not implemented yet'));
+export async function loginWithGoogle(req, res) {
+  const { idToken } = req.valid.body;
+  const result = await authService.loginWithGoogle({
+    idToken,
+    ...clientMeta(req),
+  });
+  sendSession(res, result);
 }
 
 /**

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, mailer } = vi.hoisted(() => {
+const { prisma, mailer, googleOAuth } = vi.hoisted(() => {
   const model = () => ({
     findUnique: vi.fn(),
     findFirst: vi.fn(),
@@ -24,11 +24,15 @@ const { prisma, mailer } = vi.hoisted(() => {
       sendResetPasswordNotification: vi.fn(),
       sendResetSuccessNotification: vi.fn(),
     },
+    googleOAuth: {
+      verifyGoogleIdToken: vi.fn(),
+    },
   };
 });
 
 vi.mock('@cinehub/db', () => ({ prisma }));
 vi.mock('../src/lib/mailer.js', () => mailer);
+vi.mock('../src/lib/googleOAuth.js', () => googleOAuth);
 
 const bcrypt = (await import('bcryptjs')).default;
 const { hashToken, generateRefreshToken, verifyAccessToken } = await import('../src/lib/jwt.js');
@@ -286,5 +290,79 @@ describe('refreshSession', () => {
     const error = await rejection(service.refreshSession({ refreshToken: 'garbage' }));
     expect(error).toMatchObject({ status: 401, code: 'UNAUTHORIZED' });
     expect(prisma.refreshToken.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe('loginWithGoogle', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.refreshToken.create.mockResolvedValue({ id: 'token-uuid' });
+    prisma.user.update.mockImplementation(({ data }) => Promise.resolve({ ...baseUser, ...data }));
+  });
+
+  it('creates a new account and queues welcome notification for brand new Google user', async () => {
+    googleOAuth.verifyGoogleIdToken.mockResolvedValue({
+      googleId: 'google-sub-123',
+      email: 'newuser@example.com',
+      name: 'Google User',
+      picture: 'https://lh3.googleusercontent.com/avatar',
+      emailVerified: true,
+    });
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockResolvedValue({
+      ...baseUser,
+      id: 'brand-new-id',
+      email: 'newuser@example.com',
+      fullName: 'Google User',
+      googleId: 'google-sub-123',
+      authProvider: 'GOOGLE',
+      avatarUrl: 'https://lh3.googleusercontent.com/avatar',
+    });
+
+    const result = await service.loginWithGoogle({
+      idToken: 'valid-google-id-token',
+      userAgent: 'Mozilla/5.0',
+      ipAddress: '127.0.0.1',
+    });
+
+    expect(result.user.email).toBe('newuser@example.com');
+    expect(result.accessToken).toBeDefined();
+    expect(result.refreshToken).toBeDefined();
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          googleId: 'google-sub-123',
+          authProvider: 'GOOGLE',
+        }),
+      }),
+    );
+    await flush();
+    expect(mailer.sendWelcomeNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'newuser@example.com' }),
+    );
+  });
+
+  it('merges account when user exists by email without googleId', async () => {
+    googleOAuth.verifyGoogleIdToken.mockResolvedValue({
+      googleId: 'google-sub-456',
+      email: 'an@example.com',
+      name: 'Nguyễn Văn An',
+      picture: null,
+      emailVerified: true,
+    });
+    // First findUnique by googleId returns null, second by email returns baseUser
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ ...baseUser, googleId: null });
+
+    const result = await service.loginWithGoogle({ idToken: 'valid-token' });
+
+    expect(result.user.id).toBe(USER_ID);
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: USER_ID },
+        data: expect.objectContaining({ googleId: 'google-sub-456' }),
+      }),
+    );
   });
 });

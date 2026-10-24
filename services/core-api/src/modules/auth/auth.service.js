@@ -16,6 +16,7 @@ import {
   sendVerificationEmail,
   sendWelcomeNotification,
 } from '../../lib/mailer.js';
+import { verifyGoogleIdToken } from '../../lib/googleOAuth.js';
 
 const BCRYPT_COST = 10;
 const OTP_TTL_MINUTES = 10;
@@ -457,9 +458,75 @@ export async function getCurrentUser(userId) {
  * 7. Update `lastLoginAt = new Date()`.
  * 8. Return { user, accessToken, refreshToken }.
  */
-export async function loginWithGoogle(_params) {
-  // SKELETON: To be implemented by student
-  throw new Error('Not implemented: loginWithGoogle');
+export async function loginWithGoogle({ idToken, userAgent, ipAddress }) {
+  const payload = await verifyGoogleIdToken(idToken);
+  const normalizedEmail = normalizeEmail(payload.email);
+
+  let user = await prisma.user.findUnique({
+    where: { googleId: payload.googleId },
+  });
+
+  if (user) {
+    if (!isLoginable(user)) {
+      throw new AppError(403, 'FORBIDDEN', 'Tài khoản của bạn đã bị khoá hoặc ngưng hoạt động');
+    }
+  } else {
+    // Account merging: check if user exists by email
+    user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (user) {
+      if (!isLoginable(user)) {
+        throw new AppError(403, 'FORBIDDEN', 'Tài khoản của bạn đã bị khoá hoặc ngưng hoạt động');
+      }
+
+      // Link googleId to existing user
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: payload.googleId,
+          emailVerifiedAt: user.emailVerifiedAt || new Date(),
+          avatarUrl: user.avatarUrl || payload.picture,
+        },
+      });
+    } else {
+      // Account creation for brand-new Google user
+      user = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          fullName: payload.name,
+          googleId: payload.googleId,
+          authProvider: 'GOOGLE',
+          avatarUrl: payload.picture,
+          emailVerifiedAt: new Date(),
+          passwordHash: null,
+          role: 'CUSTOMER',
+          status: 'ACTIVE',
+        },
+      });
+
+      queueEmail('welcome', () =>
+        sendWelcomeNotification({
+          to: user.email,
+          fullName: user.fullName,
+        }),
+      );
+    }
+  }
+
+  // Issue session and update lastLoginAt
+  const session = await issueSession(user, { userAgent, ipAddress });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date() },
+  });
+
+  return {
+    user: sanitizeUser(user),
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+  };
 }
 
 /**

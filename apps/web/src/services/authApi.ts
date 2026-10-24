@@ -54,6 +54,18 @@ export async function login(payload: LoginPayload): Promise<AuthResult> {
 }
 
 /**
+ * Signs in using a Google ID token obtained from Google Identity Services.
+ *
+ * @param idToken - Google credential JWT from Google One Tap / Google Sign In.
+ * @returns {Promise<AuthResult>} User profile and access token.
+ */
+export async function loginWithGoogle(idToken: string): Promise<AuthResult> {
+  const { data } = await authorizedAxios.post<{ data: AuthResult }>('/auth/google', { idToken });
+  setAccessToken(data.data.accessToken);
+  return data.data;
+}
+
+/**
  * Registers a new customer account. The server e-mails a 6-digit OTP; no session is created yet.
  *
  * @param payload - Registration fields (email, password, fullName, phone).

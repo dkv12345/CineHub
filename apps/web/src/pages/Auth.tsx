@@ -77,6 +77,16 @@ function GoogleIcon() {
   );
 }
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+const GOOGLE_CLIENT_ID =
+  (import.meta as { env?: { VITE_GOOGLE_CLIENT_ID?: string } }).env?.VITE_GOOGLE_CLIENT_ID ||
+  '430901569705-uermo89vl0jrrdgj98kegd3ccup37ah7.apps.googleusercontent.com';
+
 export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
   const { startSession } = useStore();
   const [currentMode, setCurrentMode] = useState<AuthMode>(mode);
@@ -84,6 +94,7 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
   const [err, setErr] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
   // Forgot password specific state
@@ -112,6 +123,62 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
     const t = setTimeout(() => setResetCooldown((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [resetCooldown]);
+
+  // Google Identity Services (GIS) initialization
+  useEffect(() => {
+    const handleGoogleResponse = async (response: { credential?: string }) => {
+      if (!response.credential) return;
+      try {
+        setGoogleLoading(true);
+        setFormError('');
+        const session = await authApi.loginWithGoogle(response.credential);
+        startSession(session);
+        go(next || '/');
+      } catch (error) {
+        setFormError(authApi.authErrorMessage(error));
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    const initGoogle = () => {
+      if (window.google?.accounts?.id && GOOGLE_CLIENT_ID) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+
+          const slot = document.getElementById('google-btn-slot');
+          if (slot) {
+            slot.innerHTML = '';
+            window.google.accounts.id.renderButton(slot, {
+              theme: 'filled_black',
+              size: 'large',
+              text: currentMode === 'register' ? 'signup_with' : 'signin_with',
+              shape: 'pill',
+              width: 320,
+              logo_alignment: 'left',
+            });
+          }
+        } catch {
+          // Ignore if GIS already initialized
+        }
+      }
+    };
+
+    initGoogle();
+    const timer = setInterval(() => {
+      if (window.google?.accounts?.id) {
+        initGoogle();
+        clearInterval(timer);
+      }
+    }, 400);
+
+    return () => clearInterval(timer);
+  }, [currentMode, next, startSession]);
 
   const isLogin = currentMode === 'login';
   const isRegister = currentMode === 'register';
@@ -702,20 +769,29 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                     </span>
                   </div>
 
-                  {/* Google OAuth Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Trigger Google Sign-In or show informational notice
-                      alert(
-                        'Tính năng đăng nhập Google: Hãy cấu hình GOOGLE_CLIENT_ID trong file .env để kết nối trực tiếp với tài khoản Google của bạn.',
-                      );
-                    }}
-                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/[0.04] py-3 text-xs font-bold text-white transition hover:border-white/30 hover:bg-white/[0.08] active:scale-[0.99]"
-                  >
-                    <GoogleIcon />
-                    Tiếp tục với Google
-                  </button>
+                  {/* Google OAuth Section */}
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div id="google-btn-slot" className="flex justify-center min-h-[44px] w-full" />
+                    <button
+                      type="button"
+                      disabled={googleLoading}
+                      onClick={() => {
+                        if (window.google?.accounts?.id) {
+                          window.google.accounts.id.prompt();
+                        } else {
+                          setFormError(
+                            'Đang khởi động dịch vụ Google, vui lòng thử lại sau vài giây.',
+                          );
+                        }
+                      }}
+                      className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/[0.04] py-3 text-xs font-bold text-white transition hover:border-white/30 hover:bg-white/[0.08] active:scale-[0.99] disabled:opacity-50"
+                    >
+                      <GoogleIcon />
+                      {googleLoading
+                        ? 'Đang xác thực tài khoản...'
+                        : 'Hoặc đăng nhập nhanh One Tap'}
+                    </button>
+                  </div>
 
                   {/* Terms & Privacy footer */}
                   <p className="mt-6 text-center text-[11px] leading-relaxed text-white/35">
