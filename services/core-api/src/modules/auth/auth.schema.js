@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const registerSchema = z.object({
   body: z.object({
-    email: z.string().trim().email('Invalid email address'),
+    email: z.string().trim().toLowerCase().email('Invalid email address'),
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')
@@ -24,11 +24,33 @@ export const registerSchema = z.object({
 });
 
 /**
+ * Validation schema for confirming the e-mail verification OTP.
+ */
+export const verifyEmailSchema = z.object({
+  body: z.object({
+    email: z.string().trim().toLowerCase().email('Invalid email address'),
+    code: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, 'Verification code must be 6 digits'),
+  }),
+});
+
+/**
+ * Validation schema for requesting a new verification OTP.
+ */
+export const resendVerificationSchema = z.object({
+  body: z.object({
+    email: z.string().trim().toLowerCase().email('Invalid email address'),
+  }),
+});
+
+/**
  * Validation schema for user login.
  */
 export const loginSchema = z.object({
   body: z.object({
-    email: z.string().trim().email('Invalid email address'),
+    email: z.string().trim().toLowerCase().email('Invalid email address'),
     password: z.string().min(1, 'Password is required'),
   }),
 });
@@ -59,7 +81,7 @@ export const googleAuthSchema = z.object({
  */
 export const forgotPasswordSchema = z.object({
   body: z.object({
-    email: z.string().trim().email('Invalid email address'),
+    email: z.string().trim().toLowerCase().email('Invalid email address'),
   }),
 });
 

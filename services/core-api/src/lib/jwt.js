@@ -1,10 +1,20 @@
+import crypto from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
+
+const ALGORITHM = 'HS256';
+
+/** Lifetime of an access token. Kept in sync with the `maxAge` documented in the README. */
+export const ACCESS_TOKEN_TTL = '15m';
+/** Lifetime of a refresh token (also used for the cookie `maxAge` and DB `expiresAt`). */
+export const REFRESH_TOKEN_TTL = '7d';
+export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Generates a signed short-lived JSON Web Token (Access Token).
  *
- * @param {object} _payload - Token payload data (e.g., { sub: userId, role, email }).
- * @param {object} [_options] - Optional jwt sign options (e.g., custom expiresIn).
+ * @param {object} payload - Token payload data (e.g., { sub: userId, role, email }).
+ * @param {object} [options] - Optional jwt sign options (e.g., custom expiresIn).
  * @returns {string} Signed JWT access token.
  *
  * Specification:
@@ -12,17 +22,22 @@ import { env } from '../config/env.js';
  * - Default Expiration: 15 minutes ('15m')
  * - Algorithm: 'HS256'
  */
-export function generateAccessToken(_payload, _options = {}) {
-  void env;
-  // SKELETON: To be implemented with jsonwebtoken.sign()
-  throw new Error('Not implemented: generateAccessToken');
+export function generateAccessToken(payload, options = {}) {
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
+    algorithm: ALGORITHM,
+    expiresIn: ACCESS_TOKEN_TTL,
+    ...options,
+  });
 }
 
 /**
  * Generates a signed long-lived JSON Web Token (Refresh Token).
  *
- * @param {object} _payload - Token payload data (e.g., { sub: userId, familyId }).
- * @param {object} [_options] - Optional jwt sign options (e.g., custom expiresIn).
+ * A random `jti` is added so two refresh tokens issued within the same second for the
+ * same user/family never collide on their SHA-256 hash (`refresh_tokens.tokenHash` is unique).
+ *
+ * @param {object} payload - Token payload data (e.g., { sub: userId, familyId }).
+ * @param {object} [options] - Optional jwt sign options (e.g., custom expiresIn).
  * @returns {string} Signed JWT refresh token.
  *
  * Specification:
@@ -30,16 +45,19 @@ export function generateAccessToken(_payload, _options = {}) {
  * - Default Expiration: 7 days ('7d')
  * - Algorithm: 'HS256'
  */
-export function generateRefreshToken(_payload, _options = {}) {
-  void env;
-  // SKELETON: To be implemented with jsonwebtoken.sign()
-  throw new Error('Not implemented: generateRefreshToken');
+export function generateRefreshToken(payload, options = {}) {
+  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+    algorithm: ALGORITHM,
+    expiresIn: REFRESH_TOKEN_TTL,
+    jwtid: crypto.randomUUID(),
+    ...options,
+  });
 }
 
 /**
  * Verifies and decodes a JWT Access Token.
  *
- * @param {string} _token - Bearer access token string.
+ * @param {string} token - Bearer access token string.
  * @returns {object} Decoded token payload if valid.
  * @throws {import('jsonwebtoken').TokenExpiredError} When token has expired.
  * @throws {import('jsonwebtoken').JsonWebTokenError} When signature or token is invalid.
@@ -47,16 +65,14 @@ export function generateRefreshToken(_payload, _options = {}) {
  * Specification:
  * - Secret: env.JWT_ACCESS_SECRET
  */
-export function verifyAccessToken(_token) {
-  void env;
-  // SKELETON: To be implemented with jsonwebtoken.verify()
-  throw new Error('Not implemented: verifyAccessToken');
+export function verifyAccessToken(token) {
+  return jwt.verify(token, env.JWT_ACCESS_SECRET, { algorithms: [ALGORITHM] });
 }
 
 /**
  * Verifies and decodes a JWT Refresh Token.
  *
- * @param {string} _token - Refresh token string.
+ * @param {string} token - Refresh token string.
  * @returns {object} Decoded token payload if valid.
  * @throws {import('jsonwebtoken').TokenExpiredError} When token has expired.
  * @throws {import('jsonwebtoken').JsonWebTokenError} When signature or token is invalid.
@@ -64,19 +80,16 @@ export function verifyAccessToken(_token) {
  * Specification:
  * - Secret: env.JWT_REFRESH_SECRET
  */
-export function verifyRefreshToken(_token) {
-  void env;
-  // SKELETON: To be implemented with jsonwebtoken.verify()
-  throw new Error('Not implemented: verifyRefreshToken');
+export function verifyRefreshToken(token) {
+  return jwt.verify(token, env.JWT_REFRESH_SECRET, { algorithms: [ALGORITHM] });
 }
 
 /**
- * Computes SHA-256 hash of a refresh token for secure database storage.
+ * Computes SHA-256 hash of a token for secure database storage.
  *
- * @param {string} _token - Plain refresh token.
+ * @param {string} token - Plain token (refresh token, reset token, ...).
  * @returns {string} Hex-encoded SHA-256 hash (64 characters).
  */
-export function hashToken(_token) {
-  // SKELETON: To be implemented with crypto.createHash('sha256')
-  throw new Error('Not implemented: hashToken');
+export function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }

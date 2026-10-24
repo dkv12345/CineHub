@@ -367,10 +367,14 @@ CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication
   2. If not found, searches by verified `email`. If user exists with local credentials, links `googleId` and marks `emailVerifiedAt = new Date()`.
   3. If user does not exist, registers a new account with `authProvider: 'GOOGLE'` and `passwordHash: null`.
 
-### 5.4. Password Reset Workflow
+### 5.4. Email Verification (OTP) & Password Reset Workflow
 
+- **Email Verification (`POST /api/v1/auth/register` & `POST /api/v1/auth/verify-email`)**:
+  1. Upon registration, generates a 6-digit OTP, stores its SHA-256 hash (salted with `userId`) in `email_verification_tokens` (10-minute expiry), and dispatches the OTP via Mailtrap.
+  2. The user enters the OTP at `#/verify-email`. The server validates the code, marks `emailVerifiedAt = new Date()`, issues an access token + HTTP-only refresh cookie, and sends a branded Welcome Email.
+  3. `POST /api/v1/auth/resend-verification` allows requesting a new OTP with a 60-second cooldown rate limit.
 - **Initiation (`POST /api/v1/auth/forgot-password`)**: Validates email, generates a cryptographically secure random token, stores its SHA-256 hash in MySQL (`password_reset_tokens` table with 15-minute expiration), and dispatches reset instructions. Always returns a generic confirmation to prevent account enumeration.
-- **Confirmation (`POST /api/v1/auth/reset-password`)**: Validates plain token against unexpired, unused hash. Hashes new password with bcryptjs (cost factor 10), updates `users.passwordHash`, marks reset token as used, and invalidates all active refresh tokens for the user across all devices.
+- **Confirmation (`POST /api/v1/auth/reset-password`)**: Validates plain token against unexpired, unused hash. Hashes new password with bcryptjs (cost factor 10), updates `users.passwordHash`, marks reset token as used, sends a reset confirmation email, and invalidates all active refresh tokens for the user across all devices.
 
 ### 5.5. Frontend Axios Interceptors & Concurrency Guard
 
@@ -381,16 +385,18 @@ CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication
 
 All endpoints are mounted on `/api/v1/auth` and `/api/auth`:
 
-| Method | Endpoint                       | Protection   | Description                                                 |
-| :----- | :----------------------------- | :----------- | :---------------------------------------------------------- |
-| `POST` | `/api/v1/auth/register`        | Public       | Customer account registration                               |
-| `POST` | `/api/v1/auth/login`           | Public       | Credentials login; sets HTTP-only refresh token cookie      |
-| `POST` | `/api/v1/auth/logout`          | Public       | Revokes refresh token in database and clears session cookie |
-| `PUT`  | `/api/v1/auth/refresh-token`   | Public       | Rotates refresh token and returns new access token          |
-| `GET`  | `/api/v1/auth/me`              | Bearer Token | Retrieves authenticated user profile                        |
-| `POST` | `/api/v1/auth/google`          | Public       | Authenticates Google OAuth ID token; sets session cookie    |
-| `POST` | `/api/v1/auth/forgot-password` | Public       | Dispatches password reset token                             |
-| `POST` | `/api/v1/auth/reset-password`  | Public       | Completes password reset using verification token           |
+| Method | Endpoint                           | Protection   | Description                                                  |
+| :----- | :--------------------------------- | :----------- | :----------------------------------------------------------- |
+| `POST` | `/api/v1/auth/register`            | Public       | Customer account registration; emails 6-digit OTP code       |
+| `POST` | `/api/v1/auth/verify-email`        | Public       | Verifies email via 6-digit OTP; sets session & sends welcome |
+| `POST` | `/api/v1/auth/resend-verification` | Public       | Resends OTP verification email (rate-limited)                |
+| `POST` | `/api/v1/auth/login`               | Public       | Credentials login; sets HTTP-only refresh token cookie       |
+| `POST` | `/api/v1/auth/logout`              | Public       | Revokes refresh token in database and clears session cookie  |
+| `PUT`  | `/api/v1/auth/refresh-token`       | Public       | Rotates refresh token and returns new access token           |
+| `GET`  | `/api/v1/auth/me`                  | Bearer Token | Retrieves authenticated user profile                         |
+| `POST` | `/api/v1/auth/google`              | Public       | Authenticates Google OAuth ID token; sets session cookie     |
+| `POST` | `/api/v1/auth/forgot-password`     | Public       | Dispatches password reset token via email                    |
+| `POST` | `/api/v1/auth/reset-password`      | Public       | Completes password reset using verification token            |
 
 ---
 
