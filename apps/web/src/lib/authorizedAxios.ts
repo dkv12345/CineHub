@@ -20,6 +20,25 @@ export const setIsRefreshing = (value: boolean): void => {
 };
 
 /**
+ * The access token lives only in memory (never localStorage) so XSS cannot read it from storage.
+ * It is restored after a page reload by calling the refresh endpoint with the HTTP-only cookie.
+ */
+let accessToken: string | null = null;
+export const getAccessToken = (): string | null => accessToken;
+export const setAccessToken = (token: string | null): void => {
+  accessToken = token;
+};
+
+/**
+ * Callback invoked when the session can no longer be refreshed (expired / revoked / reused token).
+ * The auth store registers it so the UI drops back to the logged-out state.
+ */
+let sessionExpiredHandler: (() => void) | null = null;
+export const setSessionExpiredHandler = (handler: (() => void) | null): void => {
+  sessionExpiredHandler = handler;
+};
+
+/**
  * Processes all queued requests once the token refresh completes.
  *
  * @param error - Error if the refresh failed, or null if successful.
@@ -42,7 +61,7 @@ export const processQueue = (error: unknown, token: string | null = null): void 
  * Features:
  * - baseURL: '/api' (proxied by Vite to backend server in development).
  * - withCredentials: true (enables sending HTTP-only cookies like refreshToken).
- * - Request interceptor: attaches Bearer token from local storage or memory.
+ * - Request interceptor: attaches the in-memory Bearer token.
  * - Response interceptor: catches 401 TOKEN_EXPIRED errors and coordinates silent refresh.
  */
 export const authorizedAxios: AxiosInstance = axios.create({
@@ -53,21 +72,47 @@ export const authorizedAxios: AxiosInstance = axios.create({
   },
 });
 
+export interface RefreshedSession {
+  accessToken: string;
+  user: unknown;
+}
+
+let refreshPromise: Promise<RefreshedSession> | null = null;
+
+/**
+ * Exchanges the HTTP-only refresh cookie for a new access token (Refresh Token Rotation).
+ *
+ * Concurrent callers share one in-flight request. This matters because the backend treats a
+ * replayed refresh token as theft and revokes the whole session: React StrictMode's double
+ * mount or several parallel 401s must never send the same cookie twice.
+ *
+ * Uses the bare axios client so a failing refresh cannot recurse through the interceptor.
+ */
+export function refreshAccessToken(): Promise<RefreshedSession> {
+  if (!refreshPromise) {
+    isRefreshing = true;
+    refreshPromise = axios
+      .post<{ data: RefreshedSession }>('/api/auth/refresh-token', {}, { withCredentials: true })
+      .then((response) => {
+        accessToken = response.data.data.accessToken;
+        return response.data.data;
+      })
+      .finally(() => {
+        refreshPromise = null;
+        isRefreshing = false;
+      });
+  }
+  return refreshPromise;
+}
+
 // ============================================================================
-// REQUEST INTERCEPTOR (SKELETON)
+// REQUEST INTERCEPTOR
 // ============================================================================
 authorizedAxios.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    /**
-     * GUIDE FOR STUDENT IMPLEMENTATION:
-     * 1. Retrieve the access token from your state management or secure storage:
-     *    const token = getAccessToken(); // or localStorage.getItem('accessToken');
-     * 2. If token exists and headers are available, inject the Authorization header:
-     *    if (token && config.headers) {
-     *      config.headers.Authorization = `Bearer ${token}`;
-     *    }
-     * 3. Return config.
-     */
+    if (accessToken && config.headers) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
     return config;
   },
   (error: unknown) => {
@@ -76,7 +121,7 @@ authorizedAxios.interceptors.request.use(
 );
 
 // ============================================================================
-// RESPONSE INTERCEPTOR (SKELETON)
+// RESPONSE INTERCEPTOR
 // ============================================================================
 authorizedAxios.interceptors.response.use(
   (response) => {
@@ -84,51 +129,39 @@ authorizedAxios.interceptors.response.use(
     return response;
   },
   async (error: AxiosError<{ error?: { code?: string; message?: string } }>) => {
-    void isRefreshing;
-    void failedQueue;
+    const originalRequest = error.config as
+      (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    /**
-     * GUIDE FOR STUDENT IMPLEMENTATION:
-     *
-     * const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-     *
-     * 1. Check if the error represents an expired access token:
-     *    const isTokenExpired =
-     *      error.response?.status === 401 &&
-     *      error.response?.data?.error?.code === 'TOKEN_EXPIRED';
-     *
-     * 2. If it is expired and this request has not been retried yet (!originalRequest._retry):
-     *
-     *    a. If another refresh request is already running (isRefreshing === true):
-     *       - Queue this request:
-     *         return new Promise<string>((resolve, reject) => {
-     *           failedQueue.push({ resolve, reject });
-     *         }).then((newToken) => {
-     *           originalRequest.headers.Authorization = `Bearer ${newToken}`;
-     *           return authorizedAxios(originalRequest);
-     *         });
-     *
-     *    b. If this is the first failed request:
-     *       - Mark originalRequest._retry = true;
-     *       - Set isRefreshing = true;
-     *       - Try calling POST /api/auth/refresh-token:
-     *         try {
-     *           const { data } = await axios.post('/api/auth/refresh-token', {}, { withCredentials: true });
-     *           const newAccessToken = data.data.accessToken;
-     *           setAccessToken(newAccessToken);
-     *           processQueue(null, newAccessToken);
-     *           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-     *           return authorizedAxios(originalRequest);
-     *         } catch (refreshError) {
-     *           processQueue(refreshError, null);
-     *           // Clear auth tokens and trigger logout redirect
-     *           return Promise.reject(refreshError);
-     *         } finally {
-     *           isRefreshing = false;
-     *         }
-     */
+    const isTokenExpired =
+      error.response?.status === 401 && error.response?.data?.error?.code === 'TOKEN_EXPIRED';
 
-    return Promise.reject(error);
+    if (!isTokenExpired || !originalRequest || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // Another request is already refreshing: wait for its result instead of refreshing twice.
+    if (isRefreshing) {
+      originalRequest._retry = true;
+      return new Promise<string>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then((newToken) => {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return authorizedAxios(originalRequest);
+      });
+    }
+
+    originalRequest._retry = true;
+    try {
+      const session = await refreshAccessToken();
+      processQueue(null, session.accessToken);
+      originalRequest.headers.Authorization = `Bearer ${session.accessToken}`;
+      return await authorizedAxios(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      accessToken = null;
+      sessionExpiredHandler?.();
+      return Promise.reject(refreshError);
+    }
   },
 );
 

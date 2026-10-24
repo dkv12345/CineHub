@@ -23,6 +23,11 @@ const schema = z.object({
   GEMINI_EMBEDDING_DIMS: z.coerce.number().int().positive().default(768),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(20000),
   MONGODB_DB: z.string().default('cinehub'),
+  SMTP_HOST: z.string().default('sandbox.smtp.mailtrap.io'),
+  SMTP_PORT: z.coerce.number().default(2525),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default('CineHub <no-reply@cinehub.vn>'),
 });
 
 export const env = schema.parse(process.env);

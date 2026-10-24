@@ -1,8 +1,11 @@
-import { useRoute, Link } from './router';
+import { useEffect } from 'react';
+import { useRoute, Link, go } from './router';
 import { Provider, useStore } from './store';
 import { Chatbot, Footer, Header } from './components/Layout';
 import { btnPrimary } from './components/ui';
 import Auth from './pages/Auth';
+import VerifyEmail from './pages/VerifyEmail';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import MovieDetail from './pages/MovieDetail';
 import Showtimes from './pages/Showtimes';
@@ -14,6 +17,12 @@ import MyTickets from './pages/MyTickets';
 import Profile from './pages/Profile';
 import { movies, movieThemes } from './data';
 import type { CSSProperties } from 'react';
+
+/** Pages that make no sense for a signed-in user (RedirectAuthenticatedUser guard). */
+const GUEST_ONLY_PATHS = ['/login', '/register', '/verify-email', '/forgot-password'];
+/** Pages that need a session (ProtectedRoute guard). */
+const isProtectedPath = (path: string) =>
+  path.startsWith('/booking') || path === '/profile' || path === '/my-tickets';
 
 function Notice({ text, to, cta }: { text: string; to: string; cta: string }) {
   return (
@@ -30,8 +39,12 @@ function Notice({ text, to, cta }: { text: string; to: string; cta: string }) {
 
 function Routes() {
   const { path, query } = useRoute();
-  const { user, booking } = useStore();
+  const { user, authLoading, booking } = useStore();
   const next = query.get('next') || '/home';
+
+  useEffect(() => {
+    if (!authLoading && user && GUEST_ONLY_PATHS.includes(path)) go(next);
+  }, [authLoading, user, path, next]);
   const login = (p: string) => `/login?next=${encodeURIComponent(p)}`;
   const isBooking = path.startsWith('/booking');
   const movieMatch = path.match(/^\/movie\/(.+)$/);
@@ -49,8 +62,20 @@ function Routes() {
   } as CSSProperties;
 
   let page;
-  if (path === '/login') page = <Auth mode="login" next={next} />;
+  if (authLoading && isProtectedPath(path))
+    page = (
+      <main className="grid min-h-[60vh] place-items-center px-5">
+        <p role="status" className="text-sm text-white/50">
+          Đang khôi phục phiên đăng nhập…
+        </p>
+      </main>
+    );
+  else if (path === '/login') page = <Auth mode="login" next={next} />;
   else if (path === '/register') page = <Auth mode="register" next={next} />;
+  else if (path === '/forgot-password') page = <Auth mode="forgot" next={next} />;
+  else if (path === '/verify-email')
+    page = <VerifyEmail email={query.get('email') || ''} next={next} />;
+  else if (path === '/reset-password') page = <ResetPassword token={query.get('token') || ''} />;
   else if (movieMatch)
     page = (
       <MovieDetail

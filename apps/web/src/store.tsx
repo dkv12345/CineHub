@@ -1,7 +1,9 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { dayInfo, PRICE } from './data';
 import type { Concession } from './services/concessionsApi';
+import * as authApi from './services/authApi';
+import { setAccessToken, setSessionExpiredHandler } from './lib/authorizedAxios';
 
 export type User = {
   uid?: string;
@@ -10,6 +12,14 @@ export type User = {
   photoURL?: string;
   provider?: 'google' | 'email';
 } | null;
+
+const toStoreUser = (u: authApi.User): NonNullable<User> => ({
+  uid: u.id,
+  name: u.fullName,
+  email: u.email,
+  photoURL: u.avatarUrl ?? undefined,
+  provider: u.authProvider === 'GOOGLE' ? 'google' : 'email',
+});
 export type SeatZone = 'normal' | 'vip' | 'sweetbox';
 export type Booking = {
   movieId: number | string | null;
@@ -142,8 +152,8 @@ export const combosTotal = (b: Booking, concessions: Concession[]) =>
 type Ctx = {
   user: User;
   authLoading: boolean;
-  login: (u: NonNullable<User>) => void;
-  logout: () => void;
+  startSession: (result: authApi.AuthResult) => void;
+  logout: () => Promise<void>;
   booking: Booking;
   patch: (p: Partial<Booking>) => void;
   startBooking: (p: Partial<Booking>) => void;
@@ -166,7 +176,7 @@ export const useStore = () => useContext(C);
 
 export function Provider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
-  const [authLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [booking, setBooking] = useState<Booking>(empty);
   const [concessions, setConcessions] = useState<Concession[]>([]);
   const [orders, setOrders] = useState<Order[]>(seedOrders);
@@ -197,6 +207,26 @@ export function Provider({ children }: { children: ReactNode }) {
     setWatchProgress(readStored(`${key}:progress`, {}));
   };
 
+  // Flow 1 – restore the session on app start: the HTTP-only refresh cookie is exchanged for a
+  // fresh access token. No cookie / revoked cookie simply leaves the user logged out.
+  useEffect(() => {
+    let cancelled = false;
+    setSessionExpiredHandler(() => activateUser(null));
+    authApi
+      .refreshToken()
+      .then((result) => {
+        if (!cancelled) activateUser(toStoreUser(result.user));
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setAuthLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      setSessionExpiredHandler(null);
+    };
+  }, []);
+
   useEffect(() => {
     const key = accountStorageKey(user);
     localStorage.setItem(`${key}:orders`, JSON.stringify(orders));
@@ -219,8 +249,19 @@ export function Provider({ children }: { children: ReactNode }) {
   const value: Ctx = {
     user,
     authLoading,
-    login: activateUser,
-    logout: () => activateUser(null),
+    startSession: (result) => {
+      setAccessToken(result.accessToken);
+      activateUser(toStoreUser(result.user));
+    },
+    logout: async () => {
+      try {
+        await authApi.logout();
+      } catch {
+        // The local session is dropped even if the server is unreachable.
+      }
+      setAccessToken(null);
+      activateUser(null);
+    },
     booking,
     patch: (p) => setBooking((b) => ({ ...b, ...p })),
     startBooking: (p) => {
