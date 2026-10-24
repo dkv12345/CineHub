@@ -144,16 +144,16 @@ export default function VerifyEmail({ email, next }: { email: string; next: stri
   }
 
   return (
-    <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#090b10] px-4 py-12 text-[#f1f3f7]">
+    <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#dedbd4] px-4 py-12 text-slate-800">
       {/* Ambient background glows */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/4 left-1/2 h-[450px] w-[450px] -translate-x-1/2 rounded-full bg-[#e50914]/15 blur-[140px]"
+        className="pointer-events-none absolute top-1/4 left-1/2 h-[450px] w-[450px] -translate-x-1/2 rounded-full bg-[#e50914]/10 blur-[140px]"
       />
 
-      <section className="relative z-10 w-full max-w-[500px] rounded-3xl border border-white/10 bg-[#121620]/85 p-7 text-center shadow-[0_25px_65px_rgba(0,0,0,0.65)] backdrop-blur-2xl sm:p-10">
+      <section className="relative z-10 w-full max-w-[500px] rounded-3xl border border-white/80 bg-white/95 p-7 text-center shadow-[0_20px_50px_rgba(45,35,25,0.09)] backdrop-blur-xl sm:p-10">
         {/* Animated envelope icon */}
-        <div className="relative mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-[#e50914]/40 bg-[#e50914]/15 text-[#ff4d57] shadow-[0_0_30px_rgba(229,9,20,0.25)]">
+        <div className="relative mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-[#e50914]/30 bg-[#e50914]/10 text-[#e50914] shadow-sm">
           <Icon name="mail" size={28} />
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ff4d57] opacity-75" />
@@ -161,13 +161,13 @@ export default function VerifyEmail({ email, next }: { email: string; next: stri
           </span>
         </div>
 
-        <h1 className="mt-5 text-2xl font-black tracking-tight text-white sm:text-3xl">
+        <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
           Xác thực tài khoản
         </h1>
-        <p className="mt-2 text-xs leading-relaxed text-white/60">
+        <p className="mt-2 text-xs leading-relaxed text-slate-600">
           CineHub đã gửi mã bảo mật 6 chữ số đến địa chỉ email:
           <br />
-          <span className="mt-1 inline-block rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 font-mono font-bold text-white">
+          <span className="mt-1.5 inline-block rounded-lg border border-slate-200 bg-slate-100 px-3 py-1 font-mono text-xs font-bold text-slate-900 shadow-xs">
             {email}
           </span>
         </p>
@@ -191,7 +191,7 @@ export default function VerifyEmail({ email, next }: { email: string; next: stri
               disabled={submitting}
               aria-label={`Chữ số ${i + 1}`}
               aria-invalid={!!error}
-              className={`h-14 w-11 rounded-2xl border bg-white/[0.05] text-center font-mono text-2xl font-black text-white outline-none transition-all focus:scale-105 focus:border-[#e50914] focus:bg-[#e50914]/10 focus:ring-2 focus:ring-[#e50914]/20 disabled:opacity-50 sm:h-16 sm:w-14 ${digit ? 'border-[#e50914]/60 bg-white/[0.08]' : error ? 'border-[#ff5a63]' : 'border-white/15'}`}
+              className={`h-14 w-11 rounded-2xl border text-center font-mono text-2xl font-black outline-none transition-all focus:scale-105 focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 disabled:opacity-50 sm:h-16 sm:w-14 shadow-xs ${digit ? 'border-[#e50914] bg-red-50/40 text-slate-900' : error ? 'border-red-500 bg-red-50/20 text-red-600' : 'border-slate-300 bg-white text-slate-900'}`}
             />
           ))}
         </div>
@@ -201,21 +201,21 @@ export default function VerifyEmail({ email, next }: { email: string; next: stri
           {error && (
             <div
               role="alert"
-              className="flex items-center justify-center gap-2 rounded-xl border border-[#ff5a63]/40 bg-[#ff5a63]/10 px-3.5 py-2 text-xs font-semibold text-[#ff7880]"
+              className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-700"
             >
               <Icon name="alert" size={15} />
               <span>{error}</span>
             </div>
           )}
           {!error && info && (
-            <div className="flex items-center justify-center gap-2 rounded-xl border border-[#46d38a]/40 bg-[#46d38a]/10 px-3.5 py-2 text-xs font-semibold text-[#46d38a]">
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700">
               <Icon name="check" size={15} />
               <span>{info}</span>
             </div>
           )}
           {submitting && (
-            <div className="flex items-center justify-center gap-2 text-xs text-white/60">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+            <div className="flex items-center justify-center gap-2 text-xs text-slate-500 font-medium">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-[#e50914]" />
               Đang xác minh mã OTP…
             </div>
           )}
@@ -226,20 +226,20 @@ export default function VerifyEmail({ email, next }: { email: string; next: stri
           type="button"
           disabled={submitting || digits.some((d) => !d)}
           onClick={() => void submit(digits.join(''))}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-[0_4px_24px_rgba(229,9,20,0.38)] transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-red-600/25 transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {submitting ? 'Đang hoàn tất kích hoạt…' : 'Xác nhận & Đăng nhập'}
         </button>
 
         {/* Resend OTP Cooldown Row */}
-        <div className="mt-7 flex flex-col items-center justify-center gap-2 border-t border-white/10 pt-6 text-xs">
-          <p className="text-white/50">
+        <div className="mt-7 flex flex-col items-center justify-center gap-2 border-t border-slate-200 pt-6 text-xs">
+          <p className="text-slate-600">
             Chưa nhận được mã xác thực?{' '}
             <button
               type="button"
               onClick={resend}
               disabled={cooldown > 0 || resending}
-              className="font-bold text-[#ff4d57] transition enabled:hover:text-[#ff7880] enabled:hover:underline disabled:cursor-not-allowed disabled:text-white/30"
+              className="font-bold text-[#e50914] transition enabled:hover:underline disabled:cursor-not-allowed disabled:text-slate-400"
             >
               {resending
                 ? 'Đang gửi mã…'
@@ -248,12 +248,12 @@ export default function VerifyEmail({ email, next }: { email: string; next: stri
                   : 'Gửi lại mã ngay'}
             </button>
           </p>
-          <p className="text-[11px] text-white/35">
+          <p className="text-[11px] text-slate-400">
             💡 Kiểm tra hộp thư chính, thư mục Quảng cáo hoặc Thư rác (Spam).
           </p>
           <Link
             to={`/register?next=${encodeURIComponent(next)}`}
-            className="mt-2 text-[11px] font-semibold text-white/50 transition hover:text-white hover:underline"
+            className="mt-2 text-[11px] font-bold text-slate-500 transition hover:text-[#e50914] hover:underline"
           >
             ← Sai địa chỉ email? Đăng ký lại
           </Link>

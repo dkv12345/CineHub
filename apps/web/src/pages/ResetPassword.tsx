@@ -112,22 +112,22 @@ export default function ResetPassword({ token }: { token: string }) {
   // Missing or invalid token parameter
   if (!token) {
     return (
-      <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#090b10] px-5 py-12 text-[#f1f3f7]">
-        <div className="w-full max-w-[440px] rounded-3xl border border-white/10 bg-[#121620]/85 p-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[#ff5a63]/40 bg-[#ff5a63]/15 text-[#ff5a63]">
+      <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#dedbd4] px-5 py-12 text-slate-800">
+        <div className="w-full max-w-[440px] rounded-3xl border border-white/80 bg-white/95 p-8 text-center shadow-[0_20px_50px_rgba(45,35,25,0.09)] backdrop-blur-xl">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-red-200 bg-red-50 text-red-600">
             <Icon name="alert" size={26} />
           </div>
-          <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-white">
+          <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-slate-900">
             Liên kết không hợp lệ
           </h1>
-          <p className="mt-2 text-xs leading-5 text-white/50">
+          <p className="mt-2 text-xs leading-5 text-slate-600">
             Liên kết đặt lại mật khẩu này đã hết hạn hoặc không đầy đủ thông tin bảo mật. Vui lòng
             yêu cầu một liên kết mới.
           </p>
           <div className="mt-6 flex flex-col gap-2.5">
             <Link
               to="/login"
-              className="inline-flex w-full items-center justify-center rounded-xl bg-[#e50914] py-3 text-xs font-bold text-white transition hover:bg-[#b81d24]"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-[#e50914] py-3 text-xs font-bold text-white shadow-md transition hover:bg-[#b81d24]"
             >
               Yêu cầu liên kết mới
             </Link>
@@ -140,31 +140,31 @@ export default function ResetPassword({ token }: { token: string }) {
   // Success state after updating password
   if (done) {
     return (
-      <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#090b10] px-5 py-12 text-[#f1f3f7]">
+      <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#dedbd4] px-5 py-12 text-slate-800">
         <div
           role="status"
-          className="w-full max-w-[460px] rounded-3xl border border-[#46d38a]/30 bg-[#121620]/90 p-8 text-center shadow-[0_25px_65px_rgba(0,0,0,0.7)] backdrop-blur-2xl"
+          className="w-full max-w-[460px] rounded-3xl border border-white/80 bg-white/95 p-8 text-center shadow-[0_20px_50px_rgba(45,35,25,0.09)] backdrop-blur-xl"
         >
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-[#46d38a]/40 bg-[#46d38a]/15 text-3xl text-[#46d38a] shadow-[0_0_30px_rgba(70,211,138,0.25)]">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-emerald-200 bg-emerald-50 text-3xl text-emerald-600 shadow-sm">
             <Icon name="check" size={32} />
           </div>
-          <h1 className="mt-5 text-2xl font-black tracking-tight text-white sm:text-3xl">
+          <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
             Đặt lại mật khẩu thành công!
           </h1>
-          <p className="mt-2 text-xs leading-relaxed text-white/60">
+          <p className="mt-2 text-xs leading-relaxed text-slate-600">
             Mật khẩu mới của bạn đã được cập nhật an toàn. Toàn bộ các phiên đăng nhập cũ trên mọi
             thiết bị đã được thu hồi.
           </p>
 
           {/* Countdown indicator */}
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs text-white/70">
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-700">
             <p>
               Tự động chuyển hướng về trang đăng nhập sau{' '}
-              <b className="font-mono text-sm text-[#46d38a]">{countdown}s</b>…
+              <b className="font-mono text-sm text-emerald-600 font-bold">{countdown}s</b>…
             </p>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
               <div
-                className="h-full bg-[#46d38a] transition-all duration-1000 ease-linear"
+                className="h-full bg-emerald-500 transition-all duration-1000 ease-linear"
                 style={{ width: `${(countdown / 3) * 100}%` }}
               />
             </div>
@@ -172,7 +172,7 @@ export default function ResetPassword({ token }: { token: string }) {
 
           <Link
             to="/login"
-            className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-[#e50914] py-3.5 text-xs font-extrabold text-white shadow-[0_4px_20px_rgba(229,9,20,0.35)] transition hover:brightness-110"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-[#e50914] py-3.5 text-xs font-extrabold text-white shadow-lg shadow-red-600/25 transition hover:brightness-110"
           >
             Đăng nhập ngay
           </Link>
@@ -183,22 +183,22 @@ export default function ResetPassword({ token }: { token: string }) {
 
   // Active Reset Password Form
   return (
-    <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#090b10] px-4 py-12 text-[#f1f3f7]">
+    <main className="relative grid min-h-[calc(100vh-74px)] place-items-center overflow-hidden bg-[#dedbd4] px-4 py-12 text-slate-800">
       {/* Ambient background glows */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/4 left-1/2 h-[450px] w-[450px] -translate-x-1/2 rounded-full bg-[#e50914]/15 blur-[140px]"
+        className="pointer-events-none absolute top-1/4 left-1/2 h-[450px] w-[450px] -translate-x-1/2 rounded-full bg-[#e50914]/10 blur-[140px]"
       />
 
-      <section className="relative z-10 w-full max-w-[460px] rounded-3xl border border-white/10 bg-[#121620]/85 p-7 shadow-[0_25px_65px_rgba(0,0,0,0.65)] backdrop-blur-2xl sm:p-10">
+      <section className="relative z-10 w-full max-w-[460px] rounded-3xl border border-white/80 bg-white/95 p-7 shadow-[0_20px_50px_rgba(45,35,25,0.09)] backdrop-blur-xl sm:p-10">
         <div className="text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[#e50914]/40 bg-[#e50914]/15 text-[#ff4d57] shadow-[0_0_25px_rgba(229,9,20,0.2)]">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[#e50914]/30 bg-[#e50914]/10 text-[#e50914] shadow-sm">
             <Icon name="key" size={26} />
           </div>
-          <h1 className="mt-4 text-2xl font-black tracking-tight text-white sm:text-3xl">
+          <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
             Tạo mật khẩu mới
           </h1>
-          <p className="mt-2 text-xs leading-5 text-white/50">
+          <p className="mt-2 text-xs leading-5 text-slate-600">
             Hãy thiết lập mật khẩu mạnh để bảo vệ tài khoản vé và đặc quyền thành viên CineHub.
           </p>
         </div>
@@ -206,9 +206,9 @@ export default function ResetPassword({ token }: { token: string }) {
         {formError && (
           <div
             role="alert"
-            className="mt-5 flex items-start gap-3 rounded-2xl border border-[#ff5a63]/40 bg-[#ff5a63]/10 p-3.5 text-xs font-medium text-[#ff7880]"
+            className="mt-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs font-medium text-red-700"
           >
-            <span className="mt-0.5 shrink-0 text-[#ff5a63]">
+            <span className="mt-0.5 shrink-0 text-red-600">
               <Icon name="alert" size={16} />
             </span>
             <div className="flex-1 leading-5">{formError}</div>
@@ -218,11 +218,11 @@ export default function ResetPassword({ token }: { token: string }) {
         <form onSubmit={submit} noValidate className="mt-6 space-y-4">
           {/* New Password */}
           <div>
-            <label className="block text-xs font-bold tracking-wide text-white/70 uppercase">
+            <label className="block text-xs font-bold tracking-wide text-slate-700 uppercase">
               Mật khẩu mới
             </label>
             <div className="relative mt-1.5">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                 <Icon name="lock" size={18} />
               </span>
               <input
@@ -234,29 +234,29 @@ export default function ResetPassword({ token }: { token: string }) {
                 }}
                 placeholder={`Tối thiểu ${MIN_PASSWORD} ký tự`}
                 autoComplete="new-password"
-                className={`w-full rounded-xl border bg-white/[0.05] py-3.5 pr-11 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/20 ${err.pw ? 'border-[#ff5a63]' : 'border-white/10'}`}
+                className={`w-full rounded-xl border bg-white py-3.5 pr-11 pl-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 shadow-xs ${err.pw ? 'border-red-500' : 'border-slate-300'}`}
               />
               <button
                 type="button"
                 onClick={() => setShowPw(!showPw)}
                 aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-white/40 transition hover:text-white"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 transition hover:text-slate-700"
               >
                 <Icon name={showPw ? 'eyeOff' : 'eye'} size={18} />
               </button>
             </div>
             {err.pw && (
-              <p role="alert" className="mt-1 text-[11px] font-medium text-[#ff5a63]">
+              <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">
                 {err.pw}
               </p>
             )}
 
             {/* Live Password Strength Meter */}
             {pw.length > 0 && (
-              <div className="mt-2.5 space-y-1.5 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs">
+              <div className="mt-2.5 space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-white/50">Độ mạnh mật khẩu:</span>
-                  <span className="font-bold" style={{ color: pwStrength.color }}>
+                  <span className="text-slate-500 font-medium">Độ mạnh mật khẩu:</span>
+                  <span className="font-extrabold" style={{ color: pwStrength.color }}>
                     {pwStrength.label}
                   </span>
                 </div>
@@ -264,28 +264,28 @@ export default function ResetPassword({ token }: { token: string }) {
                   {[1, 2, 3, 4].map((step) => (
                     <div
                       key={step}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${step <= pwStrength.score ? pwStrength.barClass : 'bg-white/10'}`}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${step <= pwStrength.score ? pwStrength.barClass : 'bg-slate-200'}`}
                     />
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-1 pt-1 text-[10px]">
+                <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] font-medium">
                   <span
-                    className={`flex items-center gap-1 ${pwStrength.checks.length ? 'text-[#46d38a]' : 'text-white/40'}`}
+                    className={`flex items-center gap-1 ${pwStrength.checks.length ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                   >
                     {pwStrength.checks.length ? '✓' : '•'} Từ 8 ký tự
                   </span>
                   <span
-                    className={`flex items-center gap-1 ${pwStrength.checks.mixedCase ? 'text-[#46d38a]' : 'text-white/40'}`}
+                    className={`flex items-center gap-1 ${pwStrength.checks.mixedCase ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                   >
                     {pwStrength.checks.mixedCase ? '✓' : '•'} Hoa & thường
                   </span>
                   <span
-                    className={`flex items-center gap-1 ${pwStrength.checks.numbers ? 'text-[#46d38a]' : 'text-white/40'}`}
+                    className={`flex items-center gap-1 ${pwStrength.checks.numbers ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                   >
                     {pwStrength.checks.numbers ? '✓' : '•'} Chữ số
                   </span>
                   <span
-                    className={`flex items-center gap-1 ${pwStrength.checks.special ? 'text-[#46d38a]' : 'text-white/40'}`}
+                    className={`flex items-center gap-1 ${pwStrength.checks.special ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                   >
                     {pwStrength.checks.special ? '✓' : '•'} Ký tự đặc biệt
                   </span>
@@ -297,19 +297,19 @@ export default function ResetPassword({ token }: { token: string }) {
           {/* Confirm Password */}
           <div>
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold tracking-wide text-white/70 uppercase">
+              <label className="block text-xs font-bold tracking-wide text-slate-700 uppercase">
                 Xác nhận mật khẩu mới
               </label>
               {pw2.length > 0 && (
                 <span
-                  className={`text-[11px] font-bold ${passwordsMatch ? 'text-[#46d38a]' : 'text-[#ff5a63]'}`}
+                  className={`text-[11px] font-bold ${passwordsMatch ? 'text-emerald-600' : 'text-red-500'}`}
                 >
                   {passwordsMatch ? '✓ Khớp mật khẩu' : '✕ Chưa khớp'}
                 </span>
               )}
             </div>
             <div className="relative mt-1.5">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                 <Icon name="lock" size={18} />
               </span>
               <input
@@ -321,19 +321,19 @@ export default function ResetPassword({ token }: { token: string }) {
                 }}
                 placeholder="Nhập lại mật khẩu mới"
                 autoComplete="new-password"
-                className={`w-full rounded-xl border bg-white/[0.05] py-3.5 pr-11 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/20 ${err.pw2 ? 'border-[#ff5a63]' : 'border-white/10'}`}
+                className={`w-full rounded-xl border bg-white py-3.5 pr-11 pl-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 shadow-xs ${err.pw2 ? 'border-red-500' : 'border-slate-300'}`}
               />
               <button
                 type="button"
                 onClick={() => setShowPw2(!showPw2)}
                 aria-label={showPw2 ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-white/40 transition hover:text-white"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 transition hover:text-slate-700"
               >
                 <Icon name={showPw2 ? 'eyeOff' : 'eye'} size={18} />
               </button>
             </div>
             {err.pw2 && (
-              <p role="alert" className="mt-1 text-[11px] font-medium text-[#ff5a63]">
+              <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">
                 {err.pw2}
               </p>
             )}
@@ -342,11 +342,11 @@ export default function ResetPassword({ token }: { token: string }) {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] via-[#ea1d27] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-[0_4px_24px_rgba(229,9,20,0.38)] transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] via-[#ea1d27] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-red-600/25 transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? (
               <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 Đang lưu mật khẩu…
               </>
             ) : (
@@ -355,10 +355,10 @@ export default function ResetPassword({ token }: { token: string }) {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-white/40">
+        <p className="mt-6 text-center text-xs text-slate-500 font-medium">
           <Link
             to="/login"
-            className="font-bold text-white/60 transition hover:text-white hover:underline"
+            className="font-bold text-slate-700 transition hover:text-[#e50914] hover:underline"
           >
             ← Quay lại đăng nhập
           </Link>

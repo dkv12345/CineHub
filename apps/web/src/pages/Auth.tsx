@@ -155,11 +155,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
           if (slot) {
             slot.innerHTML = '';
             window.google.accounts.id.renderButton(slot, {
-              theme: 'filled_black',
+              theme: 'outline',
               size: 'large',
               text: currentMode === 'register' ? 'signup_with' : 'signin_with',
-              shape: 'pill',
-              width: 320,
+              shape: 'rectangular',
+              width: 360,
               logo_alignment: 'left',
             });
           }
@@ -262,78 +262,78 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
   const currentMovie = movies[0];
 
   return (
-    <main className="relative min-h-[calc(100vh-74px)] overflow-hidden bg-[#090b10] text-[#f1f3f7]">
+    <main className="relative min-h-[calc(100vh-74px)] overflow-hidden bg-[#dedbd4] py-8 px-4 text-slate-800 sm:px-6 lg:px-8">
       {/* Ambient background lighting */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-40 left-1/4 h-[550px] w-[550px] rounded-full bg-[#e50914]/15 blur-[140px]"
+        className="pointer-events-none absolute -top-40 left-1/4 h-[550px] w-[550px] rounded-full bg-[#e50914]/10 blur-[140px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 right-10 h-[450px] w-[450px] rounded-full bg-[#5d86c7]/15 blur-[130px]"
+        className="pointer-events-none absolute bottom-0 right-10 h-[450px] w-[450px] rounded-full bg-[#5d86c7]/10 blur-[130px]"
       />
 
-      <div className="relative mx-auto grid min-h-[calc(100vh-74px)] max-w-[1480px] lg:grid-cols-12">
+      <div className="relative mx-auto grid min-h-[calc(100vh-130px)] max-w-[1360px] items-center gap-8 lg:grid-cols-12">
         {/* ================= LEFT CINEMATIC HERO SHOWCASE ================= */}
-        <section className="dark-film-content relative hidden flex-col justify-between overflow-hidden p-12 lg:col-span-6 lg:flex xl:col-span-7 xl:p-16">
+        <section className="relative hidden min-h-[640px] flex-col justify-between overflow-hidden rounded-3xl border border-black/10 bg-[#161a24] p-10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.18)] lg:col-span-6 lg:flex xl:col-span-7 xl:p-14">
           <img
             src={currentMovie.backdrop}
             alt="CineHub Premiere"
-            className="ambient-poster absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-luminosity brightness-75"
+            className="ambient-poster absolute inset-0 h-full w-full object-cover opacity-50 mix-blend-luminosity brightness-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#090b10] via-[#090b10]/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#090b10]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#161a24] via-[#161a24]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#161a24]/80" />
 
           {/* Top VIP Badge */}
           <div className="relative z-10 flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#e50914]/40 bg-[#e50914]/15 px-3.5 py-1.5 text-xs font-black tracking-wider text-[#ff4d57] uppercase shadow-[0_0_20px_rgba(229,9,20,0.25)] backdrop-blur-md">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#e50914]/40 bg-[#e50914]/20 px-3.5 py-1.5 text-xs font-black tracking-wider text-[#ff4d57] uppercase shadow-[0_0_20px_rgba(229,9,20,0.25)] backdrop-blur-md">
               <span className="h-2 w-2 animate-ping rounded-full bg-[#ff4d57]" />
               CineHub VIP Passport
             </span>
-            <span className="text-xs font-semibold text-white/50">
+            <span className="text-xs font-semibold text-white/70">
               Hệ thống rạp chiếu chuẩn quốc tế
             </span>
           </div>
 
           {/* Center Brand Statement */}
-          <div className="relative z-10 my-auto max-w-[560px] pt-12 pb-8">
-            <h2 className="display text-5xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl">
+          <div className="relative z-10 my-auto max-w-[560px] pt-8 pb-6">
+            <h2 className="display text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
               MỖI CÂU CHUYỆN HAY
               <br />
-              <span className="bg-gradient-to-r from-white via-white/90 to-white/50 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white via-white/95 to-white/70 bg-clip-text text-transparent">
                 ĐÁNG ĐƯỢC XEM
               </span>
               <br />
               <span className="text-[#e50914]">TRÊN MÀN ẢNH LỚN.</span>
             </h2>
 
-            <p className="mt-5 text-base leading-relaxed text-white/70">
+            <p className="mt-4 text-sm leading-relaxed text-white/80">
               Đăng nhập để lưu vé tức thì, trải nghiệm chọn ghế 3D POV chân thực và nhận đặc quyền
               thành viên độc quyền tại 45+ rạp chiếu toàn quốc.
             </p>
 
             {/* Feature Perks Grid */}
-            <div className="mt-8 grid gap-3.5 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md transition hover:border-[#e50914]/40 hover:bg-white/[0.07]">
-                <div className="mb-2 text-2xl">💺</div>
-                <h4 className="text-xs font-bold text-white">Ghế 3D Point-of-View</h4>
-                <p className="mt-1 text-[11px] leading-4 text-white/50">
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-md transition hover:border-[#e50914]/50 hover:bg-white/15">
+                <div className="mb-1.5 text-2xl">💺</div>
+                <h4 className="text-xs font-bold text-white">Ghế 3D POV</h4>
+                <p className="mt-1 text-[11px] leading-4 text-white/70">
                   Xem trước góc nhìn thật từ ghế ngồi trước khi đặt.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md transition hover:border-[#e50914]/40 hover:bg-white/[0.07]">
-                <div className="mb-2 text-2xl">⚡</div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-md transition hover:border-[#e50914]/50 hover:bg-white/15">
+                <div className="mb-1.5 text-2xl">⚡</div>
                 <h4 className="text-xs font-bold text-white">Giữ Ghế 15 Phút</h4>
-                <p className="mt-1 text-[11px] leading-4 text-white/50">
+                <p className="mt-1 text-[11px] leading-4 text-white/70">
                   Khóa vé an toàn, thong thả chọn combo bắp nước.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md transition hover:border-[#e50914]/40 hover:bg-white/[0.07]">
-                <div className="mb-2 text-2xl">🍿</div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-3.5 backdrop-blur-md transition hover:border-[#e50914]/50 hover:bg-white/15">
+                <div className="mb-1.5 text-2xl">🍿</div>
                 <h4 className="text-xs font-bold text-white">Điểm Thưởng VIP</h4>
-                <p className="mt-1 text-[11px] leading-4 text-white/50">
+                <p className="mt-1 text-[11px] leading-4 text-white/70">
                   Tích CinePoints đổi vé xem phim và combo miễn phí.
                 </p>
               </div>
@@ -341,37 +341,37 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
           </div>
 
           {/* Bottom Live Stats */}
-          <div className="relative z-10 flex flex-wrap items-center gap-6 border-t border-white/10 pt-6 text-xs text-white/60">
+          <div className="relative z-10 flex flex-wrap items-center gap-6 border-t border-white/15 pt-5 text-xs text-white/75">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-white">45+</span> Cụm rạp đối tác
             </div>
-            <div className="h-3 w-px bg-white/20" />
+            <div className="h-3 w-px bg-white/30" />
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-[#f5b50a]">★ 4.9/5</span> từ 120,000+ khán giả
             </div>
-            <div className="h-3 w-px bg-white/20" />
-            <div className="flex items-center gap-1.5 text-white/50">
+            <div className="h-3 w-px bg-white/30" />
+            <div className="flex items-center gap-1.5 text-white/70">
               <Icon name="shield" size={14} color="#46d38a" /> Bảo mật chuẩn SSL 256-bit
             </div>
           </div>
         </section>
 
         {/* ================= RIGHT INTERACTIVE AUTH FORM ================= */}
-        <section className="relative z-10 grid place-items-center px-4 py-10 sm:px-8 lg:col-span-6 xl:col-span-5">
+        <section className="relative z-10 grid place-items-center lg:col-span-6 xl:col-span-5">
           <div className="w-full max-w-[460px]">
             {/* Top Brand Logo for Mobile */}
             <div className="mb-6 text-center lg:hidden">
               <Link
                 to="/home"
-                className="inline-block text-2xl font-black tracking-wider text-white"
+                className="inline-block text-2xl font-black tracking-wider text-slate-900"
               >
                 CINE<span className="text-[#e50914]">HUB</span>
               </Link>
-              <p className="mt-1 text-xs text-white/50">Nền tảng đặt vé điện ảnh thế hệ mới</p>
+              <p className="mt-1 text-xs text-slate-600">Nền tảng đặt vé điện ảnh thế hệ mới</p>
             </div>
 
-            {/* Glassmorphic Form Card */}
-            <div className="rounded-3xl border border-white/10 bg-[#121620]/85 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-9">
+            {/* Bright Frosted Glass Card */}
+            <div className="rounded-3xl border border-white/80 bg-white/95 p-6 shadow-[0_20px_50px_rgba(45,35,25,0.09)] backdrop-blur-xl sm:p-9">
               {/* ================= FORGOT PASSWORD VIEW ================= */}
               {isForgot ? (
                 <div>
@@ -382,20 +382,20 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                       setForgotError('');
                       setResetSent(false);
                     }}
-                    className="group mb-6 inline-flex items-center gap-2 text-xs font-semibold text-white/50 transition hover:text-white"
+                    className="group mb-6 inline-flex items-center gap-2 text-xs font-bold text-slate-500 transition hover:text-[#e50914]"
                   >
                     <span className="transition group-hover:-translate-x-1">←</span>
                     Quay lại đăng nhập
                   </button>
 
                   <div className="text-center">
-                    <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[#e50914]/40 bg-[#e50914]/15 text-[#ff4d57] shadow-[0_0_25px_rgba(229,9,20,0.2)]">
+                    <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-[#e50914]/30 bg-[#e50914]/10 text-[#e50914] shadow-sm">
                       <Icon name="key" size={26} />
                     </div>
-                    <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                    <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                       Khôi phục mật khẩu
                     </h1>
-                    <p className="mt-2 text-xs leading-5 text-white/60">
+                    <p className="mt-2 text-xs leading-5 text-slate-600">
                       Nhập email đã đăng ký. CineHub sẽ gửi hướng dẫn kèm liên kết an toàn để đặt
                       lại mật khẩu trong vòng 15 phút.
                     </p>
@@ -403,16 +403,16 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
 
                   {resetSent ? (
                     <div className="mt-7 text-center">
-                      <div className="rounded-2xl border border-[#46d38a]/30 bg-[#46d38a]/10 p-5">
-                        <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-[#46d38a]/20 text-[#46d38a]">
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50/80 p-5">
+                        <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-emerald-600">
                           <Icon name="check" size={20} />
                         </div>
-                        <h3 className="mt-3 text-sm font-bold text-white">Đã gửi hướng dẫn!</h3>
-                        <p className="mt-1.5 text-xs leading-5 text-white/70">
-                          Nếu email <b className="text-white">{forgotEmail}</b> tồn tại trong hệ
+                        <h3 className="mt-3 text-sm font-bold text-slate-900">Đã gửi hướng dẫn!</h3>
+                        <p className="mt-1.5 text-xs leading-5 text-slate-600">
+                          Nếu email <b className="text-slate-900">{forgotEmail}</b> tồn tại trong hệ
                           thống, một liên kết đặt lại mật khẩu đã được gửi đến hộp thư của bạn.
                         </p>
-                        <p className="mt-3 text-[11px] text-white/45">
+                        <p className="mt-3 text-[11px] text-slate-500">
                           💡 Đừng quên kiểm tra cả thư mục <b>Spam / Thư rác</b> nếu chưa thấy
                           email.
                         </p>
@@ -423,7 +423,7 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                           type="button"
                           onClick={submitForgot}
                           disabled={resetCooldown > 0 || forgotSending}
-                          className="w-full rounded-xl border border-white/15 bg-white/[0.04] py-3 text-xs font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="w-full rounded-xl border border-slate-300 bg-white py-3 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {resetCooldown > 0
                             ? `Gửi lại sau ${resetCooldown}s`
@@ -432,7 +432,7 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                         <button
                           type="button"
                           onClick={() => setCurrentMode('login')}
-                          className="w-full rounded-xl bg-[#e50914] py-3 text-xs font-bold text-white transition hover:bg-[#b81d24]"
+                          className="w-full rounded-xl bg-[#e50914] py-3 text-xs font-bold text-white shadow-md transition hover:bg-[#b81d24]"
                         >
                           Về trang đăng nhập
                         </button>
@@ -441,11 +441,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                   ) : (
                     <form onSubmit={submitForgot} noValidate className="mt-7 space-y-4">
                       <div>
-                        <label className="block text-xs font-bold tracking-wide text-white/70 uppercase">
+                        <label className="block text-xs font-bold tracking-wide text-slate-700 uppercase">
                           Địa chỉ Email
                         </label>
                         <div className="relative mt-2">
-                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                             <Icon name="mail" size={18} />
                           </span>
                           <input
@@ -457,11 +457,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                             }}
                             placeholder="ten@email.com"
                             autoComplete="email"
-                            className={`w-full rounded-xl border bg-white/[0.05] py-3.5 pr-4 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/20 ${forgotError ? 'border-[#ff5a63]' : 'border-white/10'}`}
+                            className={`w-full rounded-xl border bg-white py-3.5 pr-4 pl-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 shadow-xs ${forgotError ? 'border-red-500' : 'border-slate-300'}`}
                           />
                         </div>
                         {forgotError && (
-                          <p role="alert" className="mt-1.5 text-[11px] font-medium text-[#ff5a63]">
+                          <p role="alert" className="mt-1.5 text-[11px] font-medium text-red-600">
                             {forgotError}
                           </p>
                         )}
@@ -470,11 +470,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                       <button
                         type="submit"
                         disabled={forgotSending}
-                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-[0_4px_20px_rgba(229,9,20,0.35)] transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-red-600/25 transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {forgotSending ? (
                           <>
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                             Đang gửi liên kết…
                           </>
                         ) : (
@@ -488,11 +488,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                 /* ================= LOGIN & REGISTER TABS VIEW ================= */
                 <div>
                   {/* Segmented Mode Pill Navigation */}
-                  <div className="relative mb-7 grid grid-cols-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-center">
+                  <div className="relative mb-6 grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-100 p-1 text-center">
                     <button
                       type="button"
                       onClick={() => setCurrentMode('login')}
-                      className={`relative z-10 flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all duration-200 ${isLogin ? 'bg-[#e50914] text-white shadow-[0_4px_16px_rgba(229,9,20,0.35)]' : 'text-white/60 hover:text-white'}`}
+                      className={`relative z-10 flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all duration-200 ${isLogin ? 'bg-[#e50914] text-white shadow-md' : 'text-slate-600 hover:text-slate-900'}`}
                     >
                       <Icon name="user" size={15} />
                       Đăng nhập
@@ -500,7 +500,7 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                     <button
                       type="button"
                       onClick={() => setCurrentMode('register')}
-                      className={`relative z-10 flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all duration-200 ${isRegister ? 'bg-[#e50914] text-white shadow-[0_4px_16px_rgba(229,9,20,0.35)]' : 'text-white/60 hover:text-white'}`}
+                      className={`relative z-10 flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all duration-200 ${isRegister ? 'bg-[#e50914] text-white shadow-md' : 'text-slate-600 hover:text-slate-900'}`}
                     >
                       <Icon name="sparkles" size={15} />
                       Tạo tài khoản
@@ -509,10 +509,10 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
 
                   {/* Header Title */}
                   <div className="mb-6">
-                    <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                    <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
                       {isLogin ? 'Chào mừng trở lại' : 'Trở thành Hội viên VIP'}
                     </h1>
-                    <p className="mt-1.5 text-xs text-white/50">
+                    <p className="mt-1 text-xs font-medium text-slate-500">
                       {isLogin
                         ? 'Nhập thông tin tài khoản CineHub để tiếp tục đặt vé.'
                         : 'Khởi tạo tài khoản miễn phí chỉ trong 30 giây.'}
@@ -523,9 +523,9 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                   {formError && (
                     <div
                       role="alert"
-                      className="mb-5 flex items-start gap-3 rounded-2xl border border-[#ff5a63]/40 bg-[#ff5a63]/10 p-3.5 text-xs font-medium text-[#ff7880]"
+                      className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs font-medium text-red-700"
                     >
-                      <span className="mt-0.5 shrink-0 text-[#ff5a63]">
+                      <span className="mt-0.5 shrink-0 text-red-600">
                         <Icon name="alert" size={16} />
                       </span>
                       <div className="flex-1 leading-5">{formError}</div>
@@ -537,11 +537,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                     {/* Full Name (Register only) */}
                     {isRegister && (
                       <div>
-                        <label className="block text-xs font-bold tracking-wide text-white/70 uppercase">
+                        <label className="block text-xs font-bold tracking-wide text-slate-700 uppercase">
                           Họ và tên
                         </label>
                         <div className="relative mt-1.5">
-                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                             <Icon name="user" size={18} />
                           </span>
                           <input
@@ -550,11 +550,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                             onChange={(e) => setField('name')(e.target.value)}
                             placeholder="Nguyễn Văn A"
                             autoComplete="name"
-                            className={`w-full rounded-xl border bg-white/[0.05] py-3.5 pr-4 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/20 ${err.name ? 'border-[#ff5a63]' : 'border-white/10'}`}
+                            className={`w-full rounded-xl border bg-white py-3.5 pr-4 pl-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 shadow-xs ${err.name ? 'border-red-500' : 'border-slate-300'}`}
                           />
                         </div>
                         {err.name && (
-                          <p role="alert" className="mt-1 text-[11px] font-medium text-[#ff5a63]">
+                          <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">
                             {err.name}
                           </p>
                         )}
@@ -563,11 +563,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
 
                     {/* Email Field */}
                     <div>
-                      <label className="block text-xs font-bold tracking-wide text-white/70 uppercase">
+                      <label className="block text-xs font-bold tracking-wide text-slate-700 uppercase">
                         Email
                       </label>
                       <div className="relative mt-1.5">
-                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                           <Icon name="mail" size={18} />
                         </span>
                         <input
@@ -576,11 +576,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                           onChange={(e) => setField('email')(e.target.value)}
                           placeholder="ten@email.com"
                           autoComplete="email"
-                          className={`w-full rounded-xl border bg-white/[0.05] py-3.5 pr-4 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/20 ${err.email ? 'border-[#ff5a63]' : 'border-white/10'}`}
+                          className={`w-full rounded-xl border bg-white py-3.5 pr-4 pl-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 shadow-xs ${err.email ? 'border-red-500' : 'border-slate-300'}`}
                         />
                       </div>
                       {err.email && (
-                        <p role="alert" className="mt-1 text-[11px] font-medium text-[#ff5a63]">
+                        <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">
                           {err.email}
                         </p>
                       )}
@@ -589,7 +589,7 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                     {/* Password Field */}
                     <div>
                       <div className="flex items-center justify-between">
-                        <label className="block text-xs font-bold tracking-wide text-white/70 uppercase">
+                        <label className="block text-xs font-bold tracking-wide text-slate-700 uppercase">
                           Mật khẩu
                         </label>
                         {isLogin && (
@@ -599,14 +599,14 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                               setCurrentMode('forgot');
                               setForgotEmail(f.email);
                             }}
-                            className="text-xs font-semibold text-[#ff4d57] transition hover:text-[#ff7880] hover:underline"
+                            className="text-xs font-bold text-[#e50914] transition hover:underline"
                           >
                             Quên mật khẩu?
                           </button>
                         )}
                       </div>
                       <div className="relative mt-1.5">
-                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                           <Icon name="lock" size={18} />
                         </span>
                         <input
@@ -617,29 +617,29 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                             isLogin ? 'Nhập mật khẩu của bạn' : `Tối thiểu ${MIN_PASSWORD} ký tự`
                           }
                           autoComplete={isLogin ? 'current-password' : 'new-password'}
-                          className={`w-full rounded-xl border bg-white/[0.05] py-3.5 pr-11 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/20 ${err.pw ? 'border-[#ff5a63]' : 'border-white/10'}`}
+                          className={`w-full rounded-xl border bg-white py-3.5 pr-11 pl-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 shadow-xs ${err.pw ? 'border-red-500' : 'border-slate-300'}`}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPw(!showPw)}
                           aria-label={showPw ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-white/40 transition hover:text-white"
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 transition hover:text-slate-700"
                         >
                           <Icon name={showPw ? 'eyeOff' : 'eye'} size={18} />
                         </button>
                       </div>
                       {err.pw && (
-                        <p role="alert" className="mt-1 text-[11px] font-medium text-[#ff5a63]">
+                        <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">
                           {err.pw}
                         </p>
                       )}
 
                       {/* Password Strength Indicator (Register only) */}
                       {isRegister && f.pw.length > 0 && pwStrength && (
-                        <div className="mt-2.5 space-y-1.5 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs">
+                        <div className="mt-2.5 space-y-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
                           <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-white/50">Độ mạnh mật khẩu:</span>
-                            <span className="font-bold" style={{ color: pwStrength.color }}>
+                            <span className="text-slate-500 font-medium">Độ mạnh mật khẩu:</span>
+                            <span className="font-extrabold" style={{ color: pwStrength.color }}>
                               {pwStrength.label}
                             </span>
                           </div>
@@ -648,29 +648,29 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                             {[1, 2, 3, 4].map((step) => (
                               <div
                                 key={step}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${step <= pwStrength.score ? pwStrength.barClass : 'bg-white/10'}`}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${step <= pwStrength.score ? pwStrength.barClass : 'bg-slate-200'}`}
                               />
                             ))}
                           </div>
                           {/* Requirements Checklist */}
-                          <div className="grid grid-cols-2 gap-1 pt-1 text-[10px]">
+                          <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] font-medium">
                             <span
-                              className={`flex items-center gap-1 ${pwStrength.checks.length ? 'text-[#46d38a]' : 'text-white/40'}`}
+                              className={`flex items-center gap-1 ${pwStrength.checks.length ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                             >
                               {pwStrength.checks.length ? '✓' : '•'} Từ 8 ký tự
                             </span>
                             <span
-                              className={`flex items-center gap-1 ${pwStrength.checks.mixedCase ? 'text-[#46d38a]' : 'text-white/40'}`}
+                              className={`flex items-center gap-1 ${pwStrength.checks.mixedCase ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                             >
                               {pwStrength.checks.mixedCase ? '✓' : '•'} Hoa & thường
                             </span>
                             <span
-                              className={`flex items-center gap-1 ${pwStrength.checks.numbers ? 'text-[#46d38a]' : 'text-white/40'}`}
+                              className={`flex items-center gap-1 ${pwStrength.checks.numbers ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                             >
                               {pwStrength.checks.numbers ? '✓' : '•'} Chứa chữ số
                             </span>
                             <span
-                              className={`flex items-center gap-1 ${pwStrength.checks.special ? 'text-[#46d38a]' : 'text-white/40'}`}
+                              className={`flex items-center gap-1 ${pwStrength.checks.special ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}
                             >
                               {pwStrength.checks.special ? '✓' : '•'} Ký tự đặc biệt
                             </span>
@@ -683,19 +683,19 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                     {isRegister && (
                       <div>
                         <div className="flex items-center justify-between">
-                          <label className="block text-xs font-bold tracking-wide text-white/70 uppercase">
+                          <label className="block text-xs font-bold tracking-wide text-slate-700 uppercase">
                             Xác nhận mật khẩu
                           </label>
                           {f.pw2.length > 0 && (
                             <span
-                              className={`text-[11px] font-bold ${passwordsMatch ? 'text-[#46d38a]' : 'text-[#ff5a63]'}`}
+                              className={`text-[11px] font-bold ${passwordsMatch ? 'text-emerald-600' : 'text-red-500'}`}
                             >
                               {passwordsMatch ? '✓ Khớp mật khẩu' : '✕ Chưa khớp'}
                             </span>
                           )}
                         </div>
                         <div className="relative mt-1.5">
-                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/35">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                             <Icon name="lock" size={18} />
                           </span>
                           <input
@@ -704,19 +704,19 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                             onChange={(e) => setField('pw2')(e.target.value)}
                             placeholder="Nhập lại mật khẩu"
                             autoComplete="new-password"
-                            className={`w-full rounded-xl border bg-white/[0.05] py-3.5 pr-11 pl-11 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/20 ${err.pw2 ? 'border-[#ff5a63]' : 'border-white/10'}`}
+                            className={`w-full rounded-xl border bg-white py-3.5 pr-11 pl-11 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#e50914] focus:ring-4 focus:ring-red-500/10 shadow-xs ${err.pw2 ? 'border-red-500' : 'border-slate-300'}`}
                           />
                           <button
                             type="button"
                             onClick={() => setShowPw2(!showPw2)}
                             aria-label={showPw2 ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-white/40 transition hover:text-white"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 transition hover:text-slate-700"
                           >
                             <Icon name={showPw2 ? 'eyeOff' : 'eye'} size={18} />
                           </button>
                         </div>
                         {err.pw2 && (
-                          <p role="alert" className="mt-1 text-[11px] font-medium text-[#ff5a63]">
+                          <p role="alert" className="mt-1 text-[11px] font-medium text-red-600">
                             {err.pw2}
                           </p>
                         )}
@@ -728,14 +728,14 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                       <div className="flex items-center pt-1">
                         <label
                           htmlFor={rememberId}
-                          className="flex cursor-pointer select-none items-center gap-2 text-xs text-white/60 hover:text-white"
+                          className="flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900"
                         >
                           <input
                             id={rememberId}
                             type="checkbox"
                             checked={rememberMe}
                             onChange={(e) => setRememberMe(e.target.checked)}
-                            className="h-4 w-4 rounded border-white/20 bg-white/10 text-[#e50914] accent-[#e50914] focus:ring-0"
+                            className="h-4 w-4 rounded border-slate-300 text-[#e50914] accent-[#e50914] focus:ring-0"
                           />
                           Ghi nhớ phiên đăng nhập trên thiết bị này
                         </label>
@@ -746,11 +746,11 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] via-[#ea1d27] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-[0_4px_24px_rgba(229,9,20,0.38)] transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#e50914] via-[#ea1d27] to-[#b81d24] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-red-600/25 transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {submitting ? (
                         <>
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                           Đang xử lý…
                         </>
                       ) : isLogin ? (
@@ -763,42 +763,50 @@ export default function Auth({ mode, next }: { mode: AuthMode; next: string }) {
 
                   {/* Social Divider */}
                   <div className="relative my-6 flex items-center justify-center">
-                    <div className="w-full border-t border-white/10" />
-                    <span className="absolute bg-[#121620] px-3 text-[11px] font-semibold text-white/40 uppercase">
+                    <div className="w-full border-t border-slate-200" />
+                    <span className="absolute bg-white px-3 text-[11px] font-bold text-slate-400 uppercase">
                       Hoặc tiếp tục với
                     </span>
                   </div>
 
-                  {/* Google OAuth Section */}
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <div id="google-btn-slot" className="flex justify-center min-h-[44px] w-full" />
-                    <button
-                      type="button"
-                      disabled={googleLoading}
-                      onClick={() => {
-                        if (window.google?.accounts?.id) {
-                          window.google.accounts.id.prompt();
-                        } else {
-                          setFormError(
-                            'Đang khởi động dịch vụ Google, vui lòng thử lại sau vài giây.',
-                          );
-                        }
-                      }}
-                      className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/[0.04] py-3 text-xs font-bold text-white transition hover:border-white/30 hover:bg-white/[0.08] active:scale-[0.99] disabled:opacity-50"
-                    >
-                      <GoogleIcon />
-                      {googleLoading
-                        ? 'Đang xác thực tài khoản...'
-                        : 'Hoặc đăng nhập nhanh One Tap'}
-                    </button>
+                  {/* Single Google Sign-In Button */}
+                  <div className="flex justify-center w-full">
+                    <div id="google-btn-slot" className="w-full flex justify-center min-h-[44px]">
+                      <button
+                        type="button"
+                        disabled={googleLoading}
+                        onClick={() => {
+                          if (window.google?.accounts?.id) {
+                            window.google.accounts.id.prompt();
+                          } else {
+                            setFormError(
+                              'Đang khởi động dịch vụ Google, vui lòng thử lại sau vài giây.',
+                            );
+                          }
+                        }}
+                        className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white py-3 px-4 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:border-slate-400 active:scale-[0.99] disabled:opacity-50"
+                      >
+                        <GoogleIcon />
+                        {googleLoading
+                          ? 'Đang xác thực tài khoản...'
+                          : isRegister
+                            ? 'Đăng ký bằng Google'
+                            : 'Đăng nhập bằng Google'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Terms & Privacy footer */}
-                  <p className="mt-6 text-center text-[11px] leading-relaxed text-white/35">
+                  <p className="mt-6 text-center text-[11px] leading-relaxed text-slate-400">
                     Bằng việc tiếp tục, bạn đồng ý với{' '}
-                    <span className="text-white/60 hover:underline">Điều khoản dịch vụ</span> và{' '}
-                    <span className="text-white/60 hover:underline">Chính sách bảo mật</span> của
-                    CineHub.
+                    <span className="font-semibold text-slate-600 hover:underline cursor-pointer">
+                      Điều khoản dịch vụ
+                    </span>{' '}
+                    và{' '}
+                    <span className="font-semibold text-slate-600 hover:underline cursor-pointer">
+                      Chính sách bảo mật
+                    </span>{' '}
+                    của CineHub.
                   </p>
                 </div>
               )}
