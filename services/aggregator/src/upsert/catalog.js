@@ -140,7 +140,7 @@ export async function upsertMovie(chain, mv) {
   });
 }
 
-export function upsertShowtime({ cinema, auditorium, movie }, m) {
+export async function upsertShowtime({ cinema, auditorium, movie }, m) {
   const data = {
     movieId: movie.id,
     auditoriumId: auditorium.id,
@@ -161,9 +161,32 @@ export function upsertShowtime({ cinema, auditorium, movie }, m) {
     lastSeenAt: new Date(),
   };
 
-  return prisma.showtime.upsert({
-    where: { cinemaId_externalId: { cinemaId: cinema.id, externalId: m.externalId } },
-    update: data,
-    create: { cinemaId: cinema.id, externalId: m.externalId, ...data },
+  const existing = await prisma.showtime.findFirst({
+    where: {
+      OR: [
+        { cinemaId: cinema.id, externalId: m.externalId },
+        { auditoriumId: auditorium.id, startTime: m.startTime },
+        { dedupKey: m.dedupKey },
+      ],
+    },
+  });
+
+  if (existing) {
+    return prisma.showtime.update({
+      where: { id: existing.id },
+      data: {
+        cinemaId: cinema.id,
+        externalId: m.externalId,
+        ...data,
+      },
+    });
+  }
+
+  return prisma.showtime.create({
+    data: {
+      cinemaId: cinema.id,
+      externalId: m.externalId,
+      ...data,
+    },
   });
 }
