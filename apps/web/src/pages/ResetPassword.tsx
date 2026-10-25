@@ -4,7 +4,6 @@ import { Icon } from '../components/ui';
 import * as authApi from '../services/authApi';
 
 const MIN_PASSWORD = 8;
-const REDIRECT_DELAY_MS = 3000;
 
 interface PasswordStrength {
   score: number;

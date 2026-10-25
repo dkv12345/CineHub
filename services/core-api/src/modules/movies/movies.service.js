@@ -122,12 +122,12 @@ export async function listMovies(query = {}) {
     const genresStr = genreNames.length > 0 ? genreNames.join(', ') : 'Hành động, Kịch tính';
     const directors = m.credits.filter((c) => c.role === 'DIRECTOR').map((c) => c.person.fullName);
     const cast = m.credits.filter((c) => c.role === 'ACTOR').map((c) => c.person.fullName);
-    const source = m.sources[0];
+    const source = m.sources?.[0];
     const rating = source?.sourceScore ? Number(source.sourceScore) : Number(m.ratingAvg) || 8.2;
     const votes = source?.sourceVotes ? Number(source.sourceVotes) : m.ratingCount || 150;
     const views = votes * 8 + idx * 133;
     const isNow = m.status === 'NOW_SHOWING';
-    const externalId = source?.externalId || m.slug;
+    const externalId = source?.externalId || m.slug || m.id;
 
     return {
       id: externalId,
@@ -208,8 +208,8 @@ export async function getMovieById(id) {
   const cast = movie.credits
     .filter(({ role }) => role === 'ACTOR')
     .map(({ person }) => person.fullName);
-  const source = movie.sources[0];
-  const externalId = source?.externalId || movie.slug;
+  const source = movie.sources?.[0];
+  const externalId = source?.externalId || movie.slug || movie.id;
 
   return {
     id: externalId,
@@ -236,7 +236,7 @@ export async function getMovieById(id) {
     genre: genresStr,
     directors,
     director: directors.join(', ') || 'Đang cập nhật',
-    cast: cast.slice(0, 5).join(', ') || 'Đang cập nhật',
+    cast,
     themeKey: getThemeKey(movie.title, genresStr),
   };
 }

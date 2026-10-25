@@ -46,7 +46,14 @@ describe('getMovieById', () => {
     });
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: movie.id, deletedAt: null },
+        where: {
+          OR: [
+            { id: movie.id },
+            { slug: movie.id },
+            { sources: { some: { externalId: movie.id } } },
+          ],
+          deletedAt: null,
+        },
       }),
     );
   });

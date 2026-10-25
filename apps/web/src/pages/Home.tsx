@@ -330,7 +330,7 @@ export default function Home() {
     };
   }, []);
 
-  const { user, collections, toggleCollection, recentMovies, watchProgress, trackMovie, orders } =
+  const { user, collections, toggleCollection, recentMovies, watchProgress, trackMovie } =
     useStore();
   const [recommended, setRecommended] = useState<MovieRecommendation[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
