@@ -78,7 +78,7 @@ export default function Showtimes({
     loadSessions();
   }, []);
 
-  const allSessions = apiData?.data?.result || [];
+  const allSessions = useMemo(() => apiData?.data?.result || [], [apiData]);
 
   // 7 days timeline based on available dates or current date
   const days = useMemo(() => {
