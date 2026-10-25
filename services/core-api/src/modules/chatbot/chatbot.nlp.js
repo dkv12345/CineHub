@@ -26,14 +26,14 @@ export function detectChatIntent(message) {
     return 'MOVIE_DETAILS';
   }
   if (
-    /\b(goi y|de xuat|nen xem|xem gi|phim hay|phim hot|the loai nao|nhung the loai|cac the loai)\b/.test(
+    /\b(goi y|de xuat|nen xem|xem gi|chon gi|chon phim|nen chon|di xem gi|phim hay|phim hot|the loai nao|nhung the loai|cac the loai)\b/.test(
       text,
     )
   ) {
     return 'RECOMMEND';
   }
   if (
-    /\b(suat chieu|lich chieu|gio chieu|may gio|luc nao|khi nao|rap nao|chieu toi nay|toi nay|chieu hom nay|hom nay|ngay mai)\b/.test(
+    /\b(suat chieu|suat nao|co suat|lich chieu|gio chieu|may gio|luc nao|khi nao|rap nao|chieu toi nay|toi nay|chieu hom nay|hom nay|ngay mai)\b/.test(
       text,
     )
   ) {
@@ -46,7 +46,7 @@ export function detectChatIntent(message) {
 }
 
 const SEMANTIC_CUES =
-  /\b(giong|tuong tu|kieu nhu|hop (di|de|voi|cho)|phu hop (de|voi|cho)|danh cho|theo (tam trang|so thich|khau vi)|nhe nhang|cam dong|hen ho|lang man|gay can|hoi hop|hai huoc|vui nhon|sau lang|thu gian|cho (gia dinh|tre em|cap doi|ban be|ban gai|ban trai))\b/;
+  /\b(giong|tuong tu|kieu nhu|hop (di|de|voi|cho)|phu hop (de|voi|cho)|danh cho|theo (tam trang|so thich|khau vi)|nhe nhang|cam dong|hen ho|lang man|gay can|hoi hop|hai huoc|vui nhon|sau lang|thu gian|nguoi yeu|vo chong|ban gai|ban trai|crush|bo me|cha me|ban be|di cung|mot minh|cho (gia dinh|tre em|cap doi|ban be|ban gai|ban trai))\b/;
 
 export function looksSemantic(message) {
   return SEMANTIC_CUES.test(plainText(message));
@@ -226,4 +226,62 @@ export function describePeriod({ date, evening, now = new Date() }) {
     day = `ngày ${dd}/${mm}`;
   }
   return evening ? `${day} buổi tối` : day;
+}
+
+// Cụm cho biết người dùng muốn xem lịch của mọi phim, không giới hạn theo phim vừa gợi ý
+const SCOPE_RESET = /\b(tat ca (cac )?phim|moi phim|phim khac|phim bat ky|bat ky phim)\b/;
+
+/**
+ * Phạm vi phim cho câu hỏi lịch chiếu không nêu tên phim: các phim đã gợi ý ở lượt trước.
+ * Trả về null khi không giới hạn (đã nêu tên phim, muốn xem tất cả, hoặc chưa có gợi ý nào).
+ */
+export function resolveShowtimeScope({ message, hasNamedMovie, lastMovies }) {
+  if (hasNamedMovie) return null;
+  if (!Array.isArray(lastMovies) || lastMovies.length === 0) return null;
+  if (SCOPE_RESET.test(plainText(message))) return null;
+  return { movies: lastMovies.slice(0, 6) };
+}
+/** Câu có nhắc tới phim/rạp: nếu không khớp ý định nào thì vẫn tìm theo nghĩa thay vì bỏ cuộc. */
+export function mentionsMovies(message) {
+  return /\b(phim|di rap|xem rap|rap chieu)\b/.test(plainText(message));
+}
+
+// Từ đệm bỏ đi trước khi tạo vector, để vector tập trung vào ý chính của câu hỏi
+const QUERY_NOISE = new Set(
+  (
+    'toi minh ban em anh chi thi la gi nao the sao nen chon xem phim voi di cho can muon thich ' +
+    'duoc khong ko nhi nha oi a hay mot cac nhung vai'
+  ).split(' '),
+);
+
+/** Văn bản dùng để tạo vector cho câu hỏi. "phim giống X" giữ nguyên để còn nhận ra tên phim. */
+export function semanticQueryText(message) {
+  const original = String(message ?? '');
+  if (/\b(giong|tuong tu|kieu nhu|nhu)\b/.test(plainText(original))) return original;
+  const kept = original.split(/\s+/).filter((word) => {
+    const plain = plainText(word);
+    return plain && !QUERY_NOISE.has(plain);
+  });
+  return kept.length > 0 ? `Phim phù hợp: ${kept.join(' ')}` : original;
+}
+
+// Hoàn cảnh -> tên thể loại (không dấu) nên được ưu tiên
+const MOOD_GENRES = [
+  [
+    /\b(nguoi yeu|hen ho|ban gai|ban trai|crush|cap doi|vo chong|lang man)\b/,
+    ['lang man', 'tinh cam'],
+  ],
+  [/\b(gia dinh|bo me|cha me|tre em|con cai)\b/, ['gia dinh', 'hoat hinh']],
+  [/\b(vui|vui ve|hai huoc|thu gian)\b/, ['hai']],
+  [/\b(gay can|hoi hop|ly ki|trinh tham|giat gan|ma)\b/, ['giat gan', 'ly ki', 'kinh di']],
+];
+
+/** Tập tên thể loại (không dấu) hợp với hoàn cảnh trong câu hỏi; rỗng nếu không nhận ra. */
+export function moodGenres(message) {
+  const plain = plainText(message);
+  const names = new Set();
+  for (const [pattern, genreNames] of MOOD_GENRES) {
+    if (pattern.test(plain)) for (const name of genreNames) names.add(name);
+  }
+  return names;
 }

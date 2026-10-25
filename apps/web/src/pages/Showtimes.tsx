@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { dayInfo } from '../data';
 import { go } from '../router';
 import { useStore } from '../store';
 import { Icon, Modal, btnPrimary } from '../components/ui';
+import ShowtimeFilterBar, { type FilterCountOption } from '../components/ShowtimeFilterBar';
 import {
   fetchGalaxySessions,
-  getDistinctCities,
   getDistinctCinemas,
   getDistinctMovies,
   getYouTubeEmbedUrl,
@@ -14,13 +14,22 @@ import {
   type GalaxyMovie,
   type GalaxySession,
 } from '../services/sessionsApi';
+import {
+  getCinemaCityKey,
+  filterShowtimes,
+  getShowtimeCityKey,
+  getShowtimeCityName,
+  type ShowtimeFilters,
+} from '../utils/showtimeFilters';
 
-const chip = (on: boolean) =>
-  `rounded-full border px-4 py-2 text-xs font-bold transition duration-200 cursor-pointer ${
-    on
-      ? 'film-accent-bg film-accent-border text-white shadow-[0_2px_12px_rgba(229,9,20,0.3)]'
-      : 'border-white/12 bg-white/[.04] text-white/70 hover:border-white/30 hover:bg-white/[.08]'
-  }`;
+const countBy = (sessions: GalaxySession[], getKey: (session: GalaxySession) => string) => {
+  const counts = new Map<string, number>();
+  sessions.forEach((session) => {
+    const key = getKey(session);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+  return counts;
+};
 
 export default function Showtimes({
   movieId,
@@ -37,6 +46,7 @@ export default function Showtimes({
   const [apiData, setApiData] = useState<GalaxyApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Filters State
   const [day, setDay] = useState(Math.min(6, Math.max(0, initialDay)));
@@ -55,11 +65,12 @@ export default function Showtimes({
   const [trailerMovie, setTrailerMovie] = useState<GalaxyMovie | null>(null);
 
   // Load sessions from API / Fallback
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetchGalaxySessions();
       setApiData(res);
+      setLoadError(null);
       setLastUpdated(
         new Date().toLocaleTimeString('vi-VN', {
           hour: '2-digit',
@@ -67,16 +78,16 @@ export default function Showtimes({
           second: '2-digit',
         }),
       );
-    } catch {
-      // Handled in service fallback
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Không thể tải dữ liệu suất chiếu.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadSessions();
-  }, []);
+  }, [loadSessions]);
 
   const allSessions = useMemo(() => apiData?.data?.result || [], [apiData]);
 
@@ -121,72 +132,214 @@ export default function Showtimes({
   const activeDateStr = days[day]?.dateStr || days[0]?.dateStr || '';
 
   // Distinct lists for filters
-  const cities = useMemo(() => getDistinctCities(allSessions), [allSessions]);
+  const cities = useMemo(() => {
+    const byCity = new Map<string, { id: string; name: string; region: string; count: number }>();
+    allSessions.forEach((session) => {
+      const id = getShowtimeCityKey(session);
+      if (!id) return;
+
+      const city = byCity.get(id);
+      if (city) {
+        city.count += 1;
+      } else {
+        byCity.set(id, {
+          id,
+          name: getShowtimeCityName(session),
+          region: 'Toàn quốc',
+          count: 1,
+        });
+      }
+    });
+    return Array.from(byCity.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  }, [allSessions]);
   const distinctCinemas = useMemo(() => getDistinctCinemas(allSessions), [allSessions]);
   const distinctMovies = useMemo(() => getDistinctMovies(allSessions), [allSessions]);
+
+  const filters = useMemo<ShowtimeFilters>(
+    () => ({
+      date: activeDateStr,
+      movieId: selectedMovieId,
+      cityId,
+      cinemaId,
+      format: formatFilter,
+      caption: captionFilter,
+      version: versionFilter,
+      searchQuery,
+    }),
+    [
+      activeDateStr,
+      selectedMovieId,
+      cityId,
+      cinemaId,
+      formatFilter,
+      captionFilter,
+      versionFilter,
+      searchQuery,
+    ],
+  );
+
+  const filteredSessions = useMemo(
+    () => filterShowtimes(allSessions, filters),
+    [allSessions, filters],
+  );
+
+  // Each option's count omits its own filter, so options remain useful while a filter is active.
+  const dateCountMap = useMemo(
+    () =>
+      countBy(filterShowtimes(allSessions, { ...filters, date: null }), (s) =>
+        s.showDate.slice(0, 10),
+      ),
+    [allSessions, filters],
+  );
+  const movieCountMap = useMemo(
+    () => countBy(filterShowtimes(allSessions, { ...filters, movieId: null }), (s) => s.movie.id),
+    [allSessions, filters],
+  );
+  const cityCountMap = useMemo(
+    () =>
+      countBy(
+        filterShowtimes(allSessions, {
+          ...filters,
+          cityId: null,
+          cityName: null,
+          cinemaId: null,
+        }),
+        getShowtimeCityKey,
+      ),
+    [allSessions, filters],
+  );
+  const cinemaCountMap = useMemo(
+    () => countBy(filterShowtimes(allSessions, { ...filters, cinemaId: null }), (s) => s.cinema.id),
+    [allSessions, filters],
+  );
+  const formatCountMap = useMemo(
+    () => countBy(filterShowtimes(allSessions, { ...filters, format: null }), (s) => s.movieFormat),
+    [allSessions, filters],
+  );
+  const captionCountMap = useMemo(
+    () => countBy(filterShowtimes(allSessions, { ...filters, caption: null }), (s) => s.caption),
+    [allSessions, filters],
+  );
+  const versionCountMap = useMemo(
+    () =>
+      countBy(filterShowtimes(allSessions, { ...filters, version: null }), (s) =>
+        s.version.toLowerCase(),
+      ),
+    [allSessions, filters],
+  );
+
+  const movieOptions = useMemo<FilterCountOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: 'Tất cả phim',
+        count: Array.from(movieCountMap.values()).reduce((total, count) => total + count, 0),
+      },
+      ...distinctMovies.map((movie) => ({
+        value: movie.id,
+        label: movie.name,
+        count: movieCountMap.get(movie.id) || 0,
+      })),
+    ],
+    [distinctMovies, movieCountMap],
+  );
+  const cityOptions = useMemo<FilterCountOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: 'Tất cả khu vực',
+        count: Array.from(cityCountMap.values()).reduce((total, count) => total + count, 0),
+      },
+      ...cities.map((city) => ({
+        value: city.id,
+        label: city.name,
+        count: cityCountMap.get(city.id) || 0,
+      })),
+    ],
+    [cities, cityCountMap],
+  );
+  const cinemaOptions = useMemo<FilterCountOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: 'Tất cả cụm rạp',
+        count: Array.from(cinemaCountMap.values()).reduce((total, count) => total + count, 0),
+      },
+      ...distinctCinemas
+        .filter((cinema) => cityId === 'all' || getCinemaCityKey(cinema) === cityId)
+        .map((cinema) => ({
+          value: cinema.id,
+          label: cinema.name,
+          count: cinemaCountMap.get(cinema.id) || 0,
+        })),
+    ],
+    [distinctCinemas, cityId, cinemaCountMap],
+  );
 
   // Available formats, captions, and versions
   const availableFormats = useMemo(() => {
     const set = new Set<string>();
     allSessions.forEach((s) => s.movieFormat && set.add(s.movieFormat));
-    return ['all', ...Array.from(set)];
+    return Array.from(set);
   }, [allSessions]);
+  const formatOptions = useMemo<FilterCountOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: 'Tất cả',
+        count: Array.from(formatCountMap.values()).reduce((total, count) => total + count, 0),
+      },
+      ...availableFormats.map((format) => ({
+        value: format,
+        label: format,
+        count: formatCountMap.get(format) || 0,
+      })),
+    ],
+    [availableFormats, formatCountMap],
+  );
+  const captionOptions = useMemo<FilterCountOption[]>(
+    () => [
+      {
+        value: 'all',
+        label: 'Tất cả',
+        count: Array.from(captionCountMap.values()).reduce((total, count) => total + count, 0),
+      },
+      { value: 'sub', label: 'Phụ đề', count: captionCountMap.get('sub') || 0 },
+      { value: 'voice', label: 'Lồng tiếng', count: captionCountMap.get('voice') || 0 },
+    ],
+    [captionCountMap],
+  );
+  const versionOptions = useMemo<FilterCountOption[]>(() => {
+    const versions = Array.from(
+      new Set(allSessions.map((session) => session.version.toLowerCase())),
+    );
+    return [
+      {
+        value: 'all',
+        label: 'Tất cả',
+        count: Array.from(versionCountMap.values()).reduce((total, count) => total + count, 0),
+      },
+      ...versions.map((version) => ({
+        value: version,
+        label: version.toUpperCase(),
+        count: versionCountMap.get(version) || 0,
+      })),
+    ];
+  }, [allSessions, versionCountMap]);
 
-  // Filtered Sessions
-  const filteredSessions = useMemo(() => {
-    return allSessions.filter((s) => {
-      // Filter by Day
-      if (s.showDate !== activeDateStr) return false;
-
-      // Filter by City
-      if (cityId !== 'all' && s.cinema.cityId !== cityId) return false;
-
-      // Filter by Cinema
-      if (cinemaId !== 'all' && s.cinema.id !== cinemaId && s.cinema.code !== cinemaId)
-        return false;
-
-      // Filter by Movie
-      if (
-        selectedMovieId !== null &&
-        selectedMovieId !== '' &&
-        s.movie.id !== String(selectedMovieId)
-      )
-        return false;
-
-      // Filter by Format (e.g. 2D Phụ Đề, 2D Lồng Tiếng)
-      if (formatFilter !== 'all' && s.movieFormat !== formatFilter) return false;
-
-      // Filter by Caption
-      if (captionFilter !== 'all' && s.caption !== captionFilter) return false;
-
-      // Filter by Version
-      if (versionFilter !== 'all' && s.version.toLowerCase() !== versionFilter.toLowerCase())
-        return false;
-
-      // Filter by Search Query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchMovie =
-          s.movie.name.toLowerCase().includes(q) || s.movie.slug.toLowerCase().includes(q);
-        const matchCinema =
-          s.cinema.name.toLowerCase().includes(q) || s.cinema.address.toLowerCase().includes(q);
-        const matchScreen = s.screenName.toLowerCase().includes(q);
-        if (!matchMovie && !matchCinema && !matchScreen) return false;
-      }
-
-      return true;
-    });
-  }, [
-    allSessions,
-    activeDateStr,
-    cityId,
-    cinemaId,
-    selectedMovieId,
-    formatFilter,
-    captionFilter,
-    versionFilter,
-    searchQuery,
-  ]);
+  const changeCity = useCallback((nextCityId: string) => {
+    setCityId(nextCityId);
+    setCinemaId('all');
+  }, []);
+  const resetFilters = useCallback(() => {
+    setCityId('all');
+    setCinemaId('all');
+    setSelectedMovieId(null);
+    setFormatFilter('all');
+    setCaptionFilter('all');
+    setVersionFilter('all');
+    setSearchQuery('');
+  }, []);
 
   // Grouping by Cinema
   const groupedByCinema = useMemo(() => {
@@ -325,181 +478,75 @@ export default function Showtimes({
         </div>
       </div>
 
-      {/* Date Picker Bar */}
+      {loadError && (
+        <div
+          role="alert"
+          className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-100"
+        >
+          <span>Không thể tải lịch chiếu mới nhất: {loadError}</span>
+          <button type="button" onClick={loadSessions} className="font-bold underline">
+            Thử lại
+          </button>
+        </div>
+      )}
+
       <div
         className="scrollbar-hide mt-6 flex gap-2.5 overflow-x-auto pb-2"
         role="tablist"
         aria-label="Chọn ngày chiếu"
       >
-        {days.map((d, i) => (
+        {days.map((date, index) => (
           <button
-            key={d.offset}
+            key={date.dateStr}
+            type="button"
             role="tab"
-            aria-selected={day === i}
-            onClick={() => setDay(i)}
-            className={`min-w-[96px] rounded-2xl border px-4 py-3.5 text-center backdrop-blur-xl transition duration-200 cursor-pointer ${
-              day === i
+            aria-selected={day === index}
+            onClick={() => setDay(index)}
+            className={`min-w-[96px] rounded-2xl border px-4 py-3.5 text-center backdrop-blur-xl transition duration-200 ${
+              day === index
                 ? 'film-accent-bg film-accent-border text-white shadow-[0_8px_20px_rgba(229,9,20,0.3)] scale-[1.02]'
                 : 'border-white/12 bg-white/[.04] text-white/65 hover:border-white/30 hover:bg-white/[.08]'
             }`}
           >
             <small className="block text-[11px] font-bold uppercase tracking-wider opacity-80">
-              {d.short}
+              {date.short}
             </small>
-            <b className="mt-1 block text-xl font-black">{d.num}</b>
-            <span className="mt-0.5 block text-[10px] text-white/40">{d.dateStr.slice(5)}</span>
+            <b className="mt-1 block text-xl font-black">{date.num}</b>
+            <span className="mt-0.5 block text-[10px] text-white/40">{date.dateStr.slice(5)}</span>
+            <span className="mt-1 block text-[10px] font-semibold text-white/70">
+              {(dateCountMap.get(date.dateStr) || 0).toLocaleString('vi-VN')} suất
+            </span>
           </button>
         ))}
       </div>
 
-      {/* Advanced Filter Panel */}
-      <div className="glass-panel mt-6 rounded-2xl p-5 shadow-xl">
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {/* Movie Filter */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-white/50">Phim</label>
-            <select
-              value={selectedMovieId ?? 'all'}
-              onChange={(e) => setSelectedMovieId(e.target.value === 'all' ? null : e.target.value)}
-              className="glass-control w-full rounded-xl px-3.5 py-3 text-sm font-semibold text-white outline-none focus:border-[#e50914]"
-            >
-              <option value="all">Tất cả phim ({distinctMovies.length})</option>
-              {distinctMovies.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({formatAgeLabel(m.age)} · {m.duration}p)
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* City / Province Filter */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-white/50">
-              Thành phố / Khu vực
-            </label>
-            <select
-              value={cityId}
-              onChange={(e) => {
-                setCityId(e.target.value);
-                setCinemaId('all');
-              }}
-              className="glass-control w-full rounded-xl px-3.5 py-3 text-sm font-semibold text-white outline-none focus:border-[#e50914]"
-            >
-              <option value="all">Tất cả khu vực ({cities.length})</option>
-              {cities.map((c) => (
-                <option key={c.cityId} value={c.cityId}>
-                  {c.name} ({c.count} suất)
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Cinema Filter */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-white/50">Cụm rạp</label>
-            <select
-              value={cinemaId}
-              onChange={(e) => setCinemaId(e.target.value)}
-              className="glass-control w-full rounded-xl px-3.5 py-3 text-sm font-semibold text-white outline-none focus:border-[#e50914]"
-            >
-              <option value="all">Tất cả cụm rạp ({distinctCinemas.length})</option>
-              {distinctCinemas
-                .filter((c) => cityId === 'all' || c.cityId === cityId)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          {/* Search Box */}
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-white/50">Tìm nhanh</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tên phim, rạp, phòng chiếu..."
-                className="glass-control w-full rounded-xl pl-9 pr-4 py-3 text-sm font-medium text-white outline-none placeholder:text-white/30 focus:border-[#e50914]"
-              />
-              <span className="absolute left-3 top-3.5 text-white/40">
-                <Icon name="search" size={16} />
-              </span>
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-3.5 text-white/40 hover:text-white"
-                >
-                  <Icon name="close" size={15} />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Format, Caption, Version & View Mode Chips */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/8 pt-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xs font-bold text-white/40">Định dạng:</span>
-            <div className="flex flex-wrap gap-2">
-              {availableFormats.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFormatFilter(f)}
-                  aria-pressed={formatFilter === f}
-                  className={chip(formatFilter === f)}
-                >
-                  {f === 'all' ? 'Tất cả' : f}
-                </button>
-              ))}
-            </div>
-
-            <span className="ml-2 text-xs font-bold text-white/40">Thuyết minh / Phụ đề:</span>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'all', label: 'Tất cả' },
-                { id: 'sub', label: 'Phụ đề' },
-                { id: 'voice', label: 'Lồng tiếng' },
-              ].map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setCaptionFilter(c.id)}
-                  aria-pressed={captionFilter === c.id}
-                  className={chip(captionFilter === c.id)}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 rounded-xl border border-white/12 bg-white/[.03] p-1 text-xs font-bold">
-            <button
-              onClick={() => setViewMode('cinema')}
-              className={`rounded-lg px-3 py-1.5 transition ${
-                viewMode === 'cinema'
-                  ? 'film-accent-bg text-white shadow-sm'
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              Theo cụm rạp
-            </button>
-            <button
-              onClick={() => setViewMode('movie')}
-              className={`rounded-lg px-3 py-1.5 transition ${
-                viewMode === 'movie'
-                  ? 'film-accent-bg text-white shadow-sm'
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              Theo phim
-            </button>
-          </div>
-        </div>
-      </div>
+      <ShowtimeFilterBar
+        movies={movieOptions}
+        selectedMovie={selectedMovieId === null ? 'all' : String(selectedMovieId)}
+        onMovieChange={(value) => setSelectedMovieId(value === 'all' ? null : value)}
+        cities={cityOptions}
+        selectedCity={cityId}
+        onCityChange={changeCity}
+        cinemas={cinemaOptions}
+        selectedCinema={
+          distinctCinemas.find((cinema) => cinema.id === cinemaId || cinema.code === cinemaId)
+            ?.id || cinemaId
+        }
+        onCinemaChange={setCinemaId}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        formats={formatOptions}
+        selectedFormat={formatFilter}
+        onFormatChange={setFormatFilter}
+        captions={captionOptions}
+        selectedCaption={captionFilter}
+        onCaptionChange={setCaptionFilter}
+        versions={versionOptions}
+        selectedVersion={versionFilter}
+        onVersionChange={setVersionFilter}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
 
       {/* Results Count Bar */}
       <div className="mt-6 flex items-center justify-between text-xs text-white/45">
@@ -512,17 +559,11 @@ export default function Showtimes({
           selectedMovieId !== null ||
           formatFilter !== 'all' ||
           captionFilter !== 'all' ||
+          versionFilter !== 'all' ||
           searchQuery) && (
           <button
-            onClick={() => {
-              setCityId('all');
-              setCinemaId('all');
-              setSelectedMovieId(null);
-              setFormatFilter('all');
-              setCaptionFilter('all');
-              setVersionFilter('all');
-              setSearchQuery('');
-            }}
+            type="button"
+            onClick={resetFilters}
             className="font-bold text-[#e50914] hover:underline"
           >
             Đặt lại bộ lọc
@@ -540,15 +581,24 @@ export default function Showtimes({
             </p>
           </div>
         ) : filteredSessions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-white/[.02] px-6 py-16 text-center">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-white/5 text-white/40">
-              <Icon name="calendar" size={26} />
+          <div className="relative overflow-hidden rounded-3xl border border-white/12 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,.08),transparent_65%)] px-6 py-14 text-center shadow-xl sm:py-16">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-white/10 bg-white/[.06] text-white/65 shadow-inner">
+              <Icon name="search" size={27} />
             </div>
-            <h3 className="mt-4 text-base font-bold text-white">Không có suất chiếu phù hợp</h3>
-            <p className="mt-2 text-xs text-white/40 max-w-[420px] mx-auto">
-              Không tìm thấy suất chiếu nào theo bộ lọc đã chọn. Hãy thử chọn ngày khác, đổi cụm rạp
-              hoặc xóa từ khóa tìm kiếm.
+            <h3 className="mt-5 text-lg font-extrabold text-white">
+              Chưa tìm thấy suất chiếu phù hợp
+            </h3>
+            <p className="mx-auto mt-2 max-w-[460px] text-sm leading-6 text-white/50">
+              Thử chọn ngày chiếu hoặc khu vực khác, hoặc bỏ bớt định dạng và từ khóa tìm kiếm để
+              xem thêm suất chiếu.
             </p>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-5 rounded-xl border border-white/15 bg-white/[.06] px-4 py-2.5 text-xs font-bold text-white/85 transition hover:border-white/30 hover:bg-white/10"
+            >
+              Xóa bộ lọc phim, rạp và định dạng
+            </button>
           </div>
         ) : viewMode === 'cinema' ? (
           /* Grouped by Cinema View */

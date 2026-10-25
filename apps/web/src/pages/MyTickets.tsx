@@ -1,11 +1,42 @@
 import { useMemo, useState } from 'react';
-import { movies } from '../data';
+import { movies, hash } from '../data';
 import { Link } from '../router';
 import { useStore } from '../store';
 import type { Order } from '../store';
 import { btnBookTicket, Icon, Modal } from '../components/ui';
-import { hash } from '../data';
 
+// Component Mã vạch (Barcode) chân thực cho cuống vé trắng
+function Barcode({ code }: { code: string }) {
+  const bars = useMemo(() => {
+    return Array.from({ length: 38 }, (_, i) => {
+      const w = (hash(code + i) % 3) + 1; // Độ dày vạch 1px - 3px
+      const isGap = hash(code + i * 7) % 5 === 0;
+      return { width: w, isGap };
+    });
+  }, [code]);
+
+  return (
+    <div className="my-2 flex flex-col items-center justify-center">
+      <div className="flex h-10 items-stretch gap-[1.5px] overflow-hidden px-1">
+        {bars.map((b, i) => (
+          <span
+            key={i}
+            style={{
+              width: `${b.width}px`,
+              backgroundColor: b.isGap ? 'transparent' : '#000000',
+            }}
+            className="inline-block h-full"
+          />
+        ))}
+      </div>
+      <span className="mt-1 font-mono text-[9px] font-bold tracking-widest text-slate-800">
+        {code}
+      </span>
+    </div>
+  );
+}
+
+// Component Mã QR cho Modal phóng to
 function QR({ code }: { code: string }) {
   const N = 25;
   const cells = useMemo(() => {
@@ -32,9 +63,10 @@ function QR({ code }: { code: string }) {
       return finder(r, c) ? ring(r, c) : (hash(code + i) >> 3) % 2 === 0;
     });
   }, [code]);
+
   return (
     <div
-      className="mx-auto grid h-[220px] w-[220px] rounded-lg bg-white p-3"
+      className="mx-auto grid h-[220px] w-[220px] rounded-xl bg-white p-3 shadow-2xl"
       style={{ gridTemplateColumns: `repeat(${N}, 1fr)` }}
       role="img"
       aria-label={`Mã QR ${code}`}
@@ -46,56 +78,154 @@ function QR({ code }: { code: string }) {
   );
 }
 
-function TicketCard({ o, onQR }: { o: Order; onQR: () => void }) {
+// Thẻ Vé kiểu Cuống Vé Rạp Phim (Sửa hình nền Poster sáng rõ nét)
+function TicketStubCard({ o, onQR }: { o: Order; onQR: () => void }) {
   const m = movies.find((v) => String(v.id) === String(o.movieId)) || {
     id: o.movieId,
     title: o.movieTitle || 'Phim đã đặt',
     poster: o.moviePoster || '',
+    backdrop: o.moviePoster || '',
   };
   const past = o.status === 'past';
+
   return (
-    <li className={`glass-card flex gap-5 rounded-2xl p-4 sm:p-5 ${past ? 'opacity-70' : ''}`}>
-      {m.poster && (
-        <img
-          src={m.poster}
-          alt={`Poster ${m.title}`}
-          className="h-36 w-24 shrink-0 rounded-lg object-cover"
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="truncate text-lg font-extrabold">{m.title}</h2>
-          {o.screenName && (
-            <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] font-bold text-[#f5b50a]">
-              {o.screenName}
-            </span>
-          )}
+    <li
+      className={`relative flex flex-col overflow-hidden rounded-2xl border border-white/20 shadow-2xl transition duration-300 hover:border-amber-400/80 md:flex-row ${
+        past ? 'opacity-60 grayscale-[30%]' : ''
+      }`}
+    >
+      {/* 1. Phần Cuống Vé Trắng Bên Trái (White Stub) */}
+      <div className="relative flex w-full shrink-0 flex-col justify-between bg-white p-4 text-slate-950 md:w-[240px]">
+        <div>
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+            <span>RẠP CHIẾU</span>
+            <span className="font-bold text-red-600">{o.format || '2D/3D'}</span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 text-left">
+            <div>
+              <span className="block text-[9px] font-black uppercase text-slate-400">
+                GỐC / HÀNG
+              </span>
+              <b className="text-xs font-black text-slate-900">{o.seats[0]?.[0] || 'A'}</b>
+            </div>
+            <div>
+              <span className="block text-[9px] font-black uppercase text-slate-400">GHẾ</span>
+              <b className="text-xs font-black text-slate-900">{o.seats.join(', ')}</b>
+            </div>
+            <div className="col-span-2 mt-1">
+              <span className="block text-[9px] font-black uppercase text-slate-400">
+                NGÀY & GIỜ
+              </span>
+              <b className="text-xs font-black text-slate-900">
+                {o.dateLabel} · {o.time}
+              </b>
+            </div>
+          </div>
         </div>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-white/60">
-          <Icon name="clock" size={15} /> {o.time} · {o.dateLabel} ·{' '}
-          <span className="text-[#f5b50a]">{o.format}</span>
-        </p>
-        <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-white/60">
-          <Icon name="pin" size={15} /> {o.cinema} {o.cinemaCode ? `(${o.cinemaCode})` : ''}
-        </p>
-        {o.cinemaAddress && (
-          <p className="mt-0.5 truncate text-xs text-white/40">{o.cinemaAddress}</p>
+
+        {/* Mã vạch chân thực */}
+        <Barcode code={o.code} />
+
+        <div className="truncate text-center text-[10px] font-black uppercase text-slate-600">
+          {o.cinema}
+        </div>
+
+        {/* Đường cắt xé vé rạp phim (Vết khuyết góc) */}
+        <div className="pointer-events-none absolute -right-3 top-0 z-10 hidden h-full w-6 bg-transparent md:block">
+          <div className="absolute -top-3 left-1/2 h-6 w-6 -translate-x-1/2 rounded-full bg-[#020617]" />
+          <div className="absolute -bottom-3 left-1/2 h-6 w-6 -translate-x-1/2 rounded-full bg-[#020617]" />
+        </div>
+      </div>
+
+      {/* Đường nét đứt ranh giới xé vé */}
+      <div className="z-10 hidden border-r-2 border-dashed border-white/20 md:block" />
+
+      {/* 2. Phần Thân Vé Cinematic Bên Phải (Dark Stub Body với Poster sáng nét hơn) */}
+      <div className="relative flex min-w-0 flex-1 flex-col justify-between bg-slate-950 p-5 text-white md:p-6">
+        {/* Poster nền nâng opacity-60 & giảm lớp tối gradient để nhìn rõ poster */}
+        {m.poster && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-60">
+            <img
+              src={m.poster}
+              alt=""
+              className="h-full w-full object-cover object-center blur-[1px] scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/40 to-transparent" />
+          </div>
         )}
-        <p className="mt-2 text-sm">
-          Ghế: <b className="text-[#f5b50a]">{o.seats.join(', ')}</b>
-        </p>
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <small className="truncate text-white/30">{o.code}</small>
+
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <span
+              className="rounded-md border border-amber-300/40 bg-amber-400/20 px-2.5 py-0.5 text-[11px] font-black uppercase"
+              style={{ color: '#fcd34d' }}
+            >
+              {o.format || 'STANDARD'} {o.screenName ? `· ${o.screenName}` : ''}
+            </span>
+            <span className="text-xs font-black uppercase tracking-widest text-amber-400">
+              {o.cinema}
+            </span>
+          </div>
+
+          <h2
+            className="mt-3 truncate text-2xl font-black uppercase tracking-tight sm:text-3xl"
+            style={{ color: '#ffffff' }}
+          >
+            {m.title}
+          </h2>
+
+          {/* Lưới thông số vé dạng cột chuẩn */}
+          <div className="mt-4 grid grid-cols-4 gap-2 rounded-xl border border-white/20 bg-slate-950/70 p-3 backdrop-blur-md">
+            <div>
+              <span className="block text-[10px] font-black uppercase text-amber-400/90">HÀNG</span>
+              <b className="text-sm font-black" style={{ color: '#ffffff' }}>
+                {o.seats[0]?.[0] || 'A'}
+              </b>
+            </div>
+            <div>
+              <span className="block text-[10px] font-black uppercase text-amber-400/90">
+                SỐ GHẾ
+              </span>
+              <b className="block truncate text-sm font-black" style={{ color: '#fcd34d' }}>
+                {o.seats.join(', ')}
+              </b>
+            </div>
+            <div>
+              <span className="block text-[10px] font-black uppercase text-amber-400/90">NGÀY</span>
+              <b className="text-sm font-black" style={{ color: '#ffffff' }}>
+                {o.dateLabel}
+              </b>
+            </div>
+            <div>
+              <span className="block text-[10px] font-black uppercase text-amber-400/90">
+                GIỜ CHIẾU
+              </span>
+              <b className="text-sm font-black" style={{ color: '#ffffff' }}>
+                {o.time}
+              </b>
+            </div>
+          </div>
+        </div>
+
+        {/* Nút thao tác dưới chân vé */}
+        <div className="relative z-10 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-3">
+          <span className="truncate text-xs font-bold text-slate-300">
+            Mã vé: <b style={{ color: '#ffffff' }}>{o.code}</b>
+          </span>
+
           {past ? (
-            <span className="rounded-full bg-white/8 px-3 py-1 text-[11px] font-bold text-white/45">
-              Đã xem
+            <span className="rounded-full bg-white/10 px-4 py-1 text-xs font-black text-slate-400">
+              Đã sử dụng
             </span>
           ) : (
             <button
+              type="button"
               onClick={onQR}
-              className="flex items-center gap-2 rounded-lg bg-[#e50914] px-4 py-2 text-xs font-extrabold hover:bg-[#ff101c]"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-5 py-2.5 text-xs font-black text-white shadow-lg transition hover:brightness-125"
+              style={{ color: '#ffffff' }}
             >
-              <Icon name="qr" size={16} /> Xem mã QR
+              <Icon name="qr" size={16} /> Quét mã QR vào rạp
             </button>
           )}
         </div>
@@ -108,64 +238,135 @@ export default function MyTickets() {
   const { orders } = useStore();
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [qr, setQr] = useState<Order | null>(null);
+
   const list = orders.filter((o) => o.status === tab);
-  const qm = qr && movies.find((v) => v.id === qr.movieId)!;
+  const qm = qr && movies.find((v) => String(v.id) === String(qr.movieId));
 
   return (
-    <main className="mx-auto max-w-[900px] px-5 py-10 md:px-9">
-      <h1 className="text-3xl font-extrabold tracking-tight">Vé của tôi</h1>
-      <div role="tablist" className="mt-7 flex gap-8 border-b border-white/10">
-        {(
-          [
-            ['upcoming', 'Vé sắp tới'],
-            ['past', 'Lịch sử vé'],
-          ] as const
-        ).map(([k, t]) => (
-          <button
-            key={k}
-            role="tab"
-            aria-selected={tab === k}
-            onClick={() => setTab(k)}
-            className={`-mb-px border-b-2 pb-3 text-sm font-extrabold ${tab === k ? 'border-[#e50914]' : 'border-transparent text-white/40 hover:text-white/70'}`}
-          >
-            {t}{' '}
-            <span className="ml-1 text-white/30">
-              {orders.filter((o) => o.status === k).length}
-            </span>
-          </button>
-        ))}
+    <main className="relative min-h-screen bg-[#020617] text-white selection:bg-amber-400 selection:text-black">
+      {/* Background Gradient Cinema */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_transparent_10%,_#020617_80%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/90 via-[#020617]/70 to-[#020617]" />
       </div>
-      {list.length ? (
-        <ul className="mt-6 space-y-4">
-          {list.map((o) => (
-            <TicketCard key={o.code} o={o} onQR={() => setQr(o)} />
-          ))}
-        </ul>
-      ) : (
-        <div className="mt-8 rounded-2xl border border-dashed border-white/15 px-6 py-16 text-center">
-          <p className="text-sm text-white/45">Bạn chưa có vé nào ở mục này.</p>
-          <Link to="/showtimes" className={`${btnBookTicket} mt-5`}>
-            Đặt vé ngay
-          </Link>
-        </div>
-      )}
-      {qr && qm && (
-        <Modal onClose={() => setQr(null)}>
-          <div className="text-center">
-            <h2 className="pr-6 text-lg font-extrabold">{qm.title}</h2>
-            <p className="mt-1 text-xs text-white/45">
-              {qr.time} · {qr.dateLabel} · Ghế {qr.seats.join(', ')}
+
+      <div className="relative z-10 mx-auto max-w-[1100px] px-5 py-8 md:px-9 md:py-12">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/10 pb-6">
+          <div>
+            <p
+              className="text-xs font-black uppercase tracking-[0.2em]"
+              style={{ color: '#fcd34d' }}
+            >
+              RẠP CHIẾU PHIM QUỐC TẾ
             </p>
-            <div className="mt-5">
-              <QR code={qr.code} />
-            </div>
-            <b className="mt-4 block tracking-wider">{qr.code}</b>
-            <p className="mt-2 text-xs text-white/35">
-              Đưa mã này cho nhân viên soát vé tại {qr.cinema}.
-            </p>
+            <h1
+              className="mt-1 text-3xl font-black tracking-tight sm:text-4xl"
+              style={{ color: '#ffffff' }}
+            >
+              Vé của tôi
+            </h1>
           </div>
-        </Modal>
-      )}
+
+          {/* Tab chuyển đổi Vé sắp tới / Lịch sử vé */}
+          <div
+            role="tablist"
+            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/60 p-1.5 backdrop-blur-md"
+          >
+            {(
+              [
+                ['upcoming', 'Vé sắp tới'],
+                ['past', 'Lịch sử vé'],
+              ] as const
+            ).map(([k, t]) => {
+              const isActive = tab === k;
+              const count = orders.filter((o) => o.status === k).length;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setTab(k)}
+                  className={`rounded-xl px-5 py-2 text-xs font-black transition ${
+                    isActive
+                      ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  style={{ color: isActive ? '#ffffff' : undefined }}
+                >
+                  {t} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Danh sách thẻ vé dạng Ticket Stub */}
+        {list.length ? (
+          <ul className="mt-8 space-y-6">
+            {list.map((o) => (
+              <TicketStubCard key={o.code} o={o} onQR={() => setQr(o)} />
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-12 rounded-3xl border border-dashed border-white/20 bg-slate-950/30 px-6 py-16 text-center shadow-2xl backdrop-blur-xl">
+            <p className="text-sm font-bold" style={{ color: '#ffffff' }}>
+              Bạn chưa có vé nào ở mục này.
+            </p>
+            <Link
+              to="/showtimes"
+              className={`${btnBookTicket} mt-6 inline-flex items-center justify-center`}
+            >
+              Đặt vé ngay
+            </Link>
+          </div>
+        )}
+
+        {/* Modal Xem Mã QR To Toàn Màn Hình */}
+        {qr && (
+          <Modal onClose={() => setQr(null)}>
+            <div className="p-2 text-center">
+              <span
+                className="text-[10px] font-black uppercase tracking-wider"
+                style={{ color: '#fcd34d' }}
+              >
+                MÃ VÉ VÀO RẠP CHIẾU
+              </span>
+              <h2 className="mt-1 text-2xl font-black" style={{ color: '#ffffff' }}>
+                {qm?.title || qr.movieTitle}
+              </h2>
+              <p className="mt-1 text-xs font-bold" style={{ color: '#ffffff' }}>
+                {qr.cinema} · {qr.time} · {qr.dateLabel}
+              </p>
+
+              <div className="mt-6 flex flex-col items-center">
+                <QR code={qr.code} />
+                <b
+                  className="mt-4 block text-xl font-black tracking-widest"
+                  style={{ color: '#fcd34d' }}
+                >
+                  {qr.code}
+                </b>
+                <p className="mt-2 text-xs font-semibold opacity-80" style={{ color: '#ffffff' }}>
+                  Ghế đã đặt: <b style={{ color: '#fcd34d' }}>{qr.seats.join(', ')}</b>
+                </p>
+                <p className="mt-1 text-[11px] font-bold opacity-60" style={{ color: '#ffffff' }}>
+                  Đưa mã QR này cho nhân viên soát vé tại rạp để nhận vé cứng.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setQr(null)}
+                className="mt-6 w-full rounded-xl bg-gradient-to-r from-red-600 to-amber-500 py-3 text-xs font-black text-white shadow-lg transition hover:brightness-125"
+                style={{ color: '#ffffff' }}
+              >
+                Xong
+              </button>
+            </div>
+          </Modal>
+        )}
+      </div>
     </main>
   );
 }

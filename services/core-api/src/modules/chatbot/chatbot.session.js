@@ -113,7 +113,7 @@ export async function createSession({ userId }) {
   }
 }
 
-export async function saveTurn({ session, userId, message, result }) {
+export async function saveTurn({ session, userId, message, result, memory }) {
   if (!session?.sessionId) return false;
   try {
     const collection = await getSessionsCollection();
@@ -129,18 +129,15 @@ export async function saveTurn({ session, userId, message, result }) {
         at,
       },
     ];
-    const lastMovies =
-      result.movies?.length > 0
-        ? movieReferences(result.movies)
-        : ['SHOWTIMES', 'MOVIE_DETAILS'].includes(result.intent) && result.movie
-          ? movieReferences([result.movie])
-          : session.lastMovies || [];
+    // memory = null nghĩa là giữ nguyên những gì đã nhớ
+    const lastMovies = memory ? movieReferences(memory.lastMovies) : session.lastMovies || [];
+    const lastFilters = memory ? (memory.lastFilters ?? null) : (session.lastFilters ?? null);
 
     const update = await collection.updateOne(
       { sessionId: session.sessionId, userId: userId ?? null },
       {
         $push: { messages: { $each: messages, $slice: -MAX_MESSAGES } },
-        $set: { lastMovies, updatedAt: at },
+        $set: { lastMovies, lastFilters, updatedAt: at },
       },
     );
     return update.matchedCount === 1;

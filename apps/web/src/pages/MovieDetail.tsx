@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { movies, seedReviews } from '../data';
+import { CalendarDays, Clock3, Globe2, Play, Star, Ticket } from 'lucide-react';
+import { movies } from '../data';
 import type { Movie, MovieThemeKey } from '../data';
-import { go } from '../router';
+import { go, Link } from '../router';
 import { useStore } from '../store';
-import { btnBookTicket, btnGhost, btnPrimary, Icon, Modal, Stars } from '../components/ui';
-import { Link } from '../router';
+import { Modal } from '../components/ui';
 import { getYouTubeEmbedUrl } from '../services/sessionsApi';
 import { fetchMovieById, fetchMovies } from '../services/moviesApi';
 
@@ -39,6 +39,48 @@ function toMovie(movie: Awaited<ReturnType<typeof fetchMovieById>>): Movie | nul
   };
 }
 
+function getReleaseYear(movie: Movie): string {
+  const date = movie.startDate || movie.release;
+  return date?.match(/\b(19|20)\d{2}\b/)?.[0] || 'Đang cập nhật';
+}
+
+function getDurationInMinutes(duration: string): string {
+  const hours = duration.match(/(\d+)\s*h/i);
+  const minutes = duration.match(/(\d+)\s*m/i);
+  if (hours || minutes) {
+    return `${Number(hours?.[1] || 0) * 60 + Number(minutes?.[1] || 0)} phút`;
+  }
+  return duration || 'Đang cập nhật';
+}
+
+function normalizeGenre(genre: string): string {
+  return genre
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('vi');
+}
+
+function getSimilarMovies(movie: Movie, pool: Movie[] = movies): Movie[] {
+  const genres = new Set(movie.genre.split(',').map(normalizeGenre).filter(Boolean));
+  if (!genres.size) return [];
+
+  return pool
+    .filter((candidate) => {
+      if (String(candidate.id) === String(movie.id)) return false;
+      return candidate.genre.split(',').some((genre) => genres.has(normalizeGenre(genre)));
+    })
+    .sort((a, b) => {
+      const score = (candidate: Movie) =>
+        candidate.genre
+          .split(',')
+          .map(normalizeGenre)
+          .filter((genre) => genres.has(genre)).length;
+      return score(b) - score(a) || b.rating - a.rating;
+    })
+    .slice(0, 5);
+}
+
 export default function MovieDetail({
   id,
   autoPlayTrailer = false,
@@ -46,19 +88,13 @@ export default function MovieDetail({
   id: number | string;
   autoPlayTrailer?: boolean;
 }) {
-  const localMovie = movies.find((x) => String(x.id) === String(id));
+  const localMovie = movies.find((item) => String(item.id) === String(id));
   const [movie, setMovie] = useState<Movie | null>(localMovie || null);
   const [allMovies, setAllMovies] = useState<Movie[]>(movies);
   const [movieLoading, setMovieLoading] = useState(!localMovie);
   const [movieError, setMovieError] = useState('');
-  const m = movie;
-  const { user, notified, toggleNotify, trackMovie } = useStore();
-  const [tab, setTab] = useState<'info' | 'reviews'>('info');
+  const { notified, toggleNotify, trackMovie } = useStore();
   const [trailer, setTrailer] = useState(autoPlayTrailer);
-  const [reviews, setReviews] = useState(seedReviews);
-  const [stars, setStars] = useState(0);
-  const [text, setText] = useState('');
-  const [msg, setMsg] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -102,312 +138,396 @@ export default function MovieDetail({
     trackMovie(id, 12);
   }, [id, trackMovie]);
 
-  if (!m)
+  if (!movie) {
     return (
-      <main className="grid min-h-[60vh] place-items-center text-white/50">
-        {movieLoading ? 'Đang tải thông tin phim...' : movieError || 'Không tìm thấy phim.'}{' '}
-        <Link to="/home" className="ml-2 font-bold text-[#ff4d57]">
-          Về trang chủ
-        </Link>
+      <main className="grid min-h-[60vh] place-items-center bg-slate-950 px-5 text-center text-white">
+        <div>
+          <p style={{ color: '#ffffff' }}>
+            {movieLoading ? 'Đang tải thông tin phim...' : movieError || 'Không tìm thấy phim.'}
+          </p>
+          <Link
+            to="/home"
+            className="mt-4 inline-flex font-bold text-amber-400 transition hover:text-amber-300"
+            style={{ color: '#fbbf24' }}
+          >
+            Quay về trang chủ
+          </Link>
+        </div>
       </main>
     );
-  const soon = m.status === 'soon';
-  const list = soon ? [] : reviews;
-  const avg = list.length ? list.reduce((s, r) => s + r.stars, 0) / list.length : 0;
-  const isNotified = notified.includes(m.id);
-  const related = allMovies
-    .filter((item) => item.id !== m.id && item.status === m.status)
-    .sort((a, b) => {
-      const score = (item: (typeof allMovies)[number]) =>
-        (m.studio && item.studio === m.studio ? 100 : 0) +
-        (m.themeKey && item.themeKey === m.themeKey ? 25 : 0) +
-        (item.genre.split(',')[0] === m.genre.split(',')[0] ? 10 : 0) +
-        item.rating / 100;
-      return score(b) - score(a);
-    })
-    .slice(0, 5);
+  }
 
-  const submit = () => {
-    if (!stars) return setMsg('Hãy chọn số sao trước khi gửi.');
-    if (text.trim().length < 10) return setMsg('Nội dung đánh giá cần ít nhất 10 ký tự.');
-    setReviews([{ name: user!.name, stars, text: text.trim(), when: 'Vừa xong' }, ...reviews]);
-    setStars(0);
-    setText('');
-    setMsg('');
+  const isComingSoon = movie.status === 'soon';
+  const isNotified = notified.includes(movie.id);
+  const genres = movie.genre
+    .split(',')
+    .map((genre) => genre.trim())
+    .filter(Boolean);
+  const castMembers = movie.cast
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name && name !== 'Đang cập nhật');
+  const language = movie.country === 'Việt Nam' ? 'Tiếng Việt' : 'Phụ đề tiếng Việt';
+  const durationLabel = getDurationInMinutes(movie.duration);
+  const similarMovies = getSimilarMovies(movie, allMovies);
+
+  const playTrailer = () => {
+    trackMovie(movie.id, 34);
+    setTrailer(true);
   };
 
   return (
-    <main>
-      <section className="dark-film-content relative min-h-[480px] overflow-hidden">
+    <main
+      className="min-h-screen overflow-hidden bg-slate-950 text-white"
+      style={{ backgroundColor: '#020617', color: '#ffffff' }}
+    >
+      {/* HERO BANNER SECTION */}
+      <section className="relative isolate flex min-h-[520px] items-end overflow-hidden bg-slate-950 sm:min-h-[600px]">
+        {/* Ảnh Backdrop Landscape */}
         <img
-          src={m.backdrop}
+          src={movie.backdrop || movie.poster}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-65"
+          className="absolute inset-0 z-0 h-full w-full object-cover object-center opacity-75"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#0b0d11_4%,rgba(11,13,17,.7)_42%,transparent),linear-gradient(0deg,#0b0d11_0%,transparent_70%)]" />
-        <button
-          onClick={() => setTrailer(true)}
-          aria-label="Xem trailer"
-          className="absolute left-[72%] top-1/2 hidden h-20 w-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/30 bg-black/30 backdrop-blur transition hover:scale-105 hover:bg-[#e50914] md:grid"
-        >
-          <span className="ml-1">
-            <Icon name="play" size={30} />
-          </span>
-        </button>
-        <div className="relative mx-auto flex min-h-[480px] max-w-[1400px] items-end px-5 pb-12 md:px-9">
-          <div className="max-w-[700px]">
-            <p className="mb-3 text-sm font-semibold text-white/60">{m.genre}</p>
-            <h1 className="film-title text-6xl md:text-8xl">{m.title.toUpperCase()}</h1>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/65">
-              <span className="rounded bg-white/85 px-1.5 py-0.5 text-[10px] font-black text-black">
-                {m.age}
+        {/* Ambient Blur Layer theo màu Poster */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1] scale-125 bg-cover bg-center opacity-30 blur-3xl mix-blend-screen"
+          style={{ backgroundImage: `url("${movie.poster || movie.backdrop}")` }}
+        />
+        {/* Gradient Overlay phủ toàn bộ chiều cao */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"
+        />
+
+        {/* Đã tăng pb-28 md:pb-36 để không bị poster đè lên nút đánh giá */}
+        <div className="relative z-20 mx-auto grid w-full max-w-[1440px] grid-cols-1 items-end gap-8 px-5 pb-28 pt-24 md:px-9 md:pb-36 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="max-w-4xl">
+            <p
+              className="mb-4 flex items-center gap-3 text-xs font-bold uppercase tracking-[.28em] !text-amber-300 sm:text-sm"
+              style={{ color: '#fcd34d' }}
+            >
+              <span className="h-px w-10 bg-amber-300" />
+              {movie.country || 'Điện ảnh'}
+            </p>
+            <h1
+              className="max-w-5xl text-3xl font-black tracking-wide !text-white md:text-5xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+              style={{ color: '#ffffff' }}
+            >
+              {movie.title.toLocaleUpperCase('vi')}
+            </h1>
+
+            <div
+              className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-bold !text-white sm:text-sm"
+              style={{ color: '#ffffff' }}
+            >
+              <span
+                className="inline-flex items-center gap-2 !text-white"
+                style={{ color: '#ffffff' }}
+              >
+                <CalendarDays size={16} className="text-amber-300" style={{ color: '#fcd34d' }} />
+                {getReleaseYear(movie)}
               </span>
-              <span>{m.country || 'Quốc tế'}</span>
-              <span>{m.duration}</span>
-              <span>
-                Đạo diễn: <b className="text-white">{m.director}</b>
+              <span aria-hidden="true" style={{ color: '#ffffff' }}>
+                |
               </span>
-              {!soon && (
-                <span className="font-bold text-white">
-                  <b className="film-highlight">★</b> {m.rating}
+              <span style={{ color: '#ffffff' }}>Độ tuổi: {movie.age}</span>
+              <span aria-hidden="true" style={{ color: '#ffffff' }}>
+                |
+              </span>
+              <span
+                className="inline-flex items-center gap-2 !text-white"
+                style={{ color: '#ffffff' }}
+              >
+                <Clock3 size={16} className="text-amber-300" style={{ color: '#fcd34d' }} />
+                Thời lượng: {durationLabel}
+              </span>
+              <span aria-hidden="true" style={{ color: '#ffffff' }}>
+                |
+              </span>
+              <span
+                className="inline-flex items-center gap-2 !text-white"
+                style={{ color: '#ffffff' }}
+              >
+                <Globe2 size={16} className="text-amber-300" style={{ color: '#fcd34d' }} />
+                {language}
+              </span>
+            </div>
+
+            <div className="mt-7 flex flex-wrap items-center gap-4">
+              <div
+                className="grid h-[76px] w-[76px] place-items-center rounded-full border-2 border-amber-300 bg-black/70 shadow-[0_0_30px_rgba(251,191,36,.3)] backdrop-blur"
+                aria-label={`Đánh giá ${movie.rating ? movie.rating.toFixed(1) : 'chưa có'}`}
+              >
+                <span className="flex flex-col items-center">
+                  <span
+                    className="flex items-center gap-1 text-base font-black !text-amber-300"
+                    style={{ color: '#fcd34d' }}
+                  >
+                    <Star size={14} fill="currentColor" />{' '}
+                    {movie.rating ? movie.rating.toFixed(1) : '—'}
+                  </span>
+                  <span
+                    className="mt-0.5 text-[9px] font-bold uppercase tracking-wider !text-white"
+                    style={{ color: '#ffffff' }}
+                  >
+                    Đánh giá
+                  </span>
+                </span>
+              </div>
+              {movie.votes > 0 && (
+                <span className="text-xs font-semibold !text-white" style={{ color: '#ffffff' }}>
+                  {movie.votes.toLocaleString('vi-VN')} lượt đánh giá
                 </span>
               )}
             </div>
-            {m.studio && <p className="mt-2 text-xs font-bold text-white/60">{m.studio}</p>}
-            <div className="mt-7 flex flex-wrap gap-3">
-              <button
-                onClick={() => {
-                  trackMovie(m.id, 34);
-                  setTrailer(true);
-                }}
-                className={btnGhost}
-              >
-                <Icon name="play" size={17} /> Xem trailer
-              </button>
-              {soon ? (
-                <button
-                  onClick={() => toggleNotify(m.id)}
-                  aria-pressed={isNotified}
-                  className={
-                    isNotified ? `${btnGhost} border-[#46d38a]/40 text-[#46d38a]` : btnPrimary
-                  }
-                >
-                  <Icon name={isNotified ? 'check' : 'bell'} size={18} />{' '}
-                  {isNotified ? 'Đã đăng ký nhận thông báo' : 'Nhận thông báo'}
-                </button>
-              ) : (
-                <button onClick={() => go(`/showtimes?movie=${m.id}`)} className={btnBookTicket}>
-                  Đặt vé <Icon name="arrow" size={18} />
-                </button>
-              )}
-            </div>
-            {soon && (
-              <p className="mt-3 text-xs text-white/45">
-                Khởi chiếu {m.release}. Chúng tôi sẽ báo cho bạn khi mở bán vé.
-              </p>
-            )}
           </div>
+
+          <button
+            type="button"
+            onClick={playTrailer}
+            aria-label={`Xem trailer phim ${movie.title}`}
+            className="hidden h-16 w-16 place-items-center rounded-full border-2 border-white bg-black/40 !text-white shadow-2xl backdrop-blur transition hover:scale-110 hover:border-amber-300 hover:bg-amber-400 hover:!text-black md:grid lg:mb-2"
+            style={{ color: '#ffffff', borderColor: '#ffffff' }}
+          >
+            <Play size={26} fill="currentColor" className="ml-1" />
+          </button>
         </div>
       </section>
 
-      <div className="border-b border-white/8">
-        <div role="tablist" className="mx-auto flex max-w-[1400px] gap-8 px-5 md:px-9">
-          <button
-            role="tab"
-            aria-selected={tab === 'info'}
-            onClick={() => setTab('info')}
-            className={`-mb-px border-b-2 py-4 text-sm font-extrabold ${tab === 'info' ? 'border-[#e50914]' : 'border-transparent text-white/45'}`}
+      {/* DETAILED INFO SECTION */}
+      <section className="relative z-10 mx-auto grid max-w-[1440px] gap-8 bg-slate-950 px-5 pb-12 pt-4 md:grid-cols-[260px_minmax(0,1fr)] md:gap-12 md:px-9 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16">
+        <div className="mx-auto -mt-16 w-full max-w-[280px] md:mx-0 md:-mt-24 md:max-w-none">
+          <div className="overflow-hidden rounded-xl bg-slate-900 shadow-2xl shadow-black/90 ring-2 ring-white/20">
+            <img
+              src={movie.poster || movie.backdrop}
+              alt={`Áp phích phim ${movie.title}`}
+              className="aspect-[2/3] w-full object-cover"
+            />
+          </div>
+          <span
+            className="mt-4 inline-flex rounded-md border border-amber-300/50 bg-amber-400/20 px-3.5 py-1.5 text-xs font-black tracking-wide !text-amber-300"
+            style={{ color: '#fcd34d' }}
           >
-            Thông tin
-          </button>
-          <button
-            role="tab"
-            aria-selected="false"
-            onClick={() => go(`/showtimes?movie=${m.id}`)}
-            disabled={soon}
-            className="-mb-px flex items-center gap-1.5 border-b-2 border-transparent py-4 text-sm font-extrabold text-white/45 hover:text-white disabled:opacity-40"
-          >
-            Lịch chiếu <Icon name="chevron" size={14} />
-          </button>
-          <button
-            role="tab"
-            aria-selected={tab === 'reviews'}
-            onClick={() => setTab('reviews')}
-            className={`-mb-px border-b-2 py-4 text-sm font-extrabold ${tab === 'reviews' ? 'border-[#e50914]' : 'border-transparent text-white/45'}`}
-          >
-            Đánh giá
-          </button>
+            {movie.age}
+          </span>
         </div>
-      </div>
 
-      {tab === 'info' ? (
-        <section className="mx-auto max-w-[1400px] px-5 py-10 md:px-9">
-          <p className="max-w-[760px] text-[15px] leading-7 text-white/60">{m.synopsis}</p>
-          <dl className="mt-8 grid max-w-[780px] gap-5 border-t border-white/8 pt-6 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="text-xs text-white/35">Đạo diễn</dt>
-              <dd className="mt-1 font-bold">{m.director}</dd>
+        <div className="min-w-0 pt-1">
+          <p
+            className="text-xs font-extrabold uppercase tracking-[.25em] !text-amber-400"
+            style={{ color: '#fbbf24' }}
+          >
+            THÔNG TIN PHIM
+          </p>
+          <h2
+            className="mt-2 text-2xl font-black !text-white md:text-3xl"
+            style={{ color: '#ffffff' }}
+          >
+            {movie.title}
+          </h2>
+          <p className="mt-4 text-base font-semibold !text-white" style={{ color: '#ffffff' }}>
+            <span className="font-extrabold !text-amber-400" style={{ color: '#fbbf24' }}>
+              Đạo diễn:
+            </span>{' '}
+            <span className="font-bold !text-white" style={{ color: '#ffffff' }}>
+              {movie.director}
+            </span>
+          </p>
+
+          <div className="mt-8">
+            <h3
+              className="mb-3 flex items-center gap-3 text-sm font-extrabold uppercase tracking-wide !text-amber-400"
+              style={{ color: '#fbbf24' }}
+            >
+              <span aria-hidden="true" className="h-5 w-1 rounded-full bg-amber-400" />
+              NỘI DUNG PHIM
+            </h3>
+            <p
+              className="max-w-3xl whitespace-pre-line text-sm font-medium leading-relaxed !text-white sm:text-base"
+              style={{ color: '#ffffff' }}
+            >
+              {movie.synopsis || 'Nội dung phim đang được cập nhật.'}
+            </p>
+          </div>
+
+          <div className="mt-7">
+            <h3
+              className="mb-3 text-xs font-extrabold uppercase tracking-wide !text-amber-400"
+              style={{ color: '#fbbf24' }}
+            >
+              THỂ LOẠI
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {genres.map((genre) => (
+                <span
+                  key={genre}
+                  className="rounded-full border border-white/50 bg-white/10 px-4 py-1.5 text-sm font-bold !text-white backdrop-blur-md"
+                  style={{ color: '#ffffff', borderColor: 'rgba(255,255,255,0.5)' }}
+                >
+                  {genre}
+                </span>
+              ))}
             </div>
-            <div>
-              <dt className="text-xs text-white/35">Diễn viên</dt>
-              <dd className="mt-1 font-bold">{m.cast}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-white/35">Thời lượng</dt>
-              <dd className="mt-1 font-bold">{m.duration}</dd>
-            </div>
-          </dl>
-        </section>
-      ) : (
-        <section className="mx-auto grid max-w-[1400px] gap-10 px-5 py-10 md:px-9 lg:grid-cols-[320px_1fr]">
-          <div className="glass-panel h-fit rounded-2xl p-6 text-center">
-            {list.length ? (
-              <>
-                <b className="text-5xl">{avg.toFixed(1)}</b>
-                <div className="mt-2">
-                  <Stars value={avg} size={22} />
-                </div>
-                <p className="mt-2 text-xs text-white/40">{list.length} đánh giá</p>
-              </>
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-4">
+            <button
+              type="button"
+              onClick={playTrailer}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/15 px-6 py-3 text-sm font-extrabold !text-white backdrop-blur-md transition hover:bg-white hover:!text-black shadow-lg"
+              style={{ color: '#ffffff', borderColor: '#ffffff' }}
+            >
+              <Play size={18} fill="currentColor" /> Xem Trailer
+            </button>
+            {isComingSoon ? (
+              <button
+                type="button"
+                onClick={() => toggleNotify(movie.id)}
+                aria-pressed={isNotified}
+                className={`inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-extrabold !text-white shadow-lg transition ${
+                  isNotified ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-700'
+                }`}
+                style={{ color: '#ffffff' }}
+              >
+                {isNotified ? 'Đã đăng ký nhận tin' : 'Nhận thông báo'}
+              </button>
             ) : (
-              <p className="text-sm text-white/45">Phim chưa khởi chiếu nên chưa có đánh giá.</p>
+              <button
+                type="button"
+                onClick={() => go(`/showtimes?movie=${movie.id}`)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-7 py-3 text-sm font-extrabold !text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+                style={{ color: '#ffffff' }}
+              >
+                <Ticket size={18} /> Đặt Vé Ngay
+              </button>
             )}
           </div>
-          <div>
-            {!soon && (
-              <div className="glass-panel rounded-2xl p-6">
-                <h2 className="text-lg font-extrabold">Viết đánh giá của bạn</h2>
-                {user ? (
-                  <>
-                    <div
-                      className="mt-4 flex items-center gap-1"
-                      role="radiogroup"
-                      aria-label="Chọn số sao"
-                    >
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <button
-                          key={n}
-                          role="radio"
-                          aria-checked={stars === n}
-                          aria-label={`${n} sao`}
-                          onClick={() => setStars(n)}
-                          className={`text-3xl transition hover:scale-110 ${n <= stars ? 'text-[#f5b50a]' : 'text-white/15'}`}
-                        >
-                          ★
-                        </button>
-                      ))}
-                    </div>
-                    <textarea
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      rows={3}
-                      placeholder="Bạn thấy bộ phim này thế nào?"
-                      className="glass-control mt-4 w-full resize-none rounded-xl p-4 text-sm outline-none placeholder:text-white/35 focus:border-[#e50914]"
-                    />
-                    {msg && (
-                      <p role="alert" className="mt-2 text-xs text-[#ff5a63]">
-                        {msg}
-                      </p>
-                    )}
-                    <button onClick={submit} className={`${btnPrimary} mt-4`}>
-                      Gửi đánh giá
-                    </button>
-                  </>
-                ) : (
-                  <p className="mt-3 text-sm text-white/50">
-                    Bạn cần{' '}
-                    <Link
-                      to={`/login?next=${encodeURIComponent(`/movie/${m.id}`)}`}
-                      className="font-bold text-[#ff4d57] hover:underline"
-                    >
-                      đăng nhập
-                    </Link>{' '}
-                    để viết đánh giá.
-                  </p>
-                )}
-              </div>
-            )}
-            <ul className="mt-6 space-y-4">
-              {list.map((r, i) => (
-                <li key={i} className="glass-card rounded-2xl p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-sm font-bold">
-                      {r.name[0]}
-                    </span>
-                    <div className="flex-1">
-                      <b className="text-sm">{r.name}</b>
-                      <div>
-                        <Stars value={r.stars} size={13} />
-                      </div>
-                    </div>
-                    <small className="text-white/30">{r.when}</small>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-white/60">{r.text}</p>
-                </li>
+          {isComingSoon && (
+            <p className="mt-3 text-xs font-semibold !text-white" style={{ color: '#ffffff' }}>
+              Khởi chiếu: {movie.release}. Đăng ký nhận tin để cập nhật lịch mở bán vé.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* CAST SECTION */}
+      <section className="mx-auto max-w-[1440px] px-5 pb-16 md:px-9">
+        <div className="border-t border-white/20 pt-8">
+          <h2
+            className="mb-5 flex items-center gap-3 text-sm font-extrabold uppercase tracking-wide !text-amber-400"
+            style={{ color: '#fbbf24' }}
+          >
+            <span aria-hidden="true" className="h-6 w-1 rounded-full bg-amber-400" />
+            DIỄN VIÊN
+          </h2>
+          {castMembers.length ? (
+            <div className="flex flex-wrap gap-2.5">
+              {castMembers.map((name) => (
+                <span
+                  key={name}
+                  className="rounded-lg border border-slate-600 bg-slate-800/90 px-4 py-2 text-sm font-bold !text-white shadow transition hover:bg-slate-700"
+                  style={{ color: '#ffffff', backgroundColor: '#1e293b', borderColor: '#475569' }}
+                >
+                  {name}
+                </span>
               ))}
-            </ul>
+            </div>
+          ) : (
+            <p className="text-sm font-medium !text-white" style={{ color: '#ffffff' }}>
+              Thông tin diễn viên đang được cập nhật.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* SIMILAR MOVIES SECTION */}
+      {similarMovies.length > 0 && (
+        <section className="mx-auto max-w-[1440px] px-5 pb-20 md:px-9">
+          <div className="border-t border-white/20 pt-8">
+            <h2
+              className="mb-5 text-xl font-extrabold !text-amber-400 tracking-wide"
+              style={{ color: '#fbbf24' }}
+            >
+              PHIM CÙNG THỂ LOẠI
+            </h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+              {similarMovies.map((similarMovie) => (
+                <Link
+                  key={similarMovie.id}
+                  to={`/movie/${similarMovie.id}`}
+                  onClick={() => trackMovie(similarMovie.id)}
+                  aria-label={`Xem chi tiết phim ${similarMovie.title}`}
+                  className="group min-w-0"
+                >
+                  <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-slate-900 shadow-xl ring-1 ring-white/10">
+                    <img
+                      src={similarMovie.poster || similarMovie.backdrop}
+                      alt={`Áp phích phim ${similarMovie.title}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                    <span
+                      className="absolute left-2 top-2 rounded-md border border-white/20 bg-black/80 px-2 py-1 text-[10px] font-black !text-white backdrop-blur"
+                      style={{ color: '#ffffff' }}
+                    >
+                      {similarMovie.age}
+                    </span>
+                    <span
+                      className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-amber-300/50 bg-black/80 px-2 py-1 text-[10px] font-black !text-amber-300 backdrop-blur"
+                      style={{ color: '#fcd34d' }}
+                    >
+                      <Star size={11} fill="currentColor" />
+                      {similarMovie.rating ? similarMovie.rating.toFixed(1) : '—'}
+                    </span>
+                  </div>
+                  <p
+                    className="mt-2.5 line-clamp-1 text-base font-extrabold !text-white transition group-hover:!text-amber-400"
+                    style={{ color: '#ffffff' }}
+                  >
+                    {similarMovie.title}
+                  </p>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      <section className="mx-auto max-w-[1400px] px-5 pb-12 md:px-9">
-        <div className="mb-5 flex items-end justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase text-[#f5b50a]">Phim cùng gu</p>
-            <h2 className="mt-1 text-2xl font-extrabold">People also liked</h2>
-          </div>
-          <span className="text-xs text-white/35">Gợi ý từ thể loại và điểm đánh giá</span>
-        </div>
-        <div className="scrollbar-hide -mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3">
-          {related.map((item) => (
-            <Link
-              key={item.id}
-              to={`/movie/${item.id}`}
-              onClick={() => trackMovie(item.id)}
-              className="glass-card group relative w-[150px] shrink-0 snap-start overflow-hidden rounded-2xl p-2 sm:w-[180px]"
-            >
-              <div className="relative aspect-[2/3] overflow-hidden rounded-xl">
-                <img
-                  src={item.poster}
-                  alt={`Poster ${item.title}`}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-                <span className="absolute right-2 top-2 rounded-full border border-white/20 bg-black/60 px-2 py-1 text-[10px] font-black text-[#f5b50a] backdrop-blur">
-                  ★ {item.rating || 'Sắp chiếu'}
-                </span>
-                <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-1 text-[9px] font-bold text-white/80 backdrop-blur">
-                  {item.genre.split(',')[0]}
-                </span>
-              </div>
-              <b className="mt-3 block truncate px-1 text-xs">{item.title}</b>
-            </Link>
-          ))}
-        </div>
-      </section>
-
+      {/* TRAILER MODAL */}
       {trailer && (
         <Modal wide onClose={() => setTrailer(false)}>
-          <h2 className="mb-4 pr-8 text-lg font-extrabold">Trailer · {m.title}</h2>
+          <h2 className="mb-4 pr-8 text-lg font-extrabold !text-white" style={{ color: '#ffffff' }}>
+            Trailer · {movie.title}
+          </h2>
           <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
-            {m.trailer && getYouTubeEmbedUrl(m.trailer) ? (
+            {movie.trailer && getYouTubeEmbedUrl(movie.trailer) ? (
               <iframe
-                src={getYouTubeEmbedUrl(m.trailer)!}
-                title={`Trailer ${m.title}`}
+                src={getYouTubeEmbedUrl(movie.trailer)!}
+                title={`Trailer phim ${movie.title}`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 className="h-full w-full border-0"
               />
             ) : (
               <>
-                <img src={m.backdrop} alt="" className="h-full w-full object-cover opacity-60" />
+                <img
+                  src={movie.backdrop || movie.poster}
+                  alt=""
+                  className="h-full w-full object-cover opacity-60"
+                />
                 <div className="absolute inset-0 grid place-items-center">
-                  <span className="grid h-20 w-20 place-items-center rounded-full bg-[#e50914] pl-1">
-                    <Icon name="play" size={32} />
+                  <span className="grid h-20 w-20 place-items-center rounded-full bg-red-600 pl-1 text-white">
+                    <Play size={32} fill="currentColor" />
                   </span>
                 </div>
-                <div className="absolute inset-x-0 bottom-0 h-1.5 bg-white/15">
-                  <div className="h-full w-1/3 bg-[#e50914]" />
-                </div>
+                <p
+                  className="absolute inset-x-4 bottom-5 text-center text-sm font-extrabold !text-white"
+                  style={{ color: '#ffffff' }}
+                >
+                  Trailer phim đang được cập nhật.
+                </p>
               </>
             )}
           </div>
