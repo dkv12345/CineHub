@@ -49,3 +49,26 @@ export async function fetchSessions(day) {
   await sleep(galaxy.delayMs);
   return json.data?.result ?? [];
 }
+
+export async function fetchMovieDetail(idOrSlug) {
+  if (!idOrSlug) return null;
+  const cookie = await ensureCookie();
+  const url = new URL(`/api/v2/mobile/movies/${idOrSlug}`, galaxy.baseUrl);
+  const headers = {
+    Accept: 'application/json',
+    clientid: CLIENT_ID,
+    platform: 'website',
+    'User-Agent': USER_AGENT,
+  };
+  if (cookie) headers['Cookie'] = cookie;
+
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data ?? null;
+  } catch (err) {
+    console.warn(`[WARN] fetchMovieDetail(${idOrSlug}) failed:`, err.message);
+    return null;
+  }
+}

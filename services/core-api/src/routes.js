@@ -6,6 +6,7 @@ import { concessionsRouter } from './modules/concessions/concessions.routes.js';
 import { chatbotRouter } from './modules/chatbot/chatbot.routes.js';
 import { recommendationsRouter } from './modules/recommendations/recommendations.routes.js';
 import { moviesRouter } from './modules/movies/movies.routes.js';
+import { sessionsRouter } from './modules/sessions/sessions.routes.js';
 
 export const routes = Router();
 
@@ -17,3 +18,4 @@ routes.use('/concessions', concessionsRouter);
 routes.use('/chatbot', chatbotRouter);
 routes.use('/recommendations', recommendationsRouter);
 routes.use('/movies', moviesRouter);
+routes.use('/sessions', sessionsRouter);

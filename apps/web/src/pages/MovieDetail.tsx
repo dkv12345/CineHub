@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, Clock3, Globe2, Play, Star, Ticket } from 'lucide-react';
 import { movies } from '../data';
-import type { Movie } from '../data';
+import type { Movie, MovieThemeKey } from '../data';
 import { go, Link } from '../router';
 import { useStore } from '../store';
 import { Modal } from '../components/ui';
 import { getYouTubeEmbedUrl } from '../services/sessionsApi';
-import { fetchMovieById } from '../services/moviesApi';
+import { fetchMovieById, fetchMovies } from '../services/moviesApi';
 
 function toMovie(movie: Awaited<ReturnType<typeof fetchMovieById>>): Movie | null {
   if (!movie) return null;
@@ -15,22 +15,27 @@ function toMovie(movie: Awaited<ReturnType<typeof fetchMovieById>>): Movie | nul
   return {
     id: movie.id,
     title: movie.title,
-    genre: movie.genres.join(', ') || 'Điện ảnh',
-    duration: duration ? `${Math.floor(duration / 60)}h ${duration % 60}m` : 'Đang cập nhật',
-    director: movie.directors.join(', ') || 'Đang cập nhật',
-    cast: movie.cast.join(', ') || 'Đang cập nhật',
-    age: movie.ageRating || 'T13',
+    genre: movie.genre || movie.genres?.join(', ') || 'Điện ảnh',
+    duration:
+      movie.duration ||
+      (duration ? `${Math.floor(duration / 60)}h ${duration % 60}m` : 'Đang cập nhật'),
+    director: movie.director || movie.directors?.join(', ') || 'Đang cập nhật',
+    cast: Array.isArray(movie.cast) ? movie.cast.join(', ') : movie.cast || 'Đang cập nhật',
+    age: movie.ageRating || movie.age || 'T13',
     rating: movie.rating,
-    votes: movie.ratingCount,
-    poster: movie.posterUrl || '',
-    backdrop: movie.backdropUrl || movie.posterUrl || '',
-    status: movie.status === 'NOW_SHOWING' ? 'now' : 'soon',
-    release: releaseDate
-      ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'UTC' }).format(releaseDate)
-      : 'Đang cập nhật',
+    votes: movie.ratingCount || movie.votes || 0,
+    poster: movie.posterUrl || movie.poster || '',
+    backdrop: movie.backdropUrl || movie.backdrop || movie.posterUrl || '',
+    status: movie.status === 'now' || movie.status === 'NOW_SHOWING' ? 'now' : 'soon',
+    release:
+      movie.release ||
+      (releaseDate
+        ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'UTC' }).format(releaseDate)
+        : 'Đang cập nhật'),
     synopsis: movie.synopsis || '',
     country: movie.country || undefined,
-    trailer: movie.trailerUrl || undefined,
+    trailer: movie.trailerUrl || movie.trailer || undefined,
+    themeKey: (movie.themeKey as MovieThemeKey) || undefined,
   };
 }
 
@@ -56,11 +61,11 @@ function normalizeGenre(genre: string): string {
     .toLocaleLowerCase('vi');
 }
 
-function getSimilarMovies(movie: Movie): Movie[] {
+function getSimilarMovies(movie: Movie, pool: Movie[] = movies): Movie[] {
   const genres = new Set(movie.genre.split(',').map(normalizeGenre).filter(Boolean));
   if (!genres.size) return [];
 
-  return movies
+  return pool
     .filter((candidate) => {
       if (String(candidate.id) === String(movie.id)) return false;
       return candidate.genre.split(',').some((genre) => genres.has(normalizeGenre(genre)));
@@ -84,32 +89,48 @@ export default function MovieDetail({
   autoPlayTrailer?: boolean;
 }) {
   const localMovie = movies.find((item) => String(item.id) === String(id));
-  const [databaseMovie, setDatabaseMovie] = useState<Movie | null>(null);
+  const [movie, setMovie] = useState<Movie | null>(localMovie || null);
+  const [allMovies, setAllMovies] = useState<Movie[]>(movies);
   const [movieLoading, setMovieLoading] = useState(!localMovie);
   const [movieError, setMovieError] = useState('');
-  const movie = localMovie || databaseMovie;
   const { notified, toggleNotify, trackMovie } = useStore();
   const [trailer, setTrailer] = useState(autoPlayTrailer);
 
   useEffect(() => {
-    if (localMovie) {
-      setDatabaseMovie(null);
-      setMovieLoading(false);
-      setMovieError('');
-      return;
-    }
     const controller = new AbortController();
-    setMovieLoading(true);
+    if (!localMovie) {
+      setMovieLoading(true);
+    }
     setMovieError('');
+
+    // Fetch movie details directly from database API
     fetchMovieById(String(id), controller.signal)
-      .then((result) => setDatabaseMovie(toMovie(result)))
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        if (data) {
+          setMovie(toMovie(data));
+        } else if (!localMovie) {
+          setMovieError('Không tìm thấy phim.');
+        }
+      })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setMovieError(error instanceof Error ? error.message : 'Không thể tải thông tin phim.');
+        if (!localMovie) {
+          setMovieError(error instanceof Error ? error.message : 'Không thể tải thông tin phim.');
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setMovieLoading(false);
       });
+
+    // Also fetch all movies from database API for recommendations
+    fetchMovies(controller.signal).then((list) => {
+      if (controller.signal.aborted) return;
+      if (Array.isArray(list) && list.length > 0) {
+        setAllMovies(list);
+      }
+    });
+
     return () => controller.abort();
   }, [id, localMovie]);
 
@@ -148,7 +169,7 @@ export default function MovieDetail({
     .filter((name) => name && name !== 'Đang cập nhật');
   const language = movie.country === 'Việt Nam' ? 'Tiếng Việt' : 'Phụ đề tiếng Việt';
   const durationLabel = getDurationInMinutes(movie.duration);
-  const similarMovies = getSimilarMovies(movie);
+  const similarMovies = getSimilarMovies(movie, allMovies);
 
   const playTrailer = () => {
     trackMovie(movie.id, 34);
