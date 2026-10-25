@@ -1,7 +1,129 @@
 import { prisma } from '@cinehub/db';
 import { normalize, parseAddress, cleanPhone, AGE_MAP } from '../adapters/galaxyAdapter.js';
+import { fetchMovieDetail } from '../galaxyClient.js';
 
 const dateOnly = (s) => (s ? new Date(`${s.slice(0, 10)}T00:00:00Z`) : null);
+
+function cleanHtml(html) {
+  if (!html) return '';
+  return html
+    .replace(/<br\s*[/]?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&agrave;/g, 'à')
+    .replace(/&aacute;/g, 'á')
+    .replace(/&acirc;/g, 'â')
+    .replace(/&atilde;/g, 'ã')
+    .replace(/&egrave;/g, 'è')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&ecirc;/g, 'ê')
+    .replace(/&igrave;/g, 'ì')
+    .replace(/&iacute;/g, 'í')
+    .replace(/&ograve;/g, 'ò')
+    .replace(/&oacute;/g, 'ó')
+    .replace(/&ocirc;/g, 'ô')
+    .replace(/&otilde;/g, 'õ')
+    .replace(/&ugrave;/g, 'ù')
+    .replace(/&uacute;/g, 'ú')
+    .replace(/&yacute;/g, 'ý')
+    .replace(/&Agrave;/g, 'À')
+    .replace(/&Aacute;/g, 'Á')
+    .replace(/&Acirc;/g, 'Â')
+    .replace(/&Atilde;/g, 'Ã')
+    .replace(/&Egrave;/g, 'È')
+    .replace(/&Eacute;/g, 'É')
+    .replace(/&Ecirc;/g, 'Ê')
+    .replace(/&Igrave;/g, 'Ì')
+    .replace(/&Iacute;/g, 'Í')
+    .replace(/&Ograve;/g, 'Ò')
+    .replace(/&Oacute;/g, 'Ó')
+    .replace(/&Ocirc;/g, 'Ô')
+    .replace(/&Otilde;/g, 'Õ')
+    .replace(/&Ugrave;/g, 'Ù')
+    .replace(/&Uacute;/g, 'Ú')
+    .replace(/&Yacute;/g, 'Ý')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&ldquo;/g, '“')
+    .replace(/&rdquo;/g, '”')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function syncMovieDetails(movieId, externalId, slug) {
+  try {
+    const detail =
+      (await fetchMovieDetail(externalId)) || (slug ? await fetchMovieDetail(slug) : null);
+    if (!detail) return;
+
+    const synopsis = cleanHtml(detail.description);
+    if (synopsis || detail.country) {
+      await prisma.movie.update({
+        where: { id: movieId },
+        data: {
+          synopsis: synopsis || undefined,
+          country: detail.country || undefined,
+        },
+      });
+    }
+
+    // Categories -> Genre & MovieGenre
+    for (const cat of detail.categories || []) {
+      const g = await prisma.genre.upsert({
+        where: { slug: cat.slug },
+        update: { name: cat.name },
+        create: { slug: cat.slug, name: cat.name },
+      });
+      await prisma.movieGenre.upsert({
+        where: { movieId_genreId: { movieId, genreId: g.id } },
+        update: {},
+        create: { movieId, genreId: g.id },
+      });
+    }
+
+    // Directors -> Person & MovieCredit
+    let dOrder = 0;
+    for (const dir of detail.directors || []) {
+      if (!dir.name) continue;
+      const norm = normalize(dir.name);
+      if (!norm) continue;
+      const person = await prisma.person.upsert({
+        where: { nameNormalized: norm },
+        update: { fullName: dir.name, photoUrl: dir.imagePortrait || undefined },
+        create: { fullName: dir.name, nameNormalized: norm, photoUrl: dir.imagePortrait || null },
+      });
+      await prisma.movieCredit.upsert({
+        where: { movieId_personId_role: { movieId, personId: person.id, role: 'DIRECTOR' } },
+        update: { billingOrder: dOrder },
+        create: { movieId, personId: person.id, role: 'DIRECTOR', billingOrder: dOrder },
+      });
+      dOrder++;
+    }
+
+    // Actors -> Person & MovieCredit
+    let aOrder = 0;
+    for (const act of detail.actors || []) {
+      if (!act.name) continue;
+      const norm = normalize(act.name);
+      if (!norm) continue;
+      const person = await prisma.person.upsert({
+        where: { nameNormalized: norm },
+        update: { fullName: act.name, photoUrl: act.imagePortrait || undefined },
+        create: { fullName: act.name, nameNormalized: norm, photoUrl: act.imagePortrait || null },
+      });
+      await prisma.movieCredit.upsert({
+        where: { movieId_personId_role: { movieId, personId: person.id, role: 'ACTOR' } },
+        update: { billingOrder: aOrder },
+        create: { movieId, personId: person.id, role: 'ACTOR', billingOrder: aOrder },
+      });
+      aOrder++;
+    }
+  } catch (err) {
+    console.warn(`[WARN] Failed to sync movie details for ${movieId}:`, err.message);
+  }
+}
 
 function movieStatus(startDate, endDate, today = new Date()) {
   if (startDate && startDate > today) return 'COMING_SOON';
@@ -119,13 +241,17 @@ export async function upsertMovie(chain, mv) {
 
   if (source) {
     await prisma.movieSource.update({ where: { id: source.id }, data: sourceData });
-    return prisma.movie.update({ where: { id: source.movieId }, data });
+    const updated = await prisma.movie.update({ where: { id: source.movieId }, data });
+    if (!updated.synopsis) {
+      await syncMovieDetails(updated.id, mv.id, mv.slug);
+    }
+    return updated;
   }
 
   const exists = await prisma.movie.findUnique({ where: { slug: mv.slug } });
   const slug = exists ? `${mv.slug}-${start?.getUTCFullYear() ?? Date.now()}` : mv.slug;
 
-  return prisma.movie.create({
+  const created = await prisma.movie.create({
     data: {
       slug,
       ...data,
@@ -138,6 +264,9 @@ export async function upsertMovie(chain, mv) {
       },
     },
   });
+
+  await syncMovieDetails(created.id, mv.id, mv.slug);
+  return created;
 }
 
 export async function upsertShowtime({ cinema, auditorium, movie }, m) {

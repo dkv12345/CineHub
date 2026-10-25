@@ -1,20 +1,33 @@
 export type DatabaseMovie = {
   id: string;
+  dbId?: string;
   title: string;
+  slug?: string;
   synopsis: string | null;
+  duration?: string;
   durationMin: number | null;
   ageRating: string | null;
+  age?: string;
   status: string;
+  poster?: string;
   posterUrl: string | null;
+  backdrop?: string;
   backdropUrl: string | null;
+  trailer?: string;
   trailerUrl: string | null;
+  release?: string;
   releaseDate: string | null;
   country: string | null;
   rating: number;
   ratingCount: number;
+  votes?: number;
   genres: string[];
+  genre?: string;
   directors: string[];
+  director?: string;
   cast: string[];
+  themeKey?: string;
+  views?: number;
 };
 
 export async function fetchMovieById(id: string, signal?: AbortSignal) {
