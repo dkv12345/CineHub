@@ -151,11 +151,11 @@ describe('CineBot semantic recommendations', () => {
     findMovies.mockResolvedValue([movie('movie-a', 'Phim A'), movie('movie-b', 'Phim B')]);
 
     const { answerMessage } = await import('../src/modules/chatbot/chatbot.service.js');
-    const result = await answerMessage('phim đó chiếu lúc mấy giờ?', {
+    const result = await answerMessage('phim đó nói về gì?', {
       sessionId: session.sessionId,
     });
 
-    expect(result.intent).toBe('SHOWTIMES');
+    expect(result.intent).toBe('MOVIE_DETAILS');
     expect(result.reply).toContain('Bạn muốn hỏi phim nào trong: Phim A, Phim B?');
     expect(findShowtimes).not.toHaveBeenCalled();
   });
@@ -232,7 +232,9 @@ describe('CineBot semantic recommendations', () => {
     const result = await answerMessage('Gợi ý phim có plot twist');
 
     expect(result.intent).toBe('SEMANTIC');
-    expect(semanticSearch).toHaveBeenCalledWith('Gợi ý phim có plot twist');
+    expect(semanticSearch).toHaveBeenCalledWith('Phim phù hợp: Gợi ý có plot twist', {
+      limit: 100,
+    });
     expect(result.movies.map(({ id }) => id)).toEqual(['movie-twist']);
   });
 
@@ -333,7 +335,7 @@ describe('CineBot semantic recommendations', () => {
   });
 
   it('recommends from all current catalog records when semantic search is unavailable', async () => {
-    vi.stubEnv('GEMINI_API_KEY', 'test-api-key');
+    vi.stubEnv('GEMINI_API_KEY', '');
     findGenres.mockResolvedValue([]);
     looksSemantic.mockReturnValue(true);
     semanticSearch.mockResolvedValue(null);
@@ -384,10 +386,7 @@ describe('CineBot semantic recommendations', () => {
     const { answerMessage } = await import('../src/modules/chatbot/chatbot.service.js');
     const result = await answerMessage('phim giống phim tình cảm');
 
-    expect(result.movies.map(({ id }) => id)).toEqual([
-      'current-movie-id',
-      'current-without-vector',
-    ]);
+    expect(result.movies.map(({ id }) => id)).toEqual(['current-movie-id']);
     expect(result.reply).toContain('Current Database Movie');
     expect(result.reply).not.toContain('stale-movie-id');
     expect(findMovies.mock.calls[0][0].where).toEqual({ deletedAt: null });

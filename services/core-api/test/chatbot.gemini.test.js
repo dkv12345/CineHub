@@ -6,9 +6,16 @@ vi.mock('../src/modules/chatbot/chatbot.session.js', () => ({
   saveTurn: vi.fn().mockResolvedValue(false),
 }));
 
+vi.mock('../src/modules/chatbot/chatbot.vector.js', () => ({
+  semanticSearch: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock('@cinehub/db', () => ({
   prisma: {
-    movie: { findMany: vi.fn().mockResolvedValue([]) },
+    movie: {
+      findMany: vi.fn().mockResolvedValue([]),
+      count: vi.fn().mockResolvedValue(0),
+    },
     genre: { findMany: vi.fn().mockResolvedValue([]) },
     cinema: { findMany: vi.fn().mockResolvedValue([]) },
     showtime: { findMany: vi.fn().mockResolvedValue([]) },

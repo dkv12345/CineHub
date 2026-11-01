@@ -141,6 +141,7 @@ describe('CineBot session memory', () => {
         userId: null,
         message: 'Email cine@example.com, phone 0912345678, key AIza123456789012345678901234567890',
         result: { reply: 'recommendation', intent: 'RECOMMEND', movies },
+        memory: { lastMovies: movies, lastFilters: null },
       }),
     ).resolves.toBe(true);
 
