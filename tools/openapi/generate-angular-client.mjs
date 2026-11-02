@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import prettier from 'prettier';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const specPath = resolve(__dirname, '../../docs/api/openapi.json');
@@ -142,6 +143,8 @@ ${methodBlocks.join('\n\n')}
 `;
 
 mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, fileContent, 'utf8');
+const config = (await prettier.resolveConfig(outPath)) ?? {};
+const formatted = await prettier.format(fileContent, { ...config, filepath: outPath });
+writeFileSync(outPath, formatted, 'utf8');
 process.stdout.write(`Generated TypeScript API client at ${outPath}\n`);
 
