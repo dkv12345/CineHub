@@ -1,17 +1,9 @@
-import { prisma } from '@cinehub/db';
+import * as concessionsRepository from './concessions.repository.js';
 
 export async function listConcessions({ chain, cinemaCode }) {
   const [cinema, rows] = await Promise.all([
-    cinemaCode
-      ? prisma.cinema.findFirst({
-          where: { externalId: cinemaCode, chain: { code: chain }, isActive: true },
-          select: { id: true },
-        })
-      : null,
-    prisma.concession.findMany({
-      where: { isActive: true, chain: { code: chain } },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    }),
+    cinemaCode ? concessionsRepository.findActiveCinemaByExternalId({ cinemaCode, chain }) : null,
+    concessionsRepository.findActiveConcessionsByChain(chain),
   ]);
 
   return rows.filter((concession) => {

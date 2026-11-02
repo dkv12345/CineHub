@@ -22,3 +22,4 @@ ENV PORT=4200
 COPY --from=build /workspace/dist/apps/web ./dist/apps/web
 EXPOSE 4200
 CMD ["node", "dist/apps/web/server/server.mjs"]
+

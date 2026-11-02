@@ -20,7 +20,8 @@
     "isolatedModules": true,
     "baseUrl": ".",
     "paths": {
-      "@cinehub/contracts": ["libs/shared/contracts/src/index.js"]
+      "@cinehub/contracts": ["libs/shared/contracts/src/index.js"],
+      "@cinehub/web/shared/data-access": ["libs/web/shared/data-access/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

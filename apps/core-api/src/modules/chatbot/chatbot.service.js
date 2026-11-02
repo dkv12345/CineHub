@@ -1,7 +1,7 @@
-import { prisma } from '@cinehub/db';
 import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
 import { normalizeVietnamese } from '../../platform/utils/text.js';
+import * as chatbotRepository from './chatbot.repository.js';
 import {
   buildTimeWindow,
   describePeriod,
@@ -74,24 +74,6 @@ function slimFacts(context) {
     })),
   };
 }
-
-const MOVIE_SELECT = {
-  id: true,
-  title: true,
-  titleNormalized: true,
-  synopsis: true,
-  durationMin: true,
-  ageRating: true,
-  posterUrl: true,
-  status: true,
-  ratingAvg: true,
-  genres: { include: { genre: { select: { name: true } } } },
-  sources: {
-    orderBy: { lastSyncedAt: 'desc' },
-    take: 1,
-    select: { sourceScore: true },
-  },
-};
 
 const movieDto = (movie) => ({
   id: movie.id,
@@ -210,7 +192,7 @@ function summarizeShowtimes(showtimes) {
 async function emptyCatalogDiagnostic(intent, movies, period) {
   if (movies.length || !['SEMANTIC', 'RECOMMEND', 'NOW_SHOWING'].includes(intent)) return null;
 
-  const catalogCount = await prisma.movie.count({ where: { deletedAt: null } });
+  const catalogCount = await chatbotRepository.countNonDeletedMovies();
   if (catalogCount === 0) {
     return 'Database diagnostic: MySQL is reachable, but DATABASE_URL points to a catalog with 0 non-deleted movies. Check that the Core API uses the database containing the seeded 43 movies.';
   }
@@ -422,7 +404,7 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
 
   // Thể loại chỉ cần khi gợi ý, hoặc khi câu hỏi chưa rõ ý định (vd: "phim hành động")
   const genres = ['RECOMMEND', 'UNKNOWN', 'SHOWTIMES'].includes(intent)
-    ? await prisma.genre.findMany({ select: { id: true, slug: true, name: true } })
+    ? await chatbotRepository.findAllGenres()
     : [];
   const matchedGenre = findGenre(message, genres);
   if (intent === 'UNKNOWN' && matchedGenre && /\bphim\b/.test(normalized)) intent = 'RECOMMEND';
@@ -447,14 +429,10 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
   const now = new Date();
   const [movieRows, cinemas] = await Promise.all([
     needsMovie
-      ? prisma.movie.findMany({
-          where: { deletedAt: null },
-          select: MOVIE_SELECT,
-          orderBy: { title: 'asc' },
-        })
+      ? chatbotRepository.findMoviesForCatalog({ deletedAt: null }, { title: 'asc' })
       : intent === 'NOW_SHOWING'
-        ? prisma.movie.findMany({
-            where: {
+        ? chatbotRepository.findMoviesForCatalog(
+            {
               deletedAt: null,
               OR: [
                 { status: 'NOW_SHOWING' },
@@ -468,11 +446,10 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
                 },
               ],
             },
-            select: MOVIE_SELECT,
-            orderBy: { title: 'asc' },
-          })
+            { title: 'asc' },
+          )
         : [],
-    showtimeIntent ? prisma.cinema.findMany({ where: { isActive: true } }) : [],
+    showtimeIntent ? chatbotRepository.findActiveCinemas() : [],
   ]);
 
   let matchedMovie = needsMovie
@@ -509,21 +486,18 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
     const { from, until } = buildTimeWindow({ date, evening });
     const scoreById = new Map(semanticHits.map((hit) => [hit.movieId, hit.score]));
     const wantedGenres = moodGenres(message);
-    const rows = await prisma.movie.findMany({
-      where: {
-        deletedAt: null,
-        ...(hasPeriod
-          ? {
-              showtimes: {
-                some: {
-                  status: { in: ['SCHEDULED', 'OPEN'] },
-                  startTime: { gte: from, lte: until },
-                },
+    const rows = await chatbotRepository.findMoviesForCatalog({
+      deletedAt: null,
+      ...(hasPeriod
+        ? {
+            showtimes: {
+              some: {
+                status: { in: ['SCHEDULED', 'OPEN'] },
+                startTime: { gte: from, lte: until },
               },
-            }
-          : {}),
-      },
-      select: MOVIE_SELECT,
+            },
+          }
+        : {}),
     });
     const rankOf = (movie) => (movie.score ?? -Infinity) + (movie.moodMatch ? MOOD_BOOST : 0);
     const ranked = rows
@@ -559,22 +533,19 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
     const evening = isEvening(message);
     const hasPeriod = Boolean(date) || evening;
     const { from, until } = buildTimeWindow({ date, evening });
-    const rows = await prisma.movie.findMany({
-      where: {
-        deletedAt: null,
-        ...(matchedGenre ? { genres: { some: { genreId: matchedGenre.id } } } : {}),
-        ...(hasPeriod
-          ? {
-              showtimes: {
-                some: {
-                  status: { in: ['SCHEDULED', 'OPEN'] },
-                  startTime: { gte: from, lte: until },
-                },
+    const rows = await chatbotRepository.findMoviesForCatalog({
+      deletedAt: null,
+      ...(matchedGenre ? { genres: { some: { genreId: matchedGenre.id } } } : {}),
+      ...(hasPeriod
+        ? {
+            showtimes: {
+              some: {
+                status: { in: ['SCHEDULED', 'OPEN'] },
+                startTime: { gte: from, lte: until },
               },
-            }
-          : {}),
-      },
-      select: MOVIE_SELECT,
+            },
+          }
+        : {}),
     });
     const candidates = rows.map(movieDto).sort((a, b) => b.rating - a.rating);
     const genreCounts = new Map();
@@ -629,7 +600,7 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
       // Tối đa 3 suất cho MỖI phim để phim nào cũng có mặt trong kết quả
       const perMovie = await Promise.all(
         scope.movies.map((movie) =>
-          prisma.showtime.findMany({
+          chatbotRepository.findShowtimes({
             where: { ...baseWhere, movieId: movie.id },
             include,
             orderBy: { startTime: 'asc' },
@@ -640,7 +611,7 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
       showtimes = perMovie.flat().sort((a, b) => a.startTime - b.startTime);
       missing = scope.movies.filter((_, index) => perMovie[index].length === 0).map((m) => m.title);
     } else {
-      showtimes = await prisma.showtime.findMany({
+      showtimes = await chatbotRepository.findShowtimes({
         where: { ...baseWhere, ...(matchedMovie ? { movieId: matchedMovie.id } : {}) },
         include,
         orderBy: { startTime: 'asc' },
@@ -659,14 +630,7 @@ export async function answerMessage(message, { sessionId, userId } = {}) {
         }
       : null;
   } else if (intent === 'TICKET_PRICES') {
-    const rules = await prisma.priceRule.findMany({
-      where: {
-        isActive: true,
-        chain: { code: 'GALAXY' },
-        ticketType: { code: 'ADULT' },
-      },
-      include: { seatType: { select: { name: true } } },
-    });
+    const rules = await chatbotRepository.findActiveGalaxyAdultPriceRules();
     context.prices = getTicketPrices(rules);
   }
 

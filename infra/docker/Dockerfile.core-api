@@ -19,3 +19,4 @@ COPY libs/shared/contracts ./libs/shared/contracts
 COPY apps/core-api ./apps/core-api
 EXPOSE 4000
 CMD ["node", "apps/core-api/src/bootstrap/server.js"]
+

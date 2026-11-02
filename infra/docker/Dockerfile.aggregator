@@ -17,3 +17,4 @@ COPY libs/db ./libs/db
 COPY libs/shared/contracts ./libs/shared/contracts
 COPY apps/aggregator ./apps/aggregator
 CMD ["node", "apps/aggregator/src/jobs/crawl-galaxy.js"]
+

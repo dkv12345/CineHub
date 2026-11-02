@@ -1,4 +1,4 @@
-import { prisma } from '@cinehub/db';
+import * as moviesRepository from './movies.repository.js';
 
 function formatDuration(min) {
   if (!min) return '1h 45m';
@@ -104,18 +104,7 @@ export async function listMovies(query = {}) {
       : {}),
   };
 
-  const movies = await prisma.movie.findMany({
-    where,
-    include: {
-      genres: { select: { genre: { select: { name: true, slug: true } } } },
-      credits: {
-        orderBy: { billingOrder: 'asc' },
-        select: { role: true, person: { select: { fullName: true } } },
-      },
-      sources: { select: { externalId: true, sourceScore: true, sourceVotes: true } },
-    },
-    orderBy: [{ releaseDate: 'desc' }, { createdAt: 'desc' }],
-  });
+  const movies = await moviesRepository.findMovies(where);
 
   return movies.map((m, idx) => {
     const genreNames = m.genres.map((g) => g.genre.name);
@@ -169,34 +158,7 @@ export async function listMovies(query = {}) {
 }
 
 export async function getMovieById(id) {
-  const movie = await prisma.movie.findFirst({
-    where: {
-      OR: [{ id }, { slug: id }, { sources: { some: { externalId: id } } }],
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      synopsis: true,
-      durationMin: true,
-      ageRating: true,
-      status: true,
-      posterUrl: true,
-      backdropUrl: true,
-      trailerUrl: true,
-      releaseDate: true,
-      country: true,
-      ratingAvg: true,
-      ratingCount: true,
-      genres: { select: { genre: { select: { name: true } } } },
-      credits: {
-        orderBy: { billingOrder: 'asc' },
-        select: { role: true, person: { select: { fullName: true } } },
-      },
-      sources: { select: { externalId: true, sourceScore: true, sourceVotes: true } },
-    },
-  });
+  const movie = await moviesRepository.findMovieByIdOrSlugOrExternalId(id);
 
   if (!movie) return null;
 

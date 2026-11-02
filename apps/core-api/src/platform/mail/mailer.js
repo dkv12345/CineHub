@@ -9,13 +9,14 @@ import { getResetSuccessEmail } from './templates/resetSuccessEmail.js';
 let transporterInstance = null;
 
 /**
- * Base URL of the web client used to build links inside emails.
- * The SPA uses hash-based routing, so page links must be prefixed with `/#`.
+ * Base URL of the web client used to build path-based links inside emails.
  *
  * @returns {string}
  */
 export function getClientUrl() {
-  return env.CORS_ORIGIN.split(',')[0].trim().replace(/\/+$/, '');
+  return (env.CLIENT_URL || env.CORS_ORIGIN.split(',')[0] || 'http://localhost:4200')
+    .trim()
+    .replace(/\/+$/, '');
 }
 
 /**
@@ -118,7 +119,8 @@ export async function sendWelcomeNotification({ to, fullName }) {
  * @returns {Promise<{ messageId: string }>}
  */
 export async function sendVerificationEmail({ to, fullName, otp, expiresInMinutes }) {
-  const { html, text } = getVerifyEmail({ fullName, otp, expiresInMinutes });
+  const verifyUrl = `${getClientUrl()}/verify-email?email=${encodeURIComponent(to)}`;
+  const { html, text } = getVerifyEmail({ fullName, otp, expiresInMinutes, verifyUrl });
   return sendEmail({
     to,
     subject: `[CineHub] Mã xác thực email của bạn: ${otp}`,
@@ -139,7 +141,7 @@ export async function sendVerificationEmail({ to, fullName, otp, expiresInMinute
  */
 export async function sendResetPasswordNotification({ to, fullName, resetToken, resetUrl }) {
   const targetUrl =
-    resetUrl || `${getClientUrl()}/#/reset-password?token=${encodeURIComponent(resetToken)}`;
+    resetUrl || `${getClientUrl()}/reset-password?token=${encodeURIComponent(resetToken)}`;
   const { html, text } = getResetPasswordEmail({
     fullName,
     resetToken,
@@ -165,7 +167,7 @@ export async function sendResetPasswordNotification({ to, fullName, resetToken, 
 export async function sendResetSuccessNotification({ to, fullName }) {
   const { html, text } = getResetSuccessEmail({
     fullName,
-    loginUrl: `${getClientUrl()}/#/login`,
+    loginUrl: `${getClientUrl()}/auth`,
   });
   return sendEmail({
     to,

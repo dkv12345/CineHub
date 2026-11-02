@@ -3,24 +3,28 @@ import { env } from './env.js';
 /**
  * CORS Configuration Options for Express application.
  *
- * Allows cross-origin requests from client applications with credentials.
+ * Allows cross-origin requests from whitelisted client origins with credentials enabled.
  * Credentials support is mandatory for exchanging HTTP-only refresh token cookies.
+ * Note: Google OAuth "Authorized JavaScript origins" in Google Cloud Console must
+ * include `http://localhost:4200` for local Angular development.
  */
 export const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g., server-to-server, mobile apps, curl)
     if (!origin) {
       return callback(null, true);
     }
 
-    const allowedOrigins = [
-      env.CORS_ORIGIN,
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173',
-    ].filter(Boolean);
+    const configuredOrigins = env.CORS_ORIGIN.split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const allowedOrigins = new Set([
+      ...configuredOrigins,
+      env.CLIENT_URL,
+      'http://localhost:4200',
+      'http://127.0.0.1:4200',
+    ]);
 
-    if (allowedOrigins.includes(origin) || env.NODE_ENV !== 'production') {
+    if (allowedOrigins.has(origin)) {
       return callback(null, true);
     }
 
@@ -28,7 +32,7 @@ export const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Set-Cookie'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-Id'],
+  exposedHeaders: ['Set-Cookie', 'X-Request-Id'],
   maxAge: 86400,
 };

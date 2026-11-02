@@ -7,6 +7,7 @@ import { chatbotRouter } from '../modules/chatbot/index.js';
 import { recommendationsRouter } from '../modules/recommendations/index.js';
 import { moviesRouter } from '../modules/movies/index.js';
 import { sessionsRouter } from '../modules/sessions/index.js';
+import { bookingRouter } from '../modules/booking/index.js';
 
 export const routes = Router();
 
@@ -19,3 +20,4 @@ routes.use('/chatbot', chatbotRouter);
 routes.use('/recommendations', recommendationsRouter);
 routes.use('/movies', moviesRouter);
 routes.use('/sessions', sessionsRouter);
+routes.use('/booking', bookingRouter);

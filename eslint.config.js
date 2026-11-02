@@ -166,6 +166,41 @@ export default tseslint.config(
     },
   },
   {
+    files: [
+      'apps/core-api/src/modules/**/*.service.js',
+      'apps/core-api/src/modules/**/*.controller.js',
+      'apps/core-api/src/modules/**/*.routes.js',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@cinehub/db', '@cinehub/db/*'],
+              message:
+                'Services, controllers, and routes must not call Prisma directly; use the module repository layer.',
+            },
+            {
+              group: [
+                '../*/*.controller.js',
+                '../*/*.service.js',
+                '../*/*.repository.js',
+                '../*/*.routes.js',
+                '../*/*.schema.js',
+                '../*/*.nlp.js',
+                '../*/*.session.js',
+                '../*/*.vector.js',
+              ],
+              message:
+                'Backend modules may only import another module through its public index.js entry point.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/core-api/src/modules/**/*.{js,mjs}'],
     rules: {
       'no-restricted-imports': [

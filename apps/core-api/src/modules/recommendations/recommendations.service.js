@@ -1,4 +1,4 @@
-import { prisma } from '@cinehub/db';
+import * as recommendationsRepository from './recommendations.repository.js';
 
 const dto = (movie, matchReason) => ({
   id: movie.id,
@@ -14,37 +14,8 @@ const dto = (movie, matchReason) => ({
 export async function getRecommendations({ recentMovieIds, favoriteMovieIds }) {
   const seenIds = [...new Set([...recentMovieIds, ...favoriteMovieIds])];
   const [tasteMovies, candidates] = await Promise.all([
-    seenIds.length
-      ? prisma.movie.findMany({
-          where: { id: { in: seenIds }, deletedAt: null },
-          select: {
-            id: true,
-            genres: { select: { genreId: true, genre: { select: { name: true } } } },
-          },
-        })
-      : [],
-    prisma.movie.findMany({
-      where: {
-        deletedAt: null,
-        status: { in: ['NOW_SHOWING', 'COMING_SOON'] },
-        ...(seenIds.length ? { id: { notIn: seenIds } } : {}),
-      },
-      select: {
-        id: true,
-        title: true,
-        posterUrl: true,
-        ageRating: true,
-        status: true,
-        ratingAvg: true,
-        genres: { select: { genreId: true, genre: { select: { name: true } } } },
-        sources: {
-          orderBy: { lastSyncedAt: 'desc' },
-          take: 1,
-          select: { sourceScore: true },
-        },
-        _count: { select: { showtimes: true } },
-      },
-    }),
+    seenIds.length ? recommendationsRepository.findMoviesGenresByIds(seenIds) : [],
+    recommendationsRepository.findRecommendationCandidates(seenIds),
   ]);
 
   const favorites = new Set(favoriteMovieIds);

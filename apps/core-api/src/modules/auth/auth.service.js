@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@cinehub/db';
 import { AppError } from '../../platform/utils/errors.js';
 import { logger } from '../../platform/observability/logger.js';
 import {
@@ -17,6 +16,7 @@ import {
   sendWelcomeNotification,
 } from '../../platform/mail/mailer.js';
 import { verifyGoogleIdToken } from '../../platform/security/googleOAuth.js';
+import * as authRepository from './auth.repository.js';
 
 const BCRYPT_COST = 10;
 const OTP_TTL_MINUTES = 10;
@@ -67,11 +67,7 @@ function queueEmail(label, promiseFactory) {
 const hashOtp = (userId, otp) => hashToken(`${userId}:${otp}`);
 
 async function assertOtpCooldown(userId) {
-  const latest = await prisma.emailVerificationToken.findFirst({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-    select: { createdAt: true },
-  });
+  const latest = await authRepository.findLatestEmailVerificationToken(userId);
   if (!latest) return;
   const elapsed = Date.now() - latest.createdAt.getTime();
   if (elapsed < OTP_RESEND_COOLDOWN_MS) {
@@ -90,16 +86,11 @@ async function assertOtpCooldown(userId) {
  */
 async function issueEmailOtp(user) {
   const otp = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
-  await prisma.$transaction([
-    prisma.emailVerificationToken.deleteMany({ where: { userId: user.id, usedAt: null } }),
-    prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashOtp(user.id, otp),
-        expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000),
-      },
-    }),
-  ]);
+  await authRepository.replaceEmailVerificationTokens({
+    userId: user.id,
+    tokenHash: hashOtp(user.id, otp),
+    expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000),
+  });
   queueEmail('verification', () =>
     sendVerificationEmail({
       to: user.email,
@@ -117,13 +108,13 @@ async function issueEmailOtp(user) {
  * @param {{ userAgent?: string, ipAddress?: string, familyId?: string }} meta
  * @param {import('@prisma/client').Prisma.TransactionClient} [db]
  */
-async function issueSession(user, { userAgent, ipAddress, familyId } = {}, db = prisma) {
+async function issueSession(user, { userAgent, ipAddress, familyId } = {}, db) {
   const sessionFamilyId = familyId ?? crypto.randomUUID();
   const accessToken = generateAccessToken({ sub: user.id, role: user.role, email: user.email });
   const refreshToken = generateRefreshToken({ sub: user.id, familyId: sessionFamilyId });
 
-  const record = await db.refreshToken.create({
-    data: {
+  const record = await authRepository.createRefreshToken(
+    {
       userId: user.id,
       familyId: sessionFamilyId,
       tokenHash: hashToken(refreshToken),
@@ -131,32 +122,21 @@ async function issueSession(user, { userAgent, ipAddress, familyId } = {}, db = 
       ip: ipAddress ? ipAddress.slice(0, 45) : null,
       expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
     },
-  });
+    db,
+  );
 
   return { accessToken, refreshToken, tokenId: record.id };
 }
 
 /**
  * Registers a new user account and sends the e-mail verification OTP.
- *
- * No session is issued here: the account must prove ownership of the e-mail address
- * through `verifyEmail` first.
- *
- * @param {object} params
- * @param {string} params.email - User email address.
- * @param {string} params.password - Plaintext password.
- * @param {string} params.fullName - Full display name.
- * @param {string} [params.phone] - Contact phone number.
- * @returns {Promise<{ user: object }>} Created user entity (without passwordHash).
  */
 export async function registerUser({ email, password, fullName, phone }) {
   const normalizedEmail = normalizeEmail(email);
   const conflict = () => new AppError(409, 'CONFLICT', 'Email already registered');
 
-  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  const existing = await authRepository.findUserByEmail(normalizedEmail);
 
-  // A verified (or Google / disabled) account owns the address. An abandoned, still-unverified
-  // sign-up must not lock the address forever, so it is re-claimed instead.
   if (
     existing &&
     (existing.emailVerifiedAt || existing.authProvider !== 'LOCAL' || !isLoginable(existing))
@@ -169,24 +149,23 @@ export async function registerUser({ email, password, fullName, phone }) {
 
   if (existing) {
     await assertOtpCooldown(existing.id);
-    user = await prisma.user.update({
-      where: { id: existing.id },
-      data: { passwordHash, fullName, phone: phone ?? null },
+    user = await authRepository.updateUser(existing.id, {
+      passwordHash,
+      fullName,
+      phone: phone ?? null,
     });
   } else {
     try {
-      user = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          passwordHash,
-          fullName,
-          phone: phone ?? null,
-          role: 'CUSTOMER',
-          status: 'ACTIVE',
-        },
+      user = await authRepository.createUser({
+        email: normalizedEmail,
+        passwordHash,
+        fullName,
+        phone: phone ?? null,
+        role: 'CUSTOMER',
+        status: 'ACTIVE',
       });
     } catch (error) {
-      if (error?.code === 'P2002') throw conflict(); // concurrent sign-up with the same email
+      if (error?.code === 'P2002') throw conflict();
       throw error;
     }
   }
@@ -197,45 +176,30 @@ export async function registerUser({ email, password, fullName, phone }) {
 
 /**
  * Confirms the e-mail OTP, activates the account, sends the welcome e-mail and signs the user in.
- *
- * @param {object} params
- * @param {string} params.email - Account email.
- * @param {string} params.code - 6-digit OTP from the e-mail.
- * @param {string} [params.userAgent] - Client User-Agent header.
- * @param {string} [params.ipAddress] - Client IP address.
- * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
  */
 export async function verifyEmail({ email, code, userAgent, ipAddress }) {
   const invalid = () =>
     new AppError(400, 'INVALID_CODE', 'Verification code is invalid or has expired');
 
-  const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+  const user = await authRepository.findUserByEmail(normalizeEmail(email));
   if (!user || !isLoginable(user)) throw invalid();
   if (user.emailVerifiedAt) {
     throw new AppError(409, 'ALREADY_VERIFIED', 'Email has already been verified');
   }
 
-  const record = await prisma.emailVerificationToken.findFirst({
-    where: {
-      userId: user.id,
-      tokenHash: hashOtp(user.id, code),
-      usedAt: null,
-      expiresAt: { gt: new Date() },
-    },
+  const record = await authRepository.findValidEmailVerificationToken({
+    userId: user.id,
+    tokenHash: hashOtp(user.id, code),
+    now: new Date(),
   });
   if (!record) throw invalid();
 
   const now = new Date();
-  const verifiedUser = await prisma.$transaction(async (tx) => {
-    const claimed = await tx.emailVerificationToken.updateMany({
-      where: { id: record.id, usedAt: null },
-      data: { usedAt: now },
-    });
-    if (claimed.count === 0) throw invalid(); // consumed by a concurrent request
-    return tx.user.update({
-      where: { id: user.id },
-      data: { emailVerifiedAt: now, lastLoginAt: now },
-    });
+  const verifiedUser = await authRepository.claimEmailVerificationAndActivateUser({
+    tokenId: record.id,
+    userId: user.id,
+    now,
+    onAlreadyClaimed: invalid,
   });
 
   const session = await issueSession(verifiedUser, { userAgent, ipAddress });
@@ -252,17 +216,10 @@ export async function verifyEmail({ email, code, userAgent, ipAddress }) {
 
 /**
  * Sends a new verification OTP to an account that has not verified its e-mail yet.
- *
- * Always resolves with the same message so the endpoint cannot be used to discover
- * which e-mail addresses are registered.
- *
- * @param {object} params
- * @param {string} params.email - Account email.
- * @returns {Promise<{ message: string }>}
  */
 export async function resendVerification({ email }) {
   const message = 'If the account is pending verification, a new code has been sent';
-  const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+  const user = await authRepository.findUserByEmail(normalizeEmail(email));
 
   if (!user || user.emailVerifiedAt || user.authProvider !== 'LOCAL' || !isLoginable(user)) {
     return { message };
@@ -281,16 +238,9 @@ export async function resendVerification({ email }) {
 
 /**
  * Authenticates user credentials and generates token session.
- *
- * @param {object} params
- * @param {string} params.email - User email address.
- * @param {string} params.password - Plaintext password.
- * @param {string} [params.userAgent] - Client User-Agent header.
- * @param {string} [params.ipAddress] - Client IP address.
- * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
  */
 export async function loginUser({ email, password, userAgent, ipAddress }) {
-  const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+  const user = await authRepository.findUserByEmail(normalizeEmail(email));
 
   const passwordMatches = await bcrypt.compare(
     password,
@@ -300,7 +250,6 @@ export async function loginUser({ email, password, userAgent, ipAddress }) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
   }
 
-  // Only reveal the "not verified" state once the password is proven correct.
   if (!user.emailVerifiedAt) {
     try {
       await assertOtpCooldown(user.id);
@@ -313,10 +262,7 @@ export async function loginUser({ email, password, userAgent, ipAddress }) {
     });
   }
 
-  const loggedInUser = await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  });
+  const loggedInUser = await authRepository.updateUser(user.id, { lastLoginAt: new Date() });
   const session = await issueSession(loggedInUser, { userAgent, ipAddress });
 
   return {
@@ -328,15 +274,6 @@ export async function loginUser({ email, password, userAgent, ipAddress }) {
 
 /**
  * Refreshes an expired access token using Refresh Token Rotation (RTR).
- *
- * Presenting a refresh token that was already rotated or revoked is treated as theft:
- * the whole token family (every session descending from the same login) is revoked.
- *
- * @param {object} params
- * @param {string} params.refreshToken - Raw refresh token from cookie or body.
- * @param {string} [params.userAgent] - Client User-Agent header.
- * @param {string} [params.ipAddress] - Client IP address.
- * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
  */
 export async function refreshSession({ refreshToken, userAgent, ipAddress }) {
   try {
@@ -345,19 +282,12 @@ export async function refreshSession({ refreshToken, userAgent, ipAddress }) {
     throw new AppError(401, 'UNAUTHORIZED', 'Invalid or expired refresh token');
   }
 
-  const record = await prisma.refreshToken.findUnique({
-    where: { tokenHash: hashToken(refreshToken) },
-    include: { user: true },
-  });
+  const record = await authRepository.findRefreshTokenWithUser(hashToken(refreshToken));
   if (!record) {
     throw new AppError(401, 'UNAUTHORIZED', 'Refresh token not recognized');
   }
 
-  const revokeFamily = () =>
-    prisma.refreshToken.updateMany({
-      where: { familyId: record.familyId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
+  const revokeFamily = () => authRepository.revokeRefreshTokenFamily(record.familyId, new Date());
   const reuseDetected = () =>
     new AppError(401, 'TOKEN_REUSE_DETECTED', 'Session terminated due to security violation');
 
@@ -375,16 +305,16 @@ export async function refreshSession({ refreshToken, userAgent, ipAddress }) {
 
   const rotationConflict = new Error('refresh token already rotated');
   try {
-    const session = await prisma.$transaction(async (tx) => {
+    const session = await authRepository.rotateRefreshTokenInTransaction(async (tx) => {
       const next = await issueSession(
         record.user,
         { userAgent, ipAddress, familyId: record.familyId },
         tx,
       );
-      // Conditional update: if a concurrent request already rotated this token, count is 0.
-      const claimed = await tx.refreshToken.updateMany({
-        where: { id: record.id, revokedAt: null, replacedById: null },
-        data: { replacedById: next.tokenId, revokedAt: new Date() },
+      const claimed = await authRepository.claimRefreshTokenForRotation(tx, {
+        id: record.id,
+        replacedById: next.tokenId,
+        revokedAt: new Date(),
       });
       if (claimed.count === 0) throw rotationConflict;
       return next;
@@ -406,27 +336,17 @@ export async function refreshSession({ refreshToken, userAgent, ipAddress }) {
 
 /**
  * Revokes a refresh token session upon user logout.
- *
- * @param {object} params
- * @param {string} [params.refreshToken] - Raw refresh token to revoke.
- * @returns {Promise<void>}
  */
 export async function logoutUser({ refreshToken }) {
   if (!refreshToken) return;
-  await prisma.refreshToken.updateMany({
-    where: { tokenHash: hashToken(refreshToken), revokedAt: null },
-    data: { revokedAt: new Date() },
-  });
+  await authRepository.revokeRefreshTokenByHash(hashToken(refreshToken), new Date());
 }
 
 /**
  * Retrieves the current authenticated user profile.
- *
- * @param {string} userId - User ID from authenticated token.
- * @returns {Promise<object>} User entity without sensitive credentials.
  */
 export async function getCurrentUser(userId) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await authRepository.findUserById(userId);
   if (!user || !isLoginable(user)) {
     throw new AppError(404, 'NOT_FOUND', 'User not found');
   }
@@ -435,75 +355,41 @@ export async function getCurrentUser(userId) {
 
 /**
  * Authenticates user via Google OAuth ID Token (One Tap / Sign-In).
- *
- * @param {object} params
- * @param {string} params.idToken - Google credential ID token from client.
- * @param {string} [params.userAgent] - Client User-Agent header.
- * @param {string} [params.ipAddress] - Client IP address.
- * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
- *
- * Specification for student implementation:
- * 1. Verify `idToken` using `verifyGoogleIdToken(idToken)` from `../../lib/googleOAuth.js`.
- * 2. Query user by `googleId` in `prisma.user`.
- * 3. Account Merging:
- *    - If no user matches `googleId`, query by `email`.
- *    - If user exists with same email, link Google account:
- *      Update user setting `googleId = payload.googleId`, `emailVerifiedAt = new Date()`,
- *      and populate `avatarUrl` if not already set.
- * 4. Account Creation:
- *    - If no user exists by `googleId` or `email`, insert new user:
- *      { email, fullName: name, googleId, authProvider: 'GOOGLE', avatarUrl: picture, emailVerifiedAt: new Date(), passwordHash: null }
- * 5. Generate accessToken and refreshToken pair (with new `familyId`).
- * 6. Store SHA-256 hash in `prisma.refreshToken`.
- * 7. Update `lastLoginAt = new Date()`.
- * 8. Return { user, accessToken, refreshToken }.
  */
 export async function loginWithGoogle({ idToken, userAgent, ipAddress }) {
   const payload = await verifyGoogleIdToken(idToken);
   const normalizedEmail = normalizeEmail(payload.email);
 
-  let user = await prisma.user.findUnique({
-    where: { googleId: payload.googleId },
-  });
+  let user = await authRepository.findUserByGoogleId(payload.googleId);
 
   if (user) {
     if (!isLoginable(user)) {
       throw new AppError(403, 'FORBIDDEN', 'Tài khoản của bạn đã bị khoá hoặc ngưng hoạt động');
     }
   } else {
-    // Account merging: check if user exists by email
-    user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    user = await authRepository.findUserByEmail(normalizedEmail);
 
     if (user) {
       if (!isLoginable(user)) {
         throw new AppError(403, 'FORBIDDEN', 'Tài khoản của bạn đã bị khoá hoặc ngưng hoạt động');
       }
 
-      // Link googleId to existing user
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          googleId: payload.googleId,
-          emailVerifiedAt: user.emailVerifiedAt || new Date(),
-          avatarUrl: user.avatarUrl || payload.picture,
-        },
+      user = await authRepository.updateUser(user.id, {
+        googleId: payload.googleId,
+        emailVerifiedAt: user.emailVerifiedAt || new Date(),
+        avatarUrl: user.avatarUrl || payload.picture,
       });
     } else {
-      // Account creation for brand-new Google user
-      user = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          fullName: payload.name,
-          googleId: payload.googleId,
-          authProvider: 'GOOGLE',
-          avatarUrl: payload.picture,
-          emailVerifiedAt: new Date(),
-          passwordHash: null,
-          role: 'CUSTOMER',
-          status: 'ACTIVE',
-        },
+      user = await authRepository.createUser({
+        email: normalizedEmail,
+        fullName: payload.name,
+        googleId: payload.googleId,
+        authProvider: 'GOOGLE',
+        avatarUrl: payload.picture,
+        emailVerifiedAt: new Date(),
+        passwordHash: null,
+        role: 'CUSTOMER',
+        status: 'ACTIVE',
       });
 
       queueEmail('welcome', () =>
@@ -515,12 +401,8 @@ export async function loginWithGoogle({ idToken, userAgent, ipAddress }) {
     }
   }
 
-  // Issue session and update lastLoginAt
   const session = await issueSession(user, { userAgent, ipAddress });
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  });
+  await authRepository.updateUser(user.id, { lastLoginAt: new Date() });
 
   return {
     user: sanitizeUser(user),
@@ -531,40 +413,24 @@ export async function loginWithGoogle({ idToken, userAgent, ipAddress }) {
 
 /**
  * Initiates password reset workflow by generating and storing a reset token, then e-mailing the link.
- *
- * Always resolves with the same message (unknown account, locked account, or throttled request)
- * to prevent account enumeration.
- *
- * @param {object} params
- * @param {string} params.email - User email address.
- * @returns {Promise<{ message: string }>} Status confirmation.
  */
 export async function forgotPassword({ email }) {
   const result = { message: 'If an account exists, a reset link has been dispatched' };
 
-  const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+  const user = await authRepository.findUserByEmail(normalizeEmail(email));
   if (!user || !isLoginable(user)) return result;
 
-  const latest = await prisma.passwordResetToken.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: 'desc' },
-    select: { createdAt: true },
-  });
+  const latest = await authRepository.findLatestPasswordResetToken(user.id);
   if (latest && Date.now() - latest.createdAt.getTime() < RESET_REQUEST_COOLDOWN_MS) {
     return result;
   }
 
   const resetToken = crypto.randomBytes(32).toString('hex');
-  await prisma.$transaction([
-    prisma.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } }),
-    prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashToken(resetToken),
-        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
-      },
-    }),
-  ]);
+  await authRepository.replacePasswordResetTokens({
+    userId: user.id,
+    tokenHash: hashToken(resetToken),
+    expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+  });
 
   queueEmail('password reset', () =>
     sendResetPasswordNotification({ to: user.email, fullName: user.fullName, resetToken }),
@@ -574,47 +440,26 @@ export async function forgotPassword({ email }) {
 
 /**
  * Completes password reset workflow using verification token.
- *
- * @param {object} params
- * @param {string} params.token - Plain reset token from email link.
- * @param {string} params.newPassword - New plaintext password.
- * @returns {Promise<{ message: string }>} Confirmation.
  */
 export async function resetPassword({ token, newPassword }) {
   const invalid = () => new AppError(400, 'INVALID_TOKEN', 'Reset token is invalid or expired');
 
-  const record = await prisma.passwordResetToken.findFirst({
-    where: { tokenHash: hashToken(token), usedAt: null, expiresAt: { gt: new Date() } },
-    include: { user: true },
+  const record = await authRepository.findValidPasswordResetToken({
+    tokenHash: hashToken(token),
+    now: new Date(),
   });
   if (!record || !isLoginable(record.user)) throw invalid();
 
   const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
   const now = new Date();
 
-  await prisma.$transaction(async (tx) => {
-    const claimed = await tx.passwordResetToken.updateMany({
-      where: { id: record.id, usedAt: null },
-      data: { usedAt: now },
-    });
-    if (claimed.count === 0) throw invalid(); // consumed by a concurrent request
-
-    await tx.user.update({
-      where: { id: record.userId },
-      data: {
-        passwordHash,
-        // Receiving the reset link proves ownership of the mailbox.
-        ...(record.user.emailVerifiedAt ? {} : { emailVerifiedAt: now }),
-      },
-    });
-    await tx.passwordResetToken.updateMany({
-      where: { userId: record.userId, usedAt: null },
-      data: { usedAt: now },
-    });
-    await tx.refreshToken.updateMany({
-      where: { userId: record.userId, revokedAt: null },
-      data: { revokedAt: now },
-    });
+  await authRepository.consumePasswordResetAndRevokeSessions({
+    recordId: record.id,
+    userId: record.userId,
+    passwordHash,
+    emailVerifiedAt: record.user.emailVerifiedAt,
+    now,
+    onAlreadyClaimed: invalid,
   });
 
   queueEmail('password reset success', () =>

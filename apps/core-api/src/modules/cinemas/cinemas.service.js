@@ -1,4 +1,4 @@
-import { prisma } from '@cinehub/db';
+import * as cinemasRepository from './cinemas.repository.js';
 
 const num = (d) => (d == null ? null : Number(d));
 
@@ -9,18 +9,7 @@ export async function listCinemas({ page, pageSize, chain, province }) {
     ...(province ? { province: { code: province } } : {}),
   };
 
-  const [rows, total] = await Promise.all([
-    prisma.cinema.findMany({
-      where,
-      include: { chain: true, province: true, ward: true },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.cinema.count({ where }),
-  ]);
-
-  return { rows, total };
+  return cinemasRepository.findCinemasPage({ where, page, pageSize });
 }
 
 export const toCinemaDto = (c) => ({

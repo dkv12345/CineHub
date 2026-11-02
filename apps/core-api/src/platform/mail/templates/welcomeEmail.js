@@ -8,7 +8,7 @@ import { escapeHtml } from './layout.js';
  * @param {string} [params.clientUrl] - Base URL of the web client used for the call-to-action link.
  * @returns {{ html: string, text: string }}
  */
-export function getWelcomeEmail({ fullName, clientUrl = 'http://localhost:5173' }) {
+export function getWelcomeEmail({ fullName, clientUrl = 'http://localhost:4200' }) {
   const safeName = escapeHtml(fullName);
   const text = `Xin chào ${fullName},\n\nChào mừng bạn gia nhập nền tảng đặt vé xem phim CineHub!\nTài khoản của bạn đã được khởi tạo thành công. Hãy khám phá các suất chiếu mới nhất ngay hôm nay.\n\nTrân trọng,\nĐội ngũ CineHub`;
 

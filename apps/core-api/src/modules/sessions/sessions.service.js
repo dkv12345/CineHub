@@ -1,23 +1,8 @@
-import { prisma } from '@cinehub/db';
+import * as sessionsRepository from './sessions.repository.js';
 
 export async function listSessions() {
   const since = new Date(Date.now() - 24 * 3600 * 1000);
-  const showtimes = await prisma.showtime.findMany({
-    where: {
-      startTime: { gte: since },
-    },
-    include: {
-      movie: {
-        include: {
-          sources: true,
-        },
-      },
-      cinema: true,
-      auditorium: true,
-    },
-    orderBy: [{ startTime: 'asc' }],
-    take: 6000,
-  });
+  const showtimes = await sessionsRepository.findRecentAndUpcomingShowtimes(since);
 
   const result = showtimes.map((s, idx) => {
     const totalSeat = s.providerTotalSeats || 120 + ((idx * 13) % 70);
