@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoService } from '@jsverse/transloco';
+import { ChatbotWidgetComponent } from '@cinehub/web/assistant/feature';
 import { AuthStore, ToastService } from '@cinehub/web/core';
 
 @Component({
   selector: 'ch-shell-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -169,6 +170,11 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
       <main class="flex-1">
         <router-outlet />
       </main>
+
+      <!-- Deferred AI Assistant Widget -->
+      @defer (on idle) {
+        <ch-chatbot-widget />
+      }
 
       <!-- Footer -->
       <footer class="border-t border-slate-800/80 bg-slate-950 py-8 text-xs text-slate-400">

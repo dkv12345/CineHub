@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GalaxySession } from '../services/sessionsApi';
-import { filterShowtimes } from './showtimeFilters';
+import { filterShowtimes, type GalaxySession } from '../src/index';
 
 const makeSession = (
   overrides: Partial<GalaxySession> & Pick<GalaxySession, 'id' | 'showDate' | 'movieFormat'>,
@@ -105,7 +104,9 @@ describe('filterShowtimes', () => {
 
   it('matches city IDs, city names, and cinema codes consistently', () => {
     expect(
-      filterShowtimes(sessions, { cityId: '599535ea-1ea2-4393-9b5a-3ba3a807f363' }),
+      filterShowtimes(sessions, {
+        cityId: '599535ea-1ea2-4393-9b5a-3ba3a807f363',
+      }),
     ).toHaveLength(2);
     expect(filterShowtimes(sessions, { cityName: 'ha noi' }).map((session) => session.id)).toEqual([
       '2',

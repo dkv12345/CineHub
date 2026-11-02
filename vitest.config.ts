@@ -9,8 +9,9 @@ const paths: Record<string, string[]> = tsconfig.compilerOptions?.paths ?? {};
 
 const alias: Record<string, string> = {};
 for (const [key, targets] of Object.entries(paths)) {
-  if (targets[0]) {
-    alias[key] = resolve(__dirname, targets[0]);
+  const impl = targets.find((t) => !t.endsWith('.d.ts')) ?? targets[0];
+  if (impl) {
+    alias[key] = resolve(__dirname, impl);
   }
 }
 

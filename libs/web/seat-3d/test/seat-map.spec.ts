@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutForCinema } from '../src/components/SeatMap3D';
+import { layoutForCinema } from '../src/index';
 
 describe('3D seat layout simulation', () => {
   it('uses a generic 10-row layout with a central aisle by default', () => {
