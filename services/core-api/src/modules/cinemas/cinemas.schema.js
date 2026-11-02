@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { paginationQuery } from '@cinehub/shared';
+import { paginationQuery } from '@cinehub/contracts';
 
 export const listCinemasSchema = z.object({
   query: paginationQuery.extend({

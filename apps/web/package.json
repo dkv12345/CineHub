@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cinehub/shared": "*",
+    "@cinehub/contracts": "*",
     "@types/three": "^0.186.0",
     "axios": "^1.20.0",
     "dayjs": "^1.11.13",
