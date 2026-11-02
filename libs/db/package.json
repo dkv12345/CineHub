@@ -14,7 +14,8 @@
     "migrate": "npx dotenv-cli -e ../../.env -- prisma migrate dev",
     "migrate:deploy": "npx dotenv-cli -e ../../.env -- prisma migrate deploy",
     "studio": "npx dotenv-cli -e ../../.env -- prisma studio",
-    "seed": "node --env-file=../../.env prisma/seed.js"
+    "seed": "node --env-file=../../.env prisma/seed.js",
+    "test": "vitest run"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",

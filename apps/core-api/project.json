@@ -1,0 +1,34 @@
+{
+  "name": "core-api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/core-api/src",
+  "projectType": "application",
+  "tags": ["scope:server", "type:app"],
+  "implicitDependencies": ["db", "contracts"],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run dev -w @cinehub/core-api"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --check apps/core-api/src/bootstrap/server.js"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint apps/core-api"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run test -w @cinehub/core-api"
+      }
+    }
+  }
+}
