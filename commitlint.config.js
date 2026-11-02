@@ -1,1 +1,38 @@
-export default { extends: ['@commitlint/config-conventional'] };
+const NX_PROJECT_SCOPES = [
+  'web',
+  'web-e2e',
+  'core-api',
+  'aggregator',
+  'db',
+  'contracts',
+  'shell',
+  'core',
+  'shared-ui',
+  'shared-util',
+  'shared-data-access',
+  'auth',
+  'catalog',
+  'showtimes',
+  'booking',
+  'seat-3d',
+  'concessions',
+  'tickets',
+  'account',
+  'assistant',
+  'testing',
+  'workspace',
+  'infra',
+  'docs',
+  'ci',
+  'tools',
+];
+
+export default {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'scope-empty': [2, 'never'],
+    'scope-enum': [2, 'always', NX_PROJECT_SCOPES],
+    'subject-case': [2, 'always', ['lower-case']],
+    'subject-full-stop': [2, 'never', '.'],
+  },
+};

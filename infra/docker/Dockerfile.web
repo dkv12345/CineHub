@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+FROM node:20-alpine AS deps
+WORKDIR /workspace
+COPY package.json package-lock.json nx.json tsconfig.base.json ./
+COPY apps/web/package.json ./apps/web/
+COPY apps/core-api/package.json ./apps/core-api/
+COPY apps/aggregator/package.json ./apps/aggregator/
+COPY libs/db/package.json ./libs/db/
+COPY libs/db/prisma ./libs/db/prisma
+COPY libs/shared/contracts/package.json ./libs/shared/contracts/
+RUN npm ci
+
+FROM deps AS build
+WORKDIR /workspace
+COPY . .
+RUN npx nx build web --configuration=production
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=4200
+COPY --from=build /workspace/dist/apps/web ./dist/apps/web
+EXPOSE 4200
+CMD ["node", "dist/apps/web/server/server.mjs"]
