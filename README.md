@@ -2,9 +2,9 @@
 
 ## Overview
 
-CineHub is an enterprise-grade digital cinema ticketing and reservation platform built on a distributed monorepo architecture. The platform provides real-time showtime aggregation, 3D Point-of-View (POV) auditorium seating simulation using WebGL/Three.js, an intelligent natural language processing and recommendation engine powered by Google Gemini and vector retrieval, and a multi-tiered concurrency control pipeline designed to eliminate double-booking anomalies under high-throughput conditions.
+CineHub is an enterprise-grade digital cinema ticketing platform built as an **Nx monorepo**. It provides real-time showtime aggregation, a 3D Point-of-View (POV) auditorium seat simulation (WebGL/Three.js), an NLP and recommendation engine powered by Google Gemini and vector retrieval, and a multi-tier concurrency pipeline that eliminates double-booking under high load.
 
-The platform integrates directly with live commercial cinema provider datasets (Galaxy Cinema catalog covering active movies, complexes nationwide, and daily sessions) and operates over a polyglot persistence tier composed of MySQL 8.4, Redis 7, and MongoDB 7.
+The **frontend is an Angular application** (standalone components, Signals, NgRx SignalStore, SSR). The backend is a Node.js modular monolith over a polyglot persistence tier (MySQL 8.4, Redis 7, MongoDB 7), integrated with live Galaxy Cinema datasets.
 
 ---
 
@@ -12,569 +12,412 @@ The platform integrates directly with live commercial cinema provider datasets (
 
 ```mermaid
 flowchart TB
-    subgraph ClientTier["Client Presentation Tier (apps/web)"]
-        UI["React 19 + Vite + Tailwind CSS v4"]
-        Three["3D POV Seat Simulation (Three.js)"]
-        Axios["authorizedAxios Instance"]
-        Queue["Promise Failed Queue & isRefreshing Guard"]
-        Mocks["Isolated Mock Store (mocks/)"]
-        UI --> Three
-        UI --> Axios
-        Axios <--> Queue
-        UI -.->|"VITE_USE_MOCKS=true or Fallback"| Mocks
+    subgraph Client["Client Tier (apps/web - Angular 20+)"]
+        Shell["Shell: Router + Layout (libs/web/shell)"]
+        Features["Feature libs: auth, catalog, showtimes, booking, concessions, tickets, account, assistant"]
+        Seat3D["seat-3d lib (Three.js, outside NgZone)"]
+        Core["Core: HttpClient, Interceptors, Guards (libs/web/core)"]
+        State["NgRx SignalStore (per feature)"]
+        MSW["MSW mocks (dev/test only)"]
+        SSR["Angular SSR + Hydration"]
+        Shell --> Features --> State
+        Features --> Seat3D
+        Features --> Core
+        Core -.->|"environment.mocks=true"| MSW
+        SSR --- Shell
     end
 
-    subgraph GatewayTier["API & Domain Services (services/core-api)"]
-        Router["Express 5 Router (/api)"]
-        Cors["CORS Policy (Credentials & Whitelist)"]
-        AuthMW["Authentication Middleware (requireAuth, requireRole)"]
-
-        subgraph DomainModules["Modular Monolith Domains (modules/)"]
-            AuthMod["auth (routes, controller, service, schema)"]
-            CinemasMod["cinemas"]
-            MoviesMod["movies"]
-            ConcessionsMod["concessions"]
-            ChatbotMod["chatbot & recommendations"]
+    subgraph Api["API Tier (apps/core-api - Express 5)"]
+        Router["/api/v1 Router"]
+        Mw["Platform middleware: CORS, rate limit, auth, validate, errors"]
+        subgraph Modules["Domain modules (controller > service > repository)"]
+            Auth["auth"] --- Cin["cinemas"] --- Mov["movies"] --- Con["concessions"]
+            Ses["sessions"] --- Book["booking (planned)"] --- Bot["chatbot + recommendations"]
         end
-
-        subgraph SharedLib["Shared Infrastructure (lib/)"]
-            JWT["jwt.js (Sign, Verify, Hash)"]
-            OAuth["googleOAuth.js (Google Auth Client)"]
-            Errors["errors.js (AppError)"]
-            Logger["logger.js (Pino)"]
-        end
-
-        Jobs["Background Jobs (jobs/embed-movies.js)"]
-
-        Router --> Cors --> AuthMW
-        AuthMW --> DomainModules
-        AuthMod <--> JWT
-        AuthMod <--> OAuth
-        Jobs -.-> ChatbotMod
+        Router --> Mw --> Modules
     end
 
-    subgraph ExternalServices["External Identity Providers & LLM"]
-        GoogleAuth["Google Identity Services (OAuth 2.0 / One Tap)"]
-        GeminiAPI["Google Gemini LLM & Embedding API"]
+    subgraph Ingest["Ingestion (apps/aggregator)"]
+        Crawler["Galaxy Crawler"]
     end
 
-    subgraph DataIngestionTier["Ingestion & Data Pipelines (services/aggregator & tools)"]
-        Crawler["Galaxy Cinema Crawler"]
-        SyncTool["tools/sync-data.js"]
+    subgraph Libs["Shared libs"]
+        Contracts["libs/shared/contracts (Zod, error codes, OpenAPI)"]
+        DB["libs/db (Prisma)"]
     end
 
-    subgraph PersistenceTier["Polyglot Persistence Tier"]
-        MySQL[("MySQL 8.4 - Prisma ORM 6")]
-        Redis[("Redis 7 - Distributed Lock & Cache")]
-        Mongo[("MongoDB 7 - Document & Vector Store")]
+    subgraph Data["Persistence"]
+        MySQL[("MySQL 8.4")]
+        Redis[("Redis 7")]
+        Mongo[("MongoDB 7")]
     end
 
-    OAuth <-->|"ID Token Verification"| GoogleAuth
-    ChatbotMod <--> GeminiAPI
-    Axios <-->|"HTTP REST Proxy"| Router
-    DomainModules <--> MySQL
-    DomainModules <--> Redis
-    ChatbotMod <--> Mongo
-    Jobs <--> Mongo
-    Jobs <--> MySQL
+    Ext1["Google Identity Services"]
+    Ext2["Google Gemini API"]
+
+    Core <-->|"REST (proxy /api in dev)"| Router
+    Contracts -.-> Core
+    Contracts -.-> Modules
+    Modules --> DB --> MySQL
+    Modules <--> Redis
+    Bot <--> Mongo
+    Bot <--> Ext2
+    Auth <--> Ext1
     Crawler --> MySQL
     Crawler -.-> Mongo
-    SyncTool --> MySQL
 ```
 
 ---
 
 ## Table of Contents
 
-1. [Architectural Overview and Core Decisions](#1-architectural-overview-and-core-decisions)
-2. [Monorepo Workspace Topology](#2-monorepo-workspace-topology)
-3. [Network Topology and Service Port Allocations](#3-network-topology-and-service-port-allocations)
-4. [Standard 4-Step Onboarding and Local Setup](#4-standard-4-step-onboarding-and-local-setup)
-5. [Authentication and Token Lifecycle Architecture](#5-authentication-and-token-lifecycle-architecture)
-6. [Operational Scripts and Command Reference](#6-operational-scripts-and-command-reference)
-7. [Data Tier Management and Migration Workflows](#7-data-tier-management-and-migration-workflows)
-8. [Concurrency Control and Seat Lease Protocol](#8-concurrency-control-and-seat-lease-protocol)
-9. [Engineering Standards and Git Governance](#9-engineering-standards-and-git-governance)
-10. [Troubleshooting and Operational Runbook](#10-troubleshooting-and-operational-runbook)
+1. Architectural Decisions
+2. Technology Matrix
+3. Monorepo Topology
+4. Frontend Architecture (Angular)
+5. Network Topology and Ports
+6. Onboarding and Local Setup
+7. Authentication and Token Lifecycle
+8. Command Reference
+9. Data Tier and Migrations
+10. Concurrency Control and Seat Lease Protocol
+11. Engineering Standards, CI and Governance
+12. Troubleshooting Runbook
 
 ---
 
-## 1. Architectural Overview and Core Decisions
+## 1. Architectural Decisions
 
-The CineHub architecture follows domain-driven modular design principles configured as an NPM Monorepo. Key architectural decisions include:
+- **Nx Monorepo (npm)**: single lockfile, task caching, `nx affected`, enforced module boundaries via project tags.
+- **Domain-driven modular monolith** on the backend; **domain-sliced libraries** on the frontend (`feature` / `data-access` / `ui` / `util`).
+- **Contract-first**: Zod schemas in `libs/shared/contracts` generate OpenAPI; the Angular API client and types are generated from it.
+- **Polyglot persistence**: MySQL (ACID source of truth, 39 tables / 27 enums), Redis (atomic seat leases, rate limit, `noeviction` + AOF), MongoDB (raw crawler payloads, reviews, audit, embeddings).
+- **Multi-tier concurrency**: Redis lease -> MySQL `READ COMMITTED` transaction -> pre-checkout lease validation.
 
-### 1.1. Monorepo Topology
+## 2. Technology Matrix
 
-- **NPM Workspaces**: Centralized dependency resolution, single lockfile integrity, and zero-overhead workspace package resolution (`@cinehub/db`, `@cinehub/shared`, `@cinehub/core-api`, `@cinehub/web`, `@cinehub/aggregator`).
+| Layer              | Technology                                                                                               | Function                                          |
+| :----------------- | :------------------------------------------------------------------------------------------------------- | :------------------------------------------------ |
+| Workspace          | Nx + npm                                                                                                 | Task orchestration, caching, boundaries           |
+| Frontend framework | Angular 20+ (standalone, Signals, zoneless, SSR)                                                         | SPA/SSR application                               |
+| State              | NgRx SignalStore, Angular Signals                                                                        | Feature and local state                           |
+| HTTP & security    | `HttpClient` + functional interceptors, RxJS                                                             | Auth header, silent refresh, retry, error mapping |
+| Forms              | Typed Reactive Forms + Zod validator adapter                                                             | Shared validation with the backend                |
+| UI                 | Tailwind CSS v4, Angular CDK / Material 3                                                                | Design system, accessibility                      |
+| 3D                 | Three.js (WebGL) in an Angular component                                                                 | Seat POV simulation                               |
+| i18n               | Transloco                                                                                                | vi / en                                           |
+| API client         | Generated from OpenAPI (`ng-openapi-gen`)                                                                | Type-safe contract                                |
+| Mocking            | MSW                                                                                                      | Network-level mocks for dev/test                  |
+| Backend            | Node.js 20+ (ESM), Express 5                                                                             | REST API                                          |
+| Auth               | JWT, Refresh Token Rotation, Google OAuth 2.0                                                            | Sessions and account linking                      |
+| AI                 | Google Gemini, vector similarity                                                                         | Vietnamese intent classification, recommendations |
+| Data               | MySQL 8.4 + Prisma 6, Redis 7, MongoDB 7                                                                 | See section 1                                     |
+| Quality            | ESLint 9 + angular-eslint, Prettier, Husky, lint-staged, Commitlint, Vitest, Testing Library, Playwright | Lint, format, unit, E2E                           |
+| CI/CD              | GitHub Actions (`nx affected`), Docker                                                                   | Build, test, release                              |
 
-### 1.2. Polyglot Persistence Architecture
-
-- **Relational Core (MySQL 8.4 via Prisma ORM 6)**: Acts as the definitive single source of truth for all transactional business entities, including Accounts, Refresh Tokens, Password Reset Tokens, Bookings, Orders, Tickets, Concessions, Showtimes, Auditoriums, and Price Rule matrices. Schema integrity is strictly enforced across 39 tables and 27 enumerations.
-- **Distributed Cache and Locking (Redis 7)**: Implements atomic seat hold reservations using Lua scripts with explicit Time-To-Live (TTL) expiration, rate limiting, and session security. Configured with Append-Only File (AOF) persistence and `noeviction` policy to guarantee lease validity.
-- **Unstructured / Document Storage (MongoDB 7)**: Retains raw immutable crawler payloads from cinema API gateways, user reviews, audit logging, and fallback embedding vector representations.
-
-### 1.3. Concurrency and Transaction Isolation
-
-- Seat selection under high load implements a multi-tier reservation protocol:
-  1. Distributed atomic lease in Redis (`SET resource_key token NX EX 900`).
-  2. Transactional validation in MySQL (`READ COMMITTED` isolation with row-level locks).
-  3. Pre-checkout lease validation ensuring no order placement can occur past lease expiration.
-
-### 1.4. Technology Matrix
-
-| Layer                       | Technology                                    | Operational Function                                                           |
-| :-------------------------- | :-------------------------------------------- | :----------------------------------------------------------------------------- |
-| **Workspace Orchestration** | NPM Workspaces                                | Workspace coordination, shared dependencies, unified tooling                   |
-| **Client Application**      | React 19, Vite, Tailwind CSS v4               | Single-page application, responsive layout, reactive state machine             |
-| **HTTP Client & Security**  | Axios with Interceptors & Queue               | Silent JWT renewal, request retry queue, withCredentials cookies               |
-| **3D Simulation Engine**    | Three.js (WebGL)                              | Procedural 3D auditorium viewport projection from selected seat coordinates    |
-| **Application Server**      | Node.js 20+ (ESM), Express 5                  | High-throughput REST API, Modular Monolith architecture                        |
-| **Authentication Services** | JWT, Refresh Token Rotation, Google OAuth 2.0 | Multi-provider authentication, secure token storage, account linking           |
-| **AI / NLP Engine**         | Google Gemini API, Natural NLP, Vector Math   | Vietnamese intent classification, cosine similarity search, generative chatbot |
-| **Database & ORM**          | MySQL 8.4, Prisma 6                           | ACID-compliant transaction processing, schema migrations, relation modeling    |
-| **Cache & Task Queue**      | Redis 7                                       | Atomic distributed locks, TTL leases, rate limiting                            |
-| **Validation Layer**        | Zod (`@cinehub/shared`)                       | End-to-end runtime type safety shared across client and server tiers           |
-| **Static Analysis & QA**    | ESLint 9, Prettier, Husky, Commitlint, Vitest | Continuous code linting, formatting enforcement, automated unit test suites    |
-
----
-
-## 2. Monorepo Workspace Topology
+## 3. Monorepo Topology
 
 ```
 cinehub/
 ├── apps/
-│   └── web/                                # Client Frontend Application (React 19 + Vite + TypeScript)
-│       ├── src/
-│       │   ├── components/                 # UI primitives, layout wrappers, SeatMap3D
-│       │   ├── lib/
-│       │   │   └── authorizedAxios.ts      # Axios instance, request/response interceptors & refresh queue
-│       │   ├── mocks/
-│       │   │   ├── data.mock.ts            # Isolated static movie/cinema datasets for tests & fallbacks
-│       │   │   └── sessions.mock.ts        # Large showtime session mock dataset (code-split on demand)
-│       │   ├── pages/                      # Route controllers: Home, Showtimes, Seats, Checkout, Profile
-│       │   ├── services/
-│       │   │   ├── authApi.ts              # Authentication service client interface
-│       │   │   ├── sessionsApi.ts          # Showtime sessions client with real API & mock fallback
-│       │   │   ├── moviesApi.ts            # Movie catalog API client
-│       │   │   ├── concessionsApi.ts       # Food and beverage API client
-│       │   │   └── chatbotApi.ts           # AI assistant API client
-│       │   ├── data.ts                     # UI configuration, theme tokens, and mock re-exports
-│       │   └── store.tsx                   # Client state management
-│       └── test/                           # UI and seat simulation tests
-├── services/
-│   ├── core-api/                           # Modular Monolith Backend (Node.js ESM + Express 5)
-│   │   ├── src/
-│   │   │   ├── config/
-│   │   │   │   ├── cors.js                 # Centralized CORS policy with credentials support
-│   │   │   │   └── env.js                  # Runtime environment variable validation (Zod)
-│   │   │   ├── lib/
-│   │   │   │   ├── jwt.js                  # JWT token creation, verification and hashing utilities
-│   │   │   │   ├── googleOAuth.js          # Google OAuth2 client and token verification
-│   │   │   │   ├── errors.js               # Structured AppError class
-│   │   │   │   └── logger.js               # Pino logging configuration
-│   │   │   ├── middleware/
-│   │   │   │   ├── auth.middleware.js      # Bearer token verification and role guard middleware
-│   │   │   │   ├── errorHandler.js         # Centralized error handler and notFound handler
-│   │   │   │   └── validate.js             # Zod schema request validation middleware
-│   │   │   ├── modules/                    # Feature domains (Modular Monolith)
-│   │   │   │   ├── auth/                   # routes, controller, service, schema
-│   │   │   │   ├── cinemas/                # routes, controller, service, schema
-│   │   │   │   ├── concessions/            # routes, controller, service, schema
-│   │   │   │   ├── movies/                 # routes, controller, service, schema
-│   │   │   │   ├── chatbot/                # routes, controller, service, vector search
-│   │   │   │   └── recommendations/        # routes, controller, service
-│   │   │   ├── jobs/
-│   │   │   │   └── embed-movies.js         # Movie vector embedding generation job
-│   │   │   ├── app.js                      # Express application factory
-│   │   │   ├── routes.js                   # Root API route aggregations
-│   │   │   └── server.js                   # HTTP server entrypoint
-│   │   └── test/                           # API domain and controller unit tests
-│   └── aggregator/                         # Ingestion Worker & Cinema Data Pipeline
-│       ├── src/
-│       │   ├── adapters/                   # Cinema provider data normalization mappers
-│       │   └── jobs/                       # Scheduled crawl jobs (crawl-galaxy.js)
-│       └── test/                           # Ingestion mapper contract test suites
-├── packages/
-│   ├── db/                                 # Relational Database Package
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma               # Enterprise Prisma schema (39 models, 27 enums)
-│   │   │   ├── migrations/                 # Version-controlled SQL migration history
-│   │   │   └── seed.js                     # Seed script (cinemas, rooms, pricing rules, concessions)
-│   │   └── src/index.js                    # Singleton PrismaClient export
-│   └── shared/                             # Universal Shared Library
-│       └── src/                            # Zod schemas, HTTP error codes, domain business constants
-├── tools/
-│   └── sync-data.js                        # Direct live data synchronization utility
+│   ├── web/                          # Angular application (thin: bootstrap, app.config, routes, SSR)
+│   ├── web-e2e/                      # Playwright end-to-end tests
+│   ├── core-api/                     # Node.js modular monolith (Express 5)
+│   │   └── src/
+│   │       ├── bootstrap/            # app.js (factory), server.js, routes.js
+│   │       ├── platform/             # Cross-cutting infrastructure
+│   │       │   ├── config/           # env.js (Zod), cors.js
+│   │       │   ├── http/             # auth/optionalAuth/rateLimit/validate/errorHandler middleware
+│   │       │   ├── security/         # jwt.js, googleOAuth.js
+│   │       │   ├── mail/             # mailer.js + templates/
+│   │       │   ├── cache/            # redis client, lease (Lua) helpers
+│   │       │   ├── observability/    # logger.js (Pino), requestId
+│   │       │   └── utils/            # errors.js (AppError), qr.js, text.js
+│   │       ├── modules/              # Feature domains (public API via index.js)
+│   │       │   ├── auth/             # routes, controller, service, repository, schema
+│   │       │   ├── cinemas/
+│   │       │   ├── movies/
+│   │       │   ├── sessions/
+│   │       │   ├── concessions/
+│   │       │   ├── booking/          # (planned) seats, Redis lease, orders, tickets
+│   │       │   ├── chatbot/          # nlp, session, vector, service
+│   │       │   ├── recommendations/
+│   │       │   └── health/
+│   │       ├── jobs/                 # embed-movies.js
+│   │       └── scripts/              # chat-scenario.mjs, gemini-probe.mjs
+│   └── aggregator/                   # Ingestion worker
+│       └── src/{adapters,jobs,upsert,galaxyClient.js,saveRaw.js,config.js}
+├── libs/
+│   ├── web/                          # Frontend libraries (tag: scope:web)
+│   │   ├── shell/                    # Layout, navigation, route composition  (type:shell)
+│   │   ├── core/                     # Interceptors, guards, config, error handler, GoogleAuthService
+│   │   ├── shared/
+│   │   │   ├── ui/                   # Buttons, dialogs, skeletons (design system)
+│   │   │   └── util/                 # Pure helpers (formatters, date utils)
+│   │   ├── auth/{feature,data-access}/        # Login, register, verify-email, reset-password
+│   │   ├── catalog/{feature,data-access,ui}/  # Home, MovieDetail
+│   │   ├── showtimes/{feature,data-access,ui,util}/  # Showtimes, filter bar, showtimeFilters
+│   │   ├── booking/{feature,data-access,ui}/  # Seats, Checkout, Result, seat store
+│   │   ├── seat-3d/                           # SeatMap3D, SeatPOVScene (Three.js)
+│   │   ├── concessions/{feature,data-access}/
+│   │   ├── tickets/{feature,data-access}/     # MyTickets
+│   │   ├── account/{feature,data-access}/     # Profile
+│   │   ├── assistant/{feature,data-access}/   # Chatbot widget, recommendations
+│   │   └── testing/                           # MSW handlers, fixtures (formerly mocks/)
+│   ├── shared/
+│   │   └── contracts/                # Zod schemas, constants, error codes, OpenAPI generation (scope:shared)
+│   └── db/                           # Prisma schema, migrations, seed, client (scope:server)
+├── data/seed/                        # galaxy_normalized_v3.json, galaxy_concessions.json
+├── infra/
+│   ├── docker/                       # docker-compose.yml, Dockerfiles (web, core-api, aggregator)
+│   └── k8s/                          # (optional) manifests / Helm
 ├── docs/
-│   ├── GIT_WORKFLOW.md                     # Team Git governance, feature branch lifecycle, rebase standards
-│   └── database/                           # Physical database architecture documentation
-├── .env.example                            # Canonical environment variable specification
-├── docker-compose.yml                      # Containerized infrastructure definition
-├── eslint.config.js                        # ESLint flat configuration enforcing module boundaries
-├── commitlint.config.js                    # Commit message standard rules (Conventional Commits)
-└── package.json                            # Root orchestration scripts and workspace manifests
+│   ├── architecture/                 # C4 diagrams, sequence diagrams
+│   ├── adr/                          # Architecture Decision Records (0001-use-nx, 0002-angular-signalstore...)
+│   ├── api/                          # Generated OpenAPI spec
+│   ├── database/                     # CSDL design document
+│   ├── ai/                           # chatbot-and-recommendations.md
+│   └── GIT_WORKFLOW.md
+├── tools/                            # sync-data.js, generators, scripts
+├── .github/{workflows/ci.yml, PULL_REQUEST_TEMPLATE.md, CODEOWNERS}
+├── .husky/  .vscode/  .editorconfig  .nvmrc  .prettierrc  .env.example
+├── nx.json  eslint.config.js  commitlint.config.js  tsconfig.base.json  package.json
+└── README.md
 ```
 
----
+## 4. Frontend Architecture (Angular)
 
-## 3. Network Topology and Service Port Allocations
+### 4.1. Library types and dependency rules
 
-The default local development topology requires the following network port allocations:
+Every library carries two tags. `@nx/enforce-module-boundaries` rejects violating imports at lint time.
 
-| Service Identity           | Network Endpoint        | Transport / Protocol    | Access Role                                 |
-| :------------------------- | :---------------------- | :---------------------- | :------------------------------------------ |
-| **Frontend Web**           | `http://localhost:5173` | HTTP / WebSockets (HMR) | End-user interactive web interface          |
-| **Core API Gateway**       | `http://localhost:4000` | HTTP / JSON REST        | Primary RESTful application services        |
-| **Prisma Studio**          | `http://localhost:5555` | HTTP / Web GUI          | Administrative relational data explorer     |
-| **MySQL Engine**           | `localhost:3306`        | TCP / MySQL Protocol    | Relational persistence engine               |
-| **Redis Cache**            | `localhost:6379`        | TCP / RESP              | In-memory distributed lock and caching tier |
-| **MongoDB Document Store** | `localhost:27017`       | TCP / MongoDB Wire      | Unstructured ingest document storage        |
+| Type tag           | May depend on                         |
+| :----------------- | :------------------------------------ |
+| `type:app`         | shell, feature, data-access, ui, util |
+| `type:shell`       | feature, data-access, ui, util        |
+| `type:feature`     | data-access, ui, util                 |
+| `type:data-access` | util, `scope:shared` contracts        |
+| `type:ui`          | util                                  |
+| `type:util`        | util                                  |
 
----
+| Scope tag      | Rule                                         |
+| :------------- | :------------------------------------------- |
+| `scope:web`    | May depend on `scope:web`, `scope:shared`    |
+| `scope:server` | May depend on `scope:server`, `scope:shared` |
+| `scope:shared` | May depend on `scope:shared` only            |
 
-## 4. Standard 4-Step Onboarding and Local Setup
+Features never import other features. Cross-feature communication goes through routes, shared stores in `data-access`, or events.
 
-Follow this standardized four-step procedure to initialize and run the entire CineHub monorepo locally:
+### 4.2. Application conventions
 
-### Prerequisites
+- **Standalone components only**, `ChangeDetectionStrategy.OnPush`, zoneless change detection, `inject()` instead of constructor injection, `@if/@for` control flow.
+- **Routing**: every feature exposes a `routes.ts`; the shell lazy-loads with `loadChildren`. Route guards are functional: `authGuard`, `roleGuard('ADMIN')`, `guestGuard`. Resolvers prefetch movie/showtime data.
+- **State**: server state in `data-access` SignalStores (`withEntities`, `rxMethod`); UI state in component signals. No global mutable singletons.
+- **Forms**: typed Reactive Forms; validators derived from `@cinehub/contracts` Zod schemas.
+- **Error handling**: global `ErrorHandler` + HTTP error interceptor mapping `AppError` codes to toast notifications; no raw `console.log`.
+- **3D**: `SeatMap3D` / `SeatPOVScene` initialize Three.js inside `NgZone.runOutsideAngular`, dispose geometries/renderer in `DestroyRef.onDestroy`, lazy-loaded with the booking route (Three.js stays out of the main bundle).
+- **Performance**: route-level code splitting, `@defer` for below-the-fold blocks, `NgOptimizedImage` for posters, virtual scroll for long showtime lists, budgets enforced in `angular.json`.
+- **SSR**: public pages (home, movie detail, showtimes) server-rendered with hydration; booking/checkout are client-only (`renderMode: Client`).
+- **Accessibility**: Angular CDK a11y (focus trap, live announcer); WCAG 2.1 AA checks in CI via axe in Playwright.
+- **Environments**: `environment.ts` / `environment.development.ts` via `fileReplacements`; no runtime `VITE_*` variables. MSW is enabled only when `environment.useMocks === true`.
 
-- Node.js version `>= 20.0.0`
-- NPM version `>= 10.0.0`
-- Docker Engine and Docker Compose version `>= 24.0.0`
+### 4.3. Generated API client
 
-### Preparation: Environment Configuration
+```bash
+npm run api:spec      # generate docs/api/openapi.json from Zod schemas
+npm run api:client    # generate libs/web/shared/data-access api client + types
+```
 
-Before executing the onboarding steps, ensure `.env` is initialized from the example file:
+CI fails if the generated client is out of date (`git diff --exit-code`).
+
+## 5. Network Topology and Ports
+
+| Service            | Endpoint                | Protocol        | Role                              |
+| :----------------- | :---------------------- | :-------------- | :-------------------------------- |
+| Angular dev server | `http://localhost:4200` | HTTP / WS (HMR) | Web UI, proxies `/api` to `:4000` |
+| Core API           | `http://localhost:4000` | HTTP / JSON     | REST services                     |
+| Prisma Studio      | `http://localhost:5555` | HTTP            | Relational data explorer          |
+| MySQL              | `localhost:3306`        | TCP             | Relational store                  |
+| Redis              | `localhost:6379`        | RESP            | Locks, cache                      |
+| MongoDB            | `localhost:27017`       | Mongo wire      | Document store                    |
+
+`apps/web/proxy.conf.json`:
+
+```json
+{ "/api": { "target": "http://localhost:4000", "secure": false, "changeOrigin": true } }
+```
+
+## 6. Onboarding and Local Setup
+
+Prerequisites: Node.js >= 20, npm >= 10, Docker + Compose >= 24.
 
 ```bash
 cp .env.example .env
 ```
 
----
+1. **Infrastructure**: `npm run infra:up` then `docker compose -f infra/docker/docker-compose.yml ps`
+2. **Dependencies**: `npm install` (installs workspaces, configures Husky)
+3. **Database**: `npm run db:migrate && npm run db:seed`
+4. **Run everything**: `npm run dev` (Nx runs `core-api` and `web` in parallel)
 
-### Step 1: Provision Containerized Infrastructure
+Access: Web `http://localhost:4200`, API health `http://localhost:4000/api/health`, Prisma Studio `npm run db:studio`.
 
-Start the containerized MySQL 8.4, Redis 7, and MongoDB 7 instances in detached mode:
+## 7. Authentication and Token Lifecycle
 
-```bash
-npm run infra:up
-```
-
-_Alternative equivalent command:_
-
-```bash
-docker compose up -d
-```
-
-Verify that all three database containers are healthy:
-
-```bash
-docker compose ps
-```
-
----
-
-### Step 2: Install Monorepo Dependencies
-
-Install all workspace dependencies from the root directory. This command automatically resolves workspace symlinks and configures Git hooks via Husky:
-
-```bash
-npm install
-```
-
----
-
-### Step 3: Run Database Migrations and Seed Baseline Data
-
-Apply the Prisma relational schema migrations to MySQL and populate master records (cinema chains, auditoriums, room tiers, price rule matrices, seat maps, concessions, and movies):
-
-```bash
-npm run db:migrate && npm run db:seed
-```
-
----
-
-### Step 4: Launch Full-Stack Development Environment
-
-Start both the Backend API server and the Frontend Vite client concurrently with live reload:
-
-```bash
-npm run dev
-```
-
-_Alternative alias:_
-
-```bash
-npm run dev:all
-```
-
-Once launched, access the local services at:
-
-- Web Application: `http://localhost:5173`
-- Backend API Health Check: `http://localhost:4000/api/health`
-- Optional Prisma Studio: `npm run db:studio` -> `http://localhost:5555`
-
----
-
-## 5. Authentication and Token Lifecycle Architecture
-
-CineHub enforces an enterprise JWT + Refresh Token Rotation (RTR) authentication lifecycle designed to protect against cross-site scripting (XSS), cross-site request forgery (CSRF), and token theft:
+JWT + Refresh Token Rotation (RTR), protected against XSS, CSRF and token theft.
 
 ```
-[Client Application]                                     [Core API Server]
-         |                                                        |
-         |---- 1. POST /api/v1/auth/login ----------------------->|
-         |                                                        | Validates credentials
-         |<--- 2. Returns accessToken (15m) + refreshToken Cookie -| Sets HTTP-only cookie
-         |                                                        |
-         |---- 3. GET /api/* (Header: Bearer accessToken) ------->|
-         |                                                        | Validates JWT Access Token
-         |<--- 4. HTTP 200 OK (Protected Data) -------------------|
-         |                                                        |
-         | [Time passes: accessToken expires]                     |
-         |                                                        |
-         |---- 5. GET /api/* (Expired accessToken) -------------->|
-         |                                                        | Detects expiration
-         |<--- 6. HTTP 401 Unauthorized (code: TOKEN_EXPIRED) ----|
-         |                                                        |
-         | [Axios Interceptor catches 401 & queues requests]      |
-         |---- 7. PUT /api/v1/auth/refresh-token (Cookie sent) -->|
-         |                                                        | Validates RTR Family
-         |                                                        | Rotates token record
-         |<--- 8. Returns new accessToken + new Cookie -----------|
-         |                                                        |
-         | [Drains Promise queue & retries original requests]     |
-         |---- 9. Retries GET /api/* with new token ------------->|
-         |<--- 10. HTTP 200 OK (Success) -------------------------|
+[Angular HttpClient]                                  [Core API]
+  | 1. POST /api/v1/auth/login ---------------------->|
+  |<-- 2. accessToken (15m) + refresh cookie ----------|
+  | 3. GET /api/* (Authorization: Bearer) ------------>|
+  |<-- 4. 200 -----------------------------------------|
+  | ... accessToken expires ...                        |
+  | 5. GET /api/* ------------------------------------>|
+  |<-- 6. 401 TOKEN_EXPIRED ----------------------------|
+  | [authInterceptor: single shared refresh$ in flight]|
+  | 7. PUT /api/v1/auth/refresh-token (cookie) ------->|
+  |<-- 8. new accessToken + rotated cookie -------------|
+  | 9. All waiting requests replay with new token ---->|
+  |<-- 10. 200 ----------------------------------------|
 ```
 
-### 5.1. Dual Token Strategy
+### 7.1. Dual token strategy
 
-- **Access Token (Short-lived, 15 minutes)**: Signed using `JWT_ACCESS_SECRET` with algorithm `HS256`. Carries `{ sub: userId, role, email }`. Passed by the frontend in the HTTP `Authorization: Bearer <token>` header.
-- **Refresh Token (Long-lived, 7 days)**: Signed using `JWT_REFRESH_SECRET`. Stored as a SHA-256 hash in MySQL (`refresh_tokens` table) and transmitted exclusively via an HTTP-only, SameSite=Strict cookie (`path: /api`).
+- **Access token** (15 min, HS256, `JWT_ACCESS_SECRET`): `{ sub, role, email }`, sent as `Authorization: Bearer`.
+- **Refresh token** (7 days, `JWT_REFRESH_SECRET`): stored as SHA-256 hash in `refresh_tokens`; delivered only via HTTP-only, `SameSite=Strict` cookie (`path=/api`).
 
-### 5.2. Refresh Token Rotation (RTR) & Reuse Detection
+### 7.2. RTR and reuse detection
 
-- Every refresh request invalidates the presenting refresh token and issues a new token pair within the same `familyId`.
-- If an attacker attempts to use an already-revoked or already-replaced refresh token, the system detects a token reuse attack, terminates the entire token family immediately, and revokes all active sessions for that family.
+Each refresh revokes the presented token and issues a new one in the same `familyId`. Presenting a revoked token terminates the whole family and all of its sessions.
 
-### 5.3. Google OAuth 2.0 Integration & Account Linking
+### 7.3. Google OAuth 2.0 and account linking
 
-- **Client Flow**: Uses Google Sign-In or Google One Tap to acquire an ID token on the client.
-- **Backend Verification**: Dispatches `POST /api/v1/auth/google` with `{ idToken }`. Verified using `google-auth-library` (`verifyGoogleIdToken`).
-- **Account Linking & Merging**:
-  1. Searches user by `googleId`.
-  2. If not found, searches by verified `email`. If user exists with local credentials, links `googleId` and marks `emailVerifiedAt = new Date()`.
-  3. If user does not exist, registers a new account with `authProvider: 'GOOGLE'` and `passwordHash: null`.
+Client obtains an ID token via Google Identity Services (wrapped by `GoogleAuthService`), then calls `POST /api/v1/auth/google`. The server verifies it with `google-auth-library` and: (1) finds by `googleId`; (2) else by verified `email` and links `googleId`; (3) else creates a `GOOGLE` account with `passwordHash = null`.
 
-### 5.4. Email Verification (OTP) & Password Reset Workflow
+### 7.4. Email verification (OTP) and password reset
 
-- **Email Verification (`POST /api/v1/auth/register` & `POST /api/v1/auth/verify-email`)**:
-  1. Upon registration, generates a 6-digit OTP, stores its SHA-256 hash (salted with `userId`) in `email_verification_tokens` (10-minute expiry), and dispatches the OTP via Mailtrap.
-  2. The user enters the OTP at `#/verify-email`. The server validates the code, marks `emailVerifiedAt = new Date()`, issues an access token + HTTP-only refresh cookie, and sends a branded Welcome Email.
-  3. `POST /api/v1/auth/resend-verification` allows requesting a new OTP with a 60-second cooldown rate limit.
-- **Initiation (`POST /api/v1/auth/forgot-password`)**: Validates email, generates a cryptographically secure random token, stores its SHA-256 hash in MySQL (`password_reset_tokens` table with 15-minute expiration), and dispatches reset instructions. Always returns a generic confirmation to prevent account enumeration.
-- **Confirmation (`POST /api/v1/auth/reset-password`)**: Validates plain token against unexpired, unused hash. Hashes new password with bcryptjs (cost factor 10), updates `users.passwordHash`, marks reset token as used, sends a reset confirmation email, and invalidates all active refresh tokens for the user across all devices.
+- Register generates a 6-digit OTP (SHA-256 salted with `userId`, 10-minute expiry) sent via Mailtrap; `verify-email` issues the session and sends a welcome email; `resend-verification` has a 60 s cooldown.
+- `forgot-password` stores a hashed random token (15 min) and always returns a generic response; `reset-password` validates the token, hashes the new password with bcryptjs (cost 10), and revokes all refresh tokens across devices.
 
-### 5.5. Frontend Axios Interceptors & Concurrency Guard
+### 7.5. Angular interceptor design (replaces `isRefreshing` + `failedQueue`)
 
-- **`isRefreshing` Flag**: Prevents duplicate refresh requests when multiple concurrent asynchronous API calls receive HTTP 401 simultaneously.
-- **Promise Failed Queue (`failedQueue`)**: Holds pending resolver/rejecter callbacks. While the refresh request is in flight, incoming 401 responses are enqueued. Upon successful token renewal, all queued requests are replayed with the new Bearer token.
+```ts
+// libs/web/core/src/lib/auth/auth.interceptor.ts
+let refresh$: Observable<string> | null = null;
 
-### 5.6. Core Auth Endpoints Specification
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthStore);
+  const withToken = (r: HttpRequest<unknown>, t: string | null) =>
+    r.clone({ withCredentials: true, setHeaders: t ? { Authorization: `Bearer ${t}` } : {} });
 
-All endpoints are mounted on `/api/v1/auth` and `/api/auth`:
-
-| Method | Endpoint                           | Protection   | Description                                                  |
-| :----- | :--------------------------------- | :----------- | :----------------------------------------------------------- |
-| `POST` | `/api/v1/auth/register`            | Public       | Customer account registration; emails 6-digit OTP code       |
-| `POST` | `/api/v1/auth/verify-email`        | Public       | Verifies email via 6-digit OTP; sets session & sends welcome |
-| `POST` | `/api/v1/auth/resend-verification` | Public       | Resends OTP verification email (rate-limited)                |
-| `POST` | `/api/v1/auth/login`               | Public       | Credentials login; sets HTTP-only refresh token cookie       |
-| `POST` | `/api/v1/auth/logout`              | Public       | Revokes refresh token in database and clears session cookie  |
-| `PUT`  | `/api/v1/auth/refresh-token`       | Public       | Rotates refresh token and returns new access token           |
-| `GET`  | `/api/v1/auth/me`                  | Bearer Token | Retrieves authenticated user profile                         |
-| `POST` | `/api/v1/auth/google`              | Public       | Authenticates Google OAuth ID token; sets session cookie     |
-| `POST` | `/api/v1/auth/forgot-password`     | Public       | Dispatches password reset token via email                    |
-| `POST` | `/api/v1/auth/reset-password`      | Public       | Completes password reset using verification token            |
-
----
-
-## 6. Operational Scripts and Command Reference
-
-All orchestration commands are managed from the root `package.json`:
-
-| Script Command         | Execution Context   | Description                                                            |
-| :--------------------- | :------------------ | :--------------------------------------------------------------------- |
-| `npm run dev`          | Monorepo Root       | Concurrently runs `@cinehub/core-api` and `@cinehub/web`               |
-| `npm run dev:all`      | Monorepo Root       | Alias for `npm run dev`                                                |
-| `npm run dev:api`      | `services/core-api` | Launches Core API with file-watch auto-reload (`node --watch`)         |
-| `npm run dev:web`      | `apps/web`          | Launches Vite development server with Hot Module Replacement           |
-| `npm run build`        | `apps/web`          | Compiles optimized production bundle for the client application        |
-| `npm run sync:live`    | Root Utility        | Ingests live Galaxy Cinema sessions and synchronizes database          |
-| `npm run crawl:galaxy` | Aggregator Service  | Crawls Galaxy API, upserts MySQL entities, and triggers sync           |
-| `npm run infra:up`     | Docker Engine       | Boots containerized MySQL, Redis, and MongoDB in detached mode         |
-| `npm run infra:down`   | Docker Engine       | Halts all containers while preserving data volumes                     |
-| `npm run db:migrate`   | `@cinehub/db`       | Executes Prisma schema migration on the target relational database     |
-| `npm run db:seed`      | `@cinehub/db`       | Runs comprehensive database seeding script                             |
-| `npm run db:studio`    | `@cinehub/db`       | Starts local Prisma Studio web interface on port 5555                  |
-| `npm run db:validate`  | `@cinehub/db`       | Validates Prisma schema syntax and relation constraints                |
-| `npm run lint`         | Monorepo Root       | Runs ESLint across all workspaces adhering to flat configuration       |
-| `npm run format`       | Monorepo Root       | Formats codebase adhering to Prettier specifications                   |
-| `npm test`             | Monorepo Root       | Executes unit and integration test suites via Vitest across workspaces |
-
----
-
-## 7. Data Tier Management and Migration Workflows
-
-Relational data modeling is centralized within the `@cinehub/db` package.
-
-### 7.1. Schema Modification Procedure
-
-When extending or altering entities in `packages/db/prisma/schema.prisma`:
-
-1. Apply the schema change locally and generate a named SQL migration:
-   ```bash
-   npm run db:migrate -- --name <migration_name_snake_case>
-   ```
-2. Re-generate Prisma Client bindings across all consuming workspaces:
-   ```bash
-   npm run generate -w @cinehub/db
-   ```
-3. Commit both `schema.prisma` and the newly generated SQL file under `packages/db/prisma/migrations/`.
-
-### 7.2. Master Data Ingestion and Seeding
-
-The database seeder (`packages/db/prisma/seed.js`) provides an idempotent ingestion routine covering:
-
-- Seat types: `STANDARD`, `VIP`, `SWEETBOX` with respective dimension and capacity metrics.
-- Ticket tier matrices: Adult, Student, Child, Member.
-- Cinema chains: Master entities for Galaxy Cinema, CGV, Lotte Cinema, and BHD Star.
-- Full provincial administrative taxonomy across 12 Vietnamese municipal regions.
-- Auditorium layout geometry, seat map matrix generation, and dynamic concession pricing.
-
----
-
-## 8. Concurrency Control and Seat Lease Protocol
-
-To prevent overselling and double-booking during peak ticket sale intervals, CineHub enforces an atomic reservation lifecycle:
-
-```
-[Client Request: Select Seat]
-             |
-             v
-    [Check Redis Lock via Lua]
-       |                 |
-(Lock Exists)     (Lock Available)
-       |                 |
-       v                 v
-[Reject 409 Conflict] [Acquire Lease: SET seat:{id} token NX EX 900]
-                        |
-                        v
-              [Display Hold State on Client]
-                        |
-            [Checkout: Within 15 Min?]
-               /                 \
-            (Yes)                (No / TTL Expired)
-             /                     \
-            v                       v
-[MySQL Transaction Commit]  [Redis Key Eviction: Seat Released]
-[Insert Ticket & Order]
-[Release Redis Lock]
+  return next(withToken(req, auth.accessToken())).pipe(
+    catchError((err: HttpErrorResponse) => {
+      if (err.status !== 401 || err.error?.code !== 'TOKEN_EXPIRED' || req.url.includes('/auth/')) {
+        return throwError(() => err);
+      }
+      refresh$ ??= auth.refresh().pipe(
+        finalize(() => (refresh$ = null)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+      return refresh$.pipe(switchMap((token) => next(withToken(req, token))));
+    }),
+  );
+};
 ```
 
-1. **Lease Acquisition**: When a user selects a seat, an atomic Redis key is set with a 15-minute lease:
-   `KEY: seat:{showtime_id}:{seat_id}`, `VALUE: {user_id}:{timestamp}`, `TTL: 900s`.
-2. **Atomic Verification**: Any concurrent selection attempts fail immediately at the Redis tier prior to touching relational database storage.
-3. **Checkout Validation**: During order creation, the server validates lease ownership within an ACID-compliant MySQL transaction.
-4. **Lease Release / Expiration**: Upon successful payment, the seat status transitions to `BOOKED` in MySQL and the Redis key is deleted. If the session expires without payment, Redis TTL expiration automatically returns the seat to available inventory.
+All concurrent 401s subscribe to the same `refresh$`; one request is made and every waiting call replays with the new token. If refresh fails, `AuthStore` clears the session and the router redirects to login.
 
----
+### 7.6. Auth endpoints (`/api/v1/auth`, alias `/api/auth`)
 
-## 9. Engineering Standards and Git Governance
+| Method | Endpoint               | Protection | Description                            |
+| :----- | :--------------------- | :--------- | :------------------------------------- |
+| POST   | `/register`            | Public     | Register; emails OTP                   |
+| POST   | `/verify-email`        | Public     | Verify OTP; sets session               |
+| POST   | `/resend-verification` | Public     | Resend OTP (rate-limited)              |
+| POST   | `/login`               | Public     | Credentials login; sets refresh cookie |
+| POST   | `/logout`              | Public     | Revokes refresh token, clears cookie   |
+| PUT    | `/refresh-token`       | Public     | Rotates refresh token                  |
+| GET    | `/me`                  | Bearer     | Current user profile                   |
+| POST   | `/google`              | Public     | Google ID token login                  |
+| POST   | `/forgot-password`     | Public     | Sends reset email                      |
+| POST   | `/reset-password`      | Public     | Completes reset                        |
 
-The engineering organization strictly adheres to the Feature Branch Workflow. **Direct commits or pushes to the `main` branch are strictly prohibited.**
+## 8. Command Reference
 
-Detailed operational runbook available at: [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md).
+| Command                                               | Description                                |
+| :---------------------------------------------------- | :----------------------------------------- |
+| `npm run dev`                                         | `nx run-many -t serve -p web,core-api`     |
+| `npm run dev:web` / `dev:api`                         | `nx serve web` / `nx serve core-api`       |
+| `npm run build`                                       | `nx run-many -t build` (all projects)      |
+| `npm run build:web`                                   | Production Angular build (SSR)             |
+| `npm run affected:test`                               | `nx affected -t lint test build`           |
+| `npm test`                                            | Unit tests across all projects             |
+| `npm run e2e`                                         | `nx e2e web-e2e` (Playwright)              |
+| `npm run lint` / `format`                             | ESLint (angular-eslint) / Prettier         |
+| `npm run graph`                                       | `nx graph` (dependency visualization)      |
+| `npm run api:spec` / `api:client`                     | Generate OpenAPI spec / Angular API client |
+| `npm run sync:live`                                   | Ingest live Galaxy sessions                |
+| `npm run crawl:galaxy`                                | Run aggregator crawl job                   |
+| `npm run infra:up` / `infra:down`                     | Start / stop MySQL, Redis, MongoDB         |
+| `npm run db:migrate` / `seed` / `studio` / `validate` | Prisma operations (`libs/db`)              |
 
-### 9.1. Commit Standards (Conventional Commits)
+## 9. Data Tier and Migrations
 
-All commit messages are validated via Husky and Commitlint:
+Schema change procedure (`libs/db/prisma/schema.prisma`):
 
-- `feat(scope): message`: New user-facing or platform functionality
-- `fix(scope): message`: Bug fix or defect remediation
-- `refactor(scope): message`: Code improvement without behavioral change
-- `docs(scope): message`: Documentation addition or modification
-- `chore(scope): message`: Dependency updates, tooling, or environment configuration
-- `test(scope): message`: Unit, integration, or end-to-end test suite adjustments
+1. `npm run db:migrate -- --name <snake_case_name>`
+2. `npm run generate -w @cinehub/db`
+3. Commit `schema.prisma` and the new `migrations/*` SQL together.
 
-_Rule: Subject lines must remain lowercase and must not terminate with a period._
+The idempotent seeder covers seat types (`STANDARD`, `VIP`, `SWEETBOX`), ticket tiers (Adult, Student, Child, Member), cinema chains (Galaxy, CGV, Lotte, BHD Star), 12 provincial regions, auditorium and seat map generation, and concession pricing.
 
-### 9.2. Standard Development Lifecycle
+## 10. Concurrency Control and Seat Lease Protocol
 
-1. **Synchronize Main**:
-   ```bash
-   git checkout main && git pull origin main
-   ```
-2. **Create Topic Branch**:
-   ```bash
-   git checkout -b <type>/<task-slug>
-   ```
-3. **Develop and Commit**:
-   ```bash
-   git add . && git commit -m "feat(module): explicit description"
-   ```
-4. **Rebase Against Remote Main**:
-   ```bash
-   git fetch origin && git rebase origin/main
-   ```
-5. **Publish and Open Pull Request**:
-   ```bash
-   git push -u origin <type>/<task-slug>
-   ```
+```
+[Select seat] -> [Redis Lua check]
+      | locked                | free
+ [409 Conflict]   [SET seat:{showtime}:{seat} {user}:{ts} NX EX 900]
+                              |
+                    [Client shows HOLD state]
+                              |
+                   [Checkout within 15 min?]
+                     yes /          \ no (TTL expired)
+  [MySQL tx: validate lease,    [Redis evicts key,
+   insert Order + Tickets,       seat released]
+   status=BOOKED, DEL lease]
+```
 
----
+1. **Acquire**: `seat:{showtime_id}:{seat_id}` = `{user_id}:{timestamp}`, TTL 900 s.
+2. **Atomic verification**: concurrent selections fail in Redis before reaching MySQL.
+3. **Checkout**: lease ownership validated inside a `READ COMMITTED` MySQL transaction with row locks.
+4. **Release/expire**: payment success sets `BOOKED` and deletes the key; otherwise TTL returns the seat to inventory.
 
-## 10. Troubleshooting and Operational Runbook
+The Angular `booking` store mirrors lease state with a countdown signal and releases the seat on route leave.
 
-### 10.1. Client UI Displays Outdated Showtimes
+## 11. Engineering Standards, CI and Governance
 
-- **Root Cause**: Client fallback dataset contains static show dates from previous testing windows.
-- **Remediation**: Execute direct live synchronization to ingest today's current showtimes from Galaxy Cinema:
-  ```bash
-  npm run sync:live
-  ```
+Feature Branch Workflow; **direct pushes to `main` are prohibited** (see `docs/GIT_WORKFLOW.md`).
 
-### 10.2. Missing Environment File
+- **Conventional Commits** enforced by Husky + Commitlint (`feat|fix|refactor|docs|chore|test(scope): lowercase subject, no trailing period`). Scope = Nx project name.
+- **Lifecycle**: `git checkout main && git pull` -> `git checkout -b <type>/<slug>` -> commit -> `git fetch && git rebase origin/main` -> `git push -u origin <branch>` -> PR.
+- **CI** (`.github/workflows/ci.yml`): `nx affected -t lint test build`, API client drift check, Playwright E2E on `main`; remote cache enabled.
+- **CODEOWNERS**: each `apps/*` and `libs/*` project has an owning reviewer.
+- **ADR**: significant decisions (Nx, Angular + SignalStore, contract-first API) recorded in `docs/adr/`.
+- **Quality gates**: lint-staged on pre-commit, bundle budgets, coverage threshold per project.
 
-- **Symptom**: `Environment variable not found: DATABASE_URL`.
-- **Remediation**: Copy the environment specification template:
-  ```bash
-  cp .env.example .env
-  ```
+## 12. Troubleshooting Runbook
 
-### 10.3. Port 3306 Conflict (`EADDRINUSE`)
-
-- **Symptom**: Local MySQL service conflicts with Docker container port 3306.
-- **Remediation**:
-  - Option 1 (Docker remapping): In `docker-compose.yml`, change ports to `"3307:3306"` and update `DATABASE_URL` in `.env` to `localhost:3307`.
-  - Option 2 (Native service termination): Stop the native daemon via `brew services stop mysql` (macOS) or `sudo systemctl stop mysql` (Linux).
-
-### 10.4. Prisma Client Out of Sync
-
-- **Symptom**: Error indicating `@prisma/client did not initialize yet` or missing generated types.
-- **Remediation**:
-  ```bash
-  npm run generate -w @cinehub/db
-  ```
-
-### 10.5. Git Hooks Execution Permission Failure
-
-- **Symptom**: Permission denied when executing `.husky/pre-commit` or `.husky/commit-msg`.
-- **Remediation**:
-  ```bash
-  chmod +x .husky/*
-  ```
+| Symptom                                        | Remediation                                                                              |
+| :--------------------------------------------- | :--------------------------------------------------------------------------------------- |
+| Outdated showtimes in UI                       | `npm run sync:live`                                                                      |
+| `Environment variable not found: DATABASE_URL` | `cp .env.example .env`                                                                   |
+| Port 3306 in use                               | Remap Docker to `3307:3306` and update `DATABASE_URL`, or stop native MySQL              |
+| `@prisma/client did not initialize yet`        | `npm run generate -w @cinehub/db`                                                        |
+| Husky permission denied                        | `chmod +x .husky/*`                                                                      |
+| Cookie not sent / CORS error in dev            | Run via `ng serve` with `proxy.conf.json`; do not call `:4000` directly from the browser |
+| Nx boundary lint error                         | Check project tags in `project.json`; move shared code to a `util`/`ui` lib              |
+| Stale Nx cache                                 | `npx nx reset`                                                                           |
 
 ---
 
