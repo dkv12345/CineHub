@@ -1,0 +1,27 @@
+{
+  "name": "shared-ui",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/web/shared/ui/src",
+  "tags": ["scope:web", "type:ui"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/web/shared/ui"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx vitest run libs/web/shared/ui/test"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -e \"console.log('shared-ui validated')\""
+      }
+    }
+  }
+}

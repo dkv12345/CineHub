@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "home": "Trang chủ",
+    "showtimes": "Lịch chiếu",
+    "concessions": "Bắp & Nước",
+    "tickets": "Vé của tôi",
+    "profile": "Tài khoản",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất"
+  },
+  "home": {
+    "nowShowing": "Phim đang chiếu",
+    "comingSoon": "Phim sắp chiếu",
+    "bookNow": "Đặt vé ngay",
+    "watchTrailer": "Xem trailer",
+    "aiRecommendations": "Gợi ý riêng cho bạn"
+  },
+  "booking": {
+    "selectSeats": "Chọn ghế ngồi",
+    "seatPov": "Góc nhìn 3D từ ghế",
+    "continueToCheckout": "Tiếp tục thanh toán",
+    "checkout": "Thanh toán",
+    "result": "Kết quả đặt vé"
+  },
+  "auth": {
+    "loginTitle": "Đăng nhập CineHub",
+    "registerTitle": "Tạo tài khoản mới",
+    "verifyEmailTitle": "Xác thực Email",
+    "resetPasswordTitle": "Đặt lại mật khẩu"
+  }
+}

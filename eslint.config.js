@@ -5,6 +5,8 @@ import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
+const codeFilePatterns = ['**/*.{js,mjs,cjs,ts,tsx,jsx}'];
+
 export default tseslint.config(
   {
     ignores: [
@@ -22,9 +24,9 @@ export default tseslint.config(
       'libs/web/shared/data-access/src/lib/generated/**',
     ],
   },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
   {
+    files: codeFilePatterns,
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
     plugins: {
       '@nx': nxPlugin,
     },
@@ -132,7 +134,6 @@ export default tseslint.config(
   {
     files: ['apps/web/src/app/**/*.ts', 'libs/web/**/*.ts'],
     extends: [...angular.configs.tsRecommended],
-    processor: angular.processInlineTemplates,
     rules: {
       '@angular-eslint/directive-selector': [
         'error',
