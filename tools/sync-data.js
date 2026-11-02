@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-import { fetchSessions } from '../services/aggregator/src/galaxyClient.js';
+import { fetchSessions } from '../apps/aggregator/src/galaxyClient.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
