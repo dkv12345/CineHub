@@ -2,10 +2,9 @@ import js from '@eslint/js';
 import nxPlugin from '@nx/eslint-plugin';
 import angular from 'angular-eslint';
 import globals from 'globals';
-import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
-const codeFilePatterns = ['**/*.{js,mjs,cjs,ts,tsx,jsx}'];
+const codeFilePatterns = ['**/*.{js,mjs,cjs,ts}'];
 
 export default tseslint.config(
   {
@@ -102,11 +101,8 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/web/**/*.{js,jsx,ts,tsx}', 'libs/web/**/*.{js,ts}'],
-    plugins: { 'react-hooks': reactHooks },
+    files: ['apps/web/**/*.{js,ts}', 'libs/web/**/*.{js,ts}'],
     rules: {
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
       'no-restricted-imports': [
         'error',
         {

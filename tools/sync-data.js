@@ -544,12 +544,16 @@ export interface AIRecommendation {
 }
 `;
 
-fs.writeFileSync(path.join(rootDir, 'apps/web/src/data.ts'), dataTs, 'utf-8');
+fs.writeFileSync(
+  path.join(rootDir, 'libs/web/shared/util/src/lib/catalog-data.ts'),
+  dataTs,
+  'utf-8',
+);
 console.log(
-  `[SUCCESS] Generated apps/web/src/data.ts with ${moviesList.length} movies & ${cinemasList.length} cinemas`,
+  `[SUCCESS] Generated libs/web/shared/util/src/lib/catalog-data.ts with ${moviesList.length} movies & ${cinemasList.length} cinemas`,
 );
 
-// Map sessions for sessionsApi.ts
+// Map sessions for data/seed/sessions_snapshot.json
 const movieMapByExt = new Map(d.movies.map((m) => [m.externalId, m]));
 const cinemaMapByExt = new Map(d.cinemas.map((c) => [c.externalId, c]));
 
@@ -662,138 +666,19 @@ const cityMapData = {
   'c9d0e1f2-a3b4-5678-3456-789012345678': { name: 'Vĩnh Long', region: 'Miền Tây' },
 };
 
-const sessionsApiTs = `export interface GalaxyMovie {
-  id: string;
-  name: string;
-  age: string;
-  duration: number;
-  startDate: string;
-  endDate: string;
-  createdAt: string;
-  imageLandscape: string;
-  imagePortrait: string;
-  slug: string;
-  trailer: string;
-  rate: number;
-  totalVotes: number;
-  views: number;
-  order: number;
-}
-
-export interface GalaxyCinema {
-  id: string;
-  code: string;
-  name: string;
-  latitude: string;
-  longitude: string;
-  address: string;
-  phone: string;
-  cityId: string;
-  imageLandscape: string;
-  imagePortrait: string;
-  imageUrls: string[];
-  order: number;
-}
-
-export interface GalaxySession {
-  id: string;
-  showDate: string;
-  showTime: string;
-  screenName: string;
-  totalSeat: number;
-  bookedSeat: number;
-  caption: 'voice' | 'sub' | string;
-  version: '2d' | '3d' | 'imax' | string;
-  movieFormat: string;
-  movie: GalaxyMovie;
-  cinema: GalaxyCinema;
-}
-
-export interface GalaxyApiResponse {
-  response: {
-    status: number;
-    code: number;
-    message: string;
-    url: string;
-  };
-  data: {
-    total: number;
-    result: GalaxySession[];
-  };
-}
-
-export const CITY_MAP: Record<string, { name: string; region: string }> = ${JSON.stringify(cityMapData, null, 2)};
-
-export const rawGalaxyApiResponse: GalaxyApiResponse = {
-  response: {
-    status: 200,
-    code: 0,
-    message: 'OK',
-    url: 'https://www.galaxycine.vn/api/v2/mobile/sessions2?includeCinema=true&includeMovie=true',
-  },
-  data: {
-    total: ${sessionsList.length},
-    result: ${JSON.stringify(sessionsList, null, 2)},
-  },
+const sessionsSnapshot = {
+  cityMap: cityMapData,
+  total: sessionsList.length,
+  result: sessionsList,
 };
 
-export async function fetchGalaxySessions(): Promise<GalaxyApiResponse> {
-  try {
-    const res = await fetch('/api/sessions');
-    if (res.ok) {
-      const data: GalaxyApiResponse = await res.json();
-      if (data?.data?.result && data.data.result.length > 0) {
-        return data;
-      }
-    }
-  } catch (error) {
-    console.warn('API /api/sessions unavailable, using embedded database snapshot:', error);
-  }
-  return rawGalaxyApiResponse;
-}
-
-export function getDistinctCities(sessions: GalaxySession[]): { id: string; name: string; region: string; count: number }[] {
-  const cityCount = new Map<string, number>();
-  sessions.forEach((s) => {
-    const cityId = s.cinema.cityId;
-    if (cityId) cityCount.set(cityId, (cityCount.get(cityId) || 0) + 1);
-  });
-  return Array.from(cityCount.entries()).map(([id, count]) => {
-    const info = CITY_MAP[id] || { name: 'Khu vực khác', region: 'Toàn quốc' };
-    return { id, name: info.name, region: info.region, count };
-  });
-}
-
-export function getDistinctCinemas(sessions: GalaxySession[]): GalaxyCinema[] {
-  const map = new Map<string, GalaxyCinema>();
-  sessions.forEach((s) => {
-    if (!map.has(s.cinema.code)) map.set(s.cinema.code, s.cinema);
-  });
-  return Array.from(map.values()).sort((a, b) => a.order - b.order);
-}
-
-export function getDistinctMovies(sessions: GalaxySession[]): GalaxyMovie[] {
-  const map = new Map<string, GalaxyMovie>();
-  sessions.forEach((s) => {
-    if (!map.has(s.movie.id)) map.set(s.movie.id, s.movie);
-  });
-  return Array.from(map.values()).sort((a, b) => b.rate - a.rate);
-}
-
-export function getYouTubeEmbedUrl(url: string): string {
-  if (!url) return '';
-  const match = url.match(/(?:youtu\\.be\\/|youtube\\.com\\/(?:embed\\/|v\\/|watch\\?v=|watch\\?.+&v=))([\\w-]{11})/);
-  return match ? 'https://www.youtube.com/embed/' + match[1] + '?autoplay=1&rel=0' : url;
-}
-`;
-
 fs.writeFileSync(
-  path.join(rootDir, 'apps/web/src/services/sessionsApi.ts'),
-  sessionsApiTs,
+  path.join(rootDir, 'data/seed/sessions_snapshot.json'),
+  JSON.stringify(sessionsSnapshot, null, 2),
   'utf-8',
 );
 console.log(
-  '[SUCCESS] Generated apps/web/src/services/sessionsApi.ts with',
+  '[SUCCESS] Generated data/seed/sessions_snapshot.json with',
   sessionsList.length,
   'real showtimes!',
 );
