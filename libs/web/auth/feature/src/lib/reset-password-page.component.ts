@@ -12,64 +12,281 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
   imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto flex min-h-[75vh] max-w-md flex-col justify-center px-4 py-12">
-      <div class="rounded-2xl border border-amber-500/25 bg-slate-900/90 p-6 shadow-2xl sm:p-8">
-        <h1 class="text-xl font-bold text-white">Đặt lại mật khẩu</h1>
-        <p class="mt-1 text-xs text-slate-400">Nhập mật khẩu mới cho tài khoản CineHub của bạn.</p>
+    <div
+      class="relative flex min-h-[calc(100vh-73px)] w-full flex-col md:flex-row bg-[var(--color-surface)]"
+    >
+      <!-- Left Column: Information & Form Panel -->
+      <div
+        class="flex flex-1 flex-col justify-center px-6 py-10 sm:px-12 md:w-1/2 lg:px-16 xl:px-24"
+      >
+        <div class="mx-auto w-full max-w-md space-y-6">
+          <!-- Brand Header -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2.5">
+              <span
+                class="inline-flex h-10 w-10 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-base font-semibold text-white shadow-xs"
+              >
+                CH
+              </span>
+              <div>
+                <span
+                  class="block text-lg font-semibold tracking-tight text-[var(--color-text-primary)]"
+                  >CineHub</span
+                >
+                <span class="block text-xs font-normal text-[var(--color-text-secondary)]"
+                  >Trung tâm bảo mật tài khoản</span
+                >
+              </div>
+            </div>
 
-        @if (errorBanner()) {
+            <div class="space-y-1">
+              <h1 class="cinema-heading-section">Đặt lại mật khẩu</h1>
+              <p class="cinema-metadata">
+                Nhập mã token từ email và thiết lập mật khẩu bảo mật mới cho tài khoản của bạn.
+              </p>
+            </div>
+          </div>
+
+          <!-- Error Alert Banner -->
+          @if (errorBanner()) {
+            <div
+              role="alert"
+              class="flex items-start gap-2.5 rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-3.5 text-xs font-semibold text-[var(--color-danger)]"
+            >
+              <svg
+                class="h-4 w-4 shrink-0 mt-0.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{{ errorBanner() }}</span>
+            </div>
+          }
+
+          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+            <!-- Token Field -->
+            <div>
+              <label
+                for="reset-token"
+                class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
+                >Mã Token khôi phục</label
+              >
+              <div class="relative">
+                <div
+                  class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
+                >
+                  <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1.5-1.5L8 9m-4 4 4.5-4.5a5 5 0 1 1 7.07 7.07L11 16"
+                    />
+                  </svg>
+                </div>
+                <input
+                  id="reset-token"
+                  type="text"
+                  formControlName="token"
+                  placeholder="Nhập mã token từ email"
+                  class="cinema-input cinema-input-icon-leading !h-11 w-full text-sm font-mono"
+                />
+              </div>
+            </div>
+
+            <!-- New Password Field with Show/Hide Eye Toggle -->
+            <div>
+              <label
+                for="reset-new-password"
+                class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
+                >Mật khẩu mới (tối thiểu 8 ký tự)</label
+              >
+              <div class="relative">
+                <div
+                  class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
+                >
+                  <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </div>
+                <input
+                  id="reset-new-password"
+                  [type]="showPassword() ? 'text' : 'password'"
+                  formControlName="newPassword"
+                  autocomplete="new-password"
+                  placeholder="••••••••"
+                  class="cinema-input cinema-input-icon-both !h-11 w-full text-sm"
+                />
+                <button
+                  type="button"
+                  (click)="toggleShowPassword()"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                  [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+                >
+                  @if (showPassword()) {
+                    <svg
+                      class="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path
+                        d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
+                      />
+                      <path
+                        d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
+                      />
+                      <line x1="2" x2="22" y1="2" y2="22" />
+                    </svg>
+                  } @else {
+                    <svg
+                      class="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  }
+                </button>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              [disabled]="submitting()"
+              class="cinema-btn-primary w-full !h-11 font-semibold text-sm shadow-sm transition-all"
+            >
+              @if (submitting()) {
+                <span class="inline-flex items-center gap-2">
+                  <svg
+                    class="h-4 w-4 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" />
+                  </svg>
+                  <span>Đang cập nhật...</span>
+                </span>
+              } @else {
+                <span>Cập nhật mật khẩu mới</span>
+              }
+            </button>
+          </form>
+
+          <!-- Bottom Navigation -->
           <div
-            role="alert"
-            class="mt-4 rounded-xl border border-rose-500/40 bg-rose-950/60 px-4 py-3 text-xs text-rose-200"
+            class="border-t border-[var(--color-border)] pt-4 text-center text-xs text-[var(--color-text-secondary)]"
           >
-            {{ errorBanner() }}
+            <a
+              routerLink="/auth"
+              class="inline-flex items-center gap-1.5 font-semibold text-[var(--color-brand-primary)] hover:underline"
+            >
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+              <span>Quay lại trang đăng nhập</span>
+            </a>
           </div>
-        }
-
-        <form [formGroup]="form" (ngSubmit)="submit()" class="mt-5 space-y-4">
-          <div>
-            <label for="reset-token" class="block text-xs font-semibold text-slate-300">
-              Mã Token khôi phục
-            </label>
-            <input
-              id="reset-token"
-              type="text"
-              formControlName="token"
-              placeholder="Token từ liên kết email"
-              class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label for="reset-new-password" class="block text-xs font-semibold text-slate-300">
-              Mật khẩu mới (tối thiểu 8 ký tự)
-            </label>
-            <input
-              id="reset-new-password"
-              type="password"
-              formControlName="newPassword"
-              autocomplete="new-password"
-              placeholder="••••••••"
-              class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
-            />
-          </div>
-
-          <button
-            type="submit"
-            [disabled]="submitting()"
-            class="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-400 disabled:opacity-50"
-          >
-            {{ submitting() ? 'Đang cập nhật...' : 'Cập nhật mật khẩu' }}
-          </button>
-        </form>
-
-        <div class="mt-4 text-center text-xs text-slate-400">
-          <a routerLink="/auth" class="text-amber-400 hover:underline">
-            Quay lại trang đăng nhập
-          </a>
         </div>
       </div>
-    </section>
+
+      <!-- Right Column: Cinema Visual Key-Art -->
+      <div
+        class="relative hidden md:flex md:w-1/2 flex-col justify-between overflow-hidden bg-[#160f11] p-10 lg:p-14 text-white"
+      >
+        <img
+          src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1600&q=85"
+          alt="CineHub Security"
+          class="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 hover:scale-105"
+        />
+        <div
+          class="absolute inset-0 bg-gradient-to-t from-[#120a0c] via-[#120a0c]/65 to-[#120a0c]/25"
+          aria-hidden="true"
+        ></div>
+
+        <div class="relative z-10">
+          <div
+            class="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-black/30 px-3.5 py-1.5 backdrop-blur-md"
+          >
+            <span
+              class="inline-flex h-6 w-6 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-xs font-semibold text-white shadow-xs"
+            >
+              CH
+            </span>
+            <span class="text-xs font-semibold tracking-wider uppercase text-white/95">
+              CineHub Security
+            </span>
+          </div>
+        </div>
+
+        <div
+          class="relative z-10 space-y-4 rounded-xl border border-white/15 bg-black/45 p-6 backdrop-blur-md"
+        >
+          <div class="space-y-1.5">
+            <h2 class="text-xl font-semibold leading-tight text-white">
+              Bảo Mật Tài Khoản Tuyệt Đối
+            </h2>
+            <p class="text-xs leading-relaxed text-stone-300">
+              Mật khẩu của bạn được mã hóa một chiều chuẩn công nghệ mới nhất. Vui lòng không chia
+              sẻ mật khẩu cho bất kỳ ai.
+            </p>
+          </div>
+
+          <div class="space-y-2 border-t border-white/15 pt-3.5 text-xs text-stone-200">
+            <div class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
+              <span>Mã hóa bảo mật nhiều lớp an toàn</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
+              <span>Đồng bộ tức thì trên tất cả thiết bị</span>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-stone-400">
+            © 2026 CineHub Cinema Network. Tất cả quyền được bảo lưu.
+          </div>
+        </div>
+      </div>
+    </div>
   `,
 })
 export class ResetPasswordPageComponent implements OnInit {
@@ -82,6 +299,7 @@ export class ResetPasswordPageComponent implements OnInit {
 
   readonly submitting = signal(false);
   readonly errorBanner = signal<string | null>(null);
+  readonly showPassword = signal(false);
 
   readonly form = this.fb.nonNullable.group(
     {
@@ -95,6 +313,10 @@ export class ResetPasswordPageComponent implements OnInit {
     if (this.token()) {
       this.form.controls.token.setValue(this.token());
     }
+  }
+
+  toggleShowPassword(): void {
+    this.showPassword.update((v) => !v);
   }
 
   async submit(): Promise<void> {

@@ -10,25 +10,37 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-black text-white sm:text-3xl">Vé điện tử của tôi</h1>
-          <p class="mt-1 text-xs text-slate-400">
-            Quản lý toàn bộ vé đã đặt và mã QR vào phòng chiếu
+    <div class="cinema-container max-w-5xl py-8 sm:py-12">
+      <div
+        class="mb-6 flex flex-col justify-between gap-4 border-b border-[var(--color-border)] pb-6 sm:flex-row sm:items-end"
+      >
+        <div class="space-y-1">
+          <span class="cinema-eyebrow">Tài khoản thành viên</span>
+          <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
+            Vé điện tử của tôi
+          </h1>
+          <p class="cinema-metadata text-xs">
+            Quản lý lịch sử đặt vé, trạng thái thanh toán và mã QR vào phòng chiếu.
           </p>
         </div>
 
-        <div class="flex gap-2">
+        <!-- Status Filter Tabs -->
+        <div
+          class="inline-flex rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-2xs"
+          role="tablist"
+          aria-label="Lọc vé theo trạng thái"
+        >
           @for (tab of statusTabs; track tab.key) {
             <button
               type="button"
+              role="tab"
+              [attr.aria-selected]="ticketsStore.statusFilter() === tab.key"
               (click)="ticketsStore.setStatusFilter(tab.key)"
-              class="rounded-xl border px-3.5 py-1.5 text-xs font-bold transition"
+              class="rounded-[3px] px-4 py-1.5 text-xs font-bold transition-colors"
               [class]="
                 ticketsStore.statusFilter() === tab.key
-                  ? 'border-amber-400 bg-amber-500 text-slate-950'
-                  : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700'
+                  ? 'bg-[var(--color-brand-primary)] text-[#fffdf9] shadow-xs'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
               "
             >
               {{ tab.label }}
@@ -37,48 +49,89 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <!-- Tickets Grid -->
+      <div class="grid gap-5 md:grid-cols-2">
         @for (ticket of filteredTickets(); track ticket.id) {
           <article
-            class="flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-xl"
+            class="cinema-panel flex flex-col justify-between p-5 transition-all hover:border-[var(--color-brand-primary)] hover:shadow-sm"
           >
-            <div>
-              <div class="flex items-center justify-between">
+            <div class="space-y-3">
+              <div
+                class="flex items-center justify-between border-b border-dashed border-[var(--color-border)] pb-3"
+              >
                 <span
-                  class="rounded-md bg-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-300"
+                  class="font-mono text-xs font-bold tracking-wider text-[var(--color-brand-primary)]"
                 >
                   {{ ticket.bookingCode }}
                 </span>
-                <span class="text-xs text-slate-400">{{ ticket.paymentMethod }}</span>
+                <span
+                  class="rounded-[3px] border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                  [class]="
+                    ticket.status === 'VALID'
+                      ? 'border-[var(--color-success)] bg-[var(--color-success-bg)] text-[var(--color-success)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface-secondary)] text-[var(--color-text-muted)]'
+                  "
+                >
+                  {{ ticket.status === 'VALID' ? 'Còn hiệu lực' : 'Đã sử dụng' }}
+                </span>
               </div>
 
-              <h2 class="mt-3 text-lg font-extrabold text-white">
-                {{ ticket.movieTitle }}
-              </h2>
-              <p class="mt-1 text-xs text-slate-300">
-                {{ ticket.cinemaName }} · {{ ticket.screenName }}
-              </p>
-              <p class="mt-1 text-xs text-amber-300 font-semibold">
-                Suất chiếu: {{ ticket.showTime }} ({{ ticket.format }}) · Ghế:
-                {{ ticket.seats.join(', ') }}
-              </p>
+              <div>
+                <h2 class="cinema-card-title leading-tight text-[var(--color-text-primary)]">
+                  {{ ticket.movieTitle }}
+                </h2>
+                <div class="mt-1 text-xs text-[var(--color-text-secondary)]">
+                  {{ ticket.cinemaName }} · {{ ticket.screenName }}
+                </div>
+              </div>
+
+              <div class="text-xs text-[var(--color-text-secondary)] space-y-0.5">
+                <div>
+                  <span class="text-[var(--color-text-secondary)]">Suất:</span>
+                  <span class="ml-1 font-semibold text-[var(--color-text-primary)]"
+                    >{{ ticket.showTime }} ({{ ticket.format }})</span
+                  >
+                </div>
+                <div>
+                  <span class="text-[var(--color-text-secondary)]">Ghế:</span>
+                  <span class="ml-1 font-bold text-[var(--color-brand-primary)]">{{
+                    ticket.seats.join(', ')
+                  }}</span>
+                </div>
+              </div>
             </div>
 
-            <div class="mt-5 flex items-center justify-between border-t border-slate-800 pt-3">
-              <span class="text-sm font-black text-white">
-                {{ formatCurrency(ticket.totalPaid) }}
-              </span>
+            <div
+              class="mt-5 flex items-center justify-between border-t border-[var(--color-border-subtle)] pt-3"
+            >
+              <div>
+                <div class="text-[10px] text-[var(--color-text-secondary)]">
+                  Đã thanh toán ({{ ticket.paymentMethod }})
+                </div>
+                <div
+                  class="cinema-price font-semibold tabular-nums text-sm text-[var(--color-brand-primary)]"
+                >
+                  {{ formatCurrency(ticket.totalPaid) }}
+                </div>
+              </div>
+
               <a
                 [routerLink]="['/result', ticket.id]"
-                class="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3.5 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-500 hover:text-slate-950"
+                class="cinema-btn-secondary !min-h-[36px] !px-3.5 !py-1 !text-xs font-bold"
               >
-                Xem mã QR
+                Xem mã vé QR
               </a>
             </div>
           </article>
+        } @empty {
+          <div
+            class="cinema-panel col-span-full p-12 text-center text-sm text-[var(--color-text-secondary)]"
+          >
+            Chưa có vé nào trong danh mục này.
+          </div>
         }
       </div>
-    </section>
+    </div>
   `,
 })
 export class MyTicketsPageComponent {

@@ -7,19 +7,19 @@ import type { ShowtimeFilters } from '@cinehub/web/showtimes/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900/90 p-4 sm:grid-cols-2 lg:grid-cols-4"
+      class="cinema-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4 shadow-2xs"
+      role="search"
+      aria-label="Bộ lọc lịch chiếu"
     >
       <div>
-        <label for="filter-city" class="block text-xs font-semibold text-slate-400">
-          Tỉnh / Thành phố
-        </label>
+        <label for="filter-city" class="cinema-label">Tỉnh / Thành phố</label>
         <select
           id="filter-city"
           [value]="filters().cityId ?? 'all'"
           (change)="onSelectChange('cityId', $event)"
-          class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
+          class="cinema-input"
         >
-          <option value="all">Toàn quốc</option>
+          <option value="all">Toàn quốc (Tất cả cụm rạp)</option>
           @for (city of cities(); track city.id) {
             <option [value]="city.id">{{ city.name }}</option>
           }
@@ -27,42 +27,34 @@ import type { ShowtimeFilters } from '@cinehub/web/showtimes/util';
       </div>
 
       <div>
-        <label for="filter-format" class="block text-xs font-semibold text-slate-400">
-          Định dạng phòng chiếu
-        </label>
+        <label for="filter-format" class="cinema-label">Định dạng phòng chiếu</label>
         <select
           id="filter-format"
           [value]="filters().format ?? 'all'"
           (change)="onSelectChange('format', $event)"
-          class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none"
+          class="cinema-input"
         >
-          <option value="all">Tất cả định dạng</option>
-          <option value="2D">2D Standard</option>
-          <option value="3D">3D</option>
+          <option value="all">Mọi định dạng</option>
+          <option value="2D">2D Digital Standard</option>
+          <option value="3D">3D RealD Cinema</option>
           <option value="IMAX">IMAX Laser</option>
         </select>
       </div>
 
       <div>
-        <label for="filter-search" class="block text-xs font-semibold text-slate-400">
-          Tìm theo tên phim hoặc rạp
-        </label>
+        <label for="filter-search" class="cinema-label">Tìm kiếm phim hoặc rạp</label>
         <input
           id="filter-search"
           type="search"
           [value]="filters().searchQuery ?? ''"
           (input)="onSelectChange('searchQuery', $event)"
-          placeholder="Nhập tên phim, rạp..."
-          class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+          placeholder="Nhập tên phim, cụm rạp..."
+          class="cinema-input"
         />
       </div>
 
       <div class="flex items-end">
-        <button
-          type="button"
-          (click)="resetClicked.emit()"
-          class="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 text-xs font-bold text-slate-300 transition hover:border-amber-400 hover:text-amber-300"
-        >
+        <button type="button" (click)="resetClicked.emit()" class="cinema-btn-secondary w-full">
           Đặt lại bộ lọc
         </button>
       </div>

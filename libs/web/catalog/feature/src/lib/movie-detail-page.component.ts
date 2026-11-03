@@ -12,12 +12,24 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (resolvedMovie(); as m) {
-      <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <div class="grid gap-8 lg:grid-cols-12">
-          <!-- Poster Column -->
+      <div class="cinema-container py-8 sm:py-12">
+        <!-- Breadcrumb / Back Link -->
+        <div class="mb-6 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+          <a
+            routerLink="/"
+            class="text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-brand-primary)]"
+          >
+            ← Danh mục phim
+          </a>
+          <span class="text-[var(--color-border)]">/</span>
+          <span class="text-[var(--color-text-primary)] font-semibold">{{ m.title }}</span>
+        </div>
+
+        <div class="grid gap-10 lg:grid-cols-12 lg:gap-12 items-start">
+          <!-- Poster Column (Natural Aspect Ratio, Crisp Artwork Presentation) -->
           <div class="lg:col-span-4">
             <div
-              class="overflow-hidden rounded-2xl border border-amber-500/30 bg-slate-900 shadow-2xl"
+              class="sticky top-24 overflow-hidden rounded-[var(--radius-poster)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md"
             >
               <img
                 [ngSrc]="m.poster"
@@ -25,97 +37,166 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
                 width="480"
                 height="720"
                 priority
-                class="w-full object-cover"
+                class="h-auto w-full object-cover"
               />
             </div>
           </div>
 
-          <!-- Metadata & Quick Showtime Selector -->
-          <div class="lg:col-span-8 space-y-6">
-            <div>
+          <!-- Editorial Content & Showtimes Column -->
+          <div class="space-y-8 lg:col-span-8">
+            <!-- Movie Header & Key Metadata -->
+            <div class="space-y-3.5">
               <div class="flex flex-wrap items-center gap-2.5">
                 <ch-age-badge [age]="m.age" />
                 <span
-                  class="rounded-md bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-300"
+                  class="inline-flex items-center gap-1 rounded-[3px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-primary)] shadow-2xs"
                 >
-                  ★ {{ m.rating }} ({{ m.votes }} đánh giá)
+                  <svg
+                    class="h-3.5 w-3.5 text-[var(--color-brand-accent)]"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+                    />
+                  </svg>
+                  <span>{{ m.rating }}</span>
+                  <span class="text-[var(--color-text-secondary)] font-normal text-[11px]"
+                    >({{ m.votes }} đánh giá)</span
+                  >
                 </span>
-                <span class="text-xs text-slate-400">{{ m.duration }}</span>
+                <span class="text-xs text-[var(--color-text-secondary)]">· {{ m.duration }}</span>
               </div>
 
-              <h1 class="mt-3 text-3xl font-black text-white sm:text-4xl">
+              <h1 class="cinema-heading-page leading-tight text-[var(--color-text-primary)]">
                 {{ m.title }}
               </h1>
 
-              <div class="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
-                <div><span class="text-slate-400">Thể loại:</span> {{ m.genre }}</div>
-                <div><span class="text-slate-400">Đạo diễn:</span> {{ m.director }}</div>
-                <div class="sm:col-span-2">
-                  <span class="text-slate-400">Diễn viên:</span> {{ m.cast }}
+              <!-- Structured Metadata Grid -->
+              <div
+                class="grid gap-3 border-y border-[var(--color-border)] py-4 text-xs sm:grid-cols-2"
+              >
+                <div>
+                  <span class="text-[var(--color-text-secondary)]">Thể loại:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
+                    m.genre
+                  }}</span>
                 </div>
-                <div><span class="text-slate-400">Khởi chiếu:</span> {{ m.release }}</div>
+                <div>
+                  <span class="text-[var(--color-text-secondary)]">Đạo diễn:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
+                    m.director
+                  }}</span>
+                </div>
+                <div class="sm:col-span-2">
+                  <span class="text-[var(--color-text-secondary)]">Diễn viên chính:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
+                    m.cast
+                  }}</span>
+                </div>
+                <div>
+                  <span class="text-[var(--color-text-secondary)]">Ngày khởi chiếu:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
+                    m.release
+                  }}</span>
+                </div>
+                <div>
+                  <span class="text-[var(--color-text-secondary)]">Định dạng phát hành:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-brand-primary)]"
+                    >2D Digital, 3D, IMAX Laser</span
+                  >
+                </div>
               </div>
             </div>
 
-            <div
-              class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 text-sm leading-relaxed text-slate-200"
-            >
-              <h2 class="mb-2 text-xs font-bold uppercase tracking-wider text-amber-400">
-                Nội dung phim
-              </h2>
-              <p class="whitespace-pre-line">{{ m.synopsis }}</p>
+            <!-- Synopsis Section (Editorial Whitespace) -->
+            <div class="cinema-panel p-6 space-y-2">
+              <span class="cinema-eyebrow">Nội dung phim</span>
+              <p
+                class="text-sm leading-relaxed text-[var(--color-text-secondary)] whitespace-pre-line"
+              >
+                {{ m.synopsis }}
+              </p>
             </div>
 
-            <!-- Date Picker & Showtime Slots -->
-            <div class="rounded-2xl border border-amber-500/25 bg-slate-900/90 p-5">
-              <h2 class="text-base font-bold text-white">Chọn ngày & suất chiếu nhanh</h2>
+            <!-- Showtime Selection Section -->
+            <div class="cinema-panel-raised p-6 sm:p-7 space-y-6">
+              <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                  <span class="cinema-eyebrow">Đặt vé xem phim</span>
+                  <h2 class="cinema-heading-section mt-0.5 text-[var(--color-text-primary)]">
+                    Lịch chiếu & Suất xem tại rạp
+                  </h2>
+                </div>
+                <span class="text-xs text-[var(--color-text-secondary)]">
+                  Suất chiếu cập nhật thời gian thực
+                </span>
+              </div>
 
-              <div class="mt-3 flex flex-wrap gap-2">
+              <!-- Date Selection Strip -->
+              <div class="flex flex-wrap gap-2" role="tablist" aria-label="Chọn ngày xem">
                 @for (d of days; track d.offset) {
                   <button
                     type="button"
                     (click)="selectedDayOffset.set(d.offset)"
-                    class="rounded-xl border px-3.5 py-2 text-xs font-bold transition"
+                    class="rounded-[4px] border px-4 py-2.5 text-xs transition-colors"
                     [class]="
                       selectedDayOffset() === d.offset
-                        ? 'border-amber-400 bg-amber-500 text-slate-950'
-                        : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-amber-500/40'
+                        ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[#fffdf9] font-bold shadow-xs'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)]'
                     "
                   >
-                    <div>{{ d.short }}</div>
-                    <div class="text-[11px] opacity-80">{{ d.num }}</div>
+                    <div class="font-bold">{{ d.short }}</div>
+                    <div
+                      class="text-[11px]"
+                      [class]="
+                        selectedDayOffset() === d.offset
+                          ? 'text-[#fffdf9]/80'
+                          : 'text-[var(--color-text-secondary)]'
+                      "
+                    >
+                      {{ d.num }}
+                    </div>
                   </button>
                 }
               </div>
 
-              <div class="mt-5 space-y-4">
+              <!-- Venues & Showtimes List -->
+              <div class="space-y-4">
                 @for (cinema of store.cinemas().slice(0, 4); track cinema.id; let idx = $index) {
-                  <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-4">
-                    <div class="flex items-center justify-between">
+                  <div
+                    class="rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5"
+                  >
+                    <div class="flex items-center justify-between gap-3">
                       <div>
-                        <div class="text-sm font-bold text-white">
+                        <div class="text-sm font-bold text-[var(--color-text-primary)]">
                           {{ cinema.name }}
                         </div>
-                        <div class="text-xs text-slate-400">
+                        <div class="text-xs text-[var(--color-text-secondary)]">
                           {{ cinema.address }}
                         </div>
                       </div>
-                      <span class="rounded-md bg-slate-800 px-2 py-0.5 text-[11px] text-amber-300">
+                      <span
+                        class="rounded-[3px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-brand-accent)]"
+                      >
                         {{ cinema.dist }}
                       </span>
                     </div>
 
-                    <div class="mt-3 flex flex-wrap gap-2">
+                    <div class="mt-4 flex flex-wrap gap-2.5">
                       @for (slot of getCinemaShows(m.id, idx); track slot.time) {
                         <a
                           [routerLink]="[
                             '/seats',
                             m.id + '__' + cinema.id + '__' + slot.time + '__' + slot.format,
                           ]"
-                          class="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-200 transition hover:bg-amber-500 hover:text-slate-950"
+                          class="inline-flex items-center gap-2 rounded-[4px] border border-[var(--color-border)] bg-[#ffffff] px-3.5 py-2 text-xs font-bold text-[var(--color-text-primary)] no-underline transition-all hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)] hover:text-[var(--color-brand-primary)] shadow-2xs"
                         >
-                          <span>{{ slot.time }}</span>
-                          <span class="rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px]">
+                          <span class="text-sm">{{ slot.time }}</span>
+                          <span
+                            class="rounded-[2px] bg-[var(--color-surface-secondary)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-brand-primary)]"
+                          >
                             {{ slot.format }}
                           </span>
                         </a>
@@ -126,30 +207,42 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
               </div>
             </div>
 
-            <!-- Deferred Audience Reviews -->
+            <!-- Audience Reviews (Restrained Editorial Format) -->
             @defer (on viewport) {
-              <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-                <h2 class="text-base font-bold text-white">Đánh giá từ khán giả CineHub</h2>
-                <div class="mt-4 space-y-3">
+              <div class="cinema-panel p-6 space-y-4">
+                <div>
+                  <span class="cinema-eyebrow">Cộng đồng khán giả</span>
+                  <h2 class="cinema-card-title mt-0.5 text-[var(--color-text-primary)]">
+                    Nhận xét từ người xem CineHub
+                  </h2>
+                </div>
+
+                <div class="space-y-3">
                   @for (rev of reviews; track rev.name) {
                     <div
-                      class="rounded-xl border border-slate-800/80 bg-slate-950/70 p-3.5 text-xs"
+                      class="rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] p-4 text-xs"
                     >
                       <div class="flex items-center justify-between">
-                        <span class="font-bold text-amber-300">{{ rev.name }}</span>
-                        <span class="text-slate-400">{{ rev.when }}</span>
+                        <span class="font-bold text-[var(--color-text-primary)]">{{
+                          rev.name
+                        }}</span>
+                        <span class="text-[var(--color-text-muted)]">{{ rev.when }}</span>
                       </div>
-                      <p class="mt-1.5 text-slate-300">{{ rev.text }}</p>
+                      <p class="mt-1.5 leading-relaxed text-[var(--color-text-secondary)]">
+                        "{{ rev.text }}"
+                      </p>
                     </div>
                   }
                 </div>
               </div>
             } @placeholder {
-              <div class="text-xs text-slate-500">Đang tải đánh giá...</div>
+              <div class="cinema-panel p-4 text-xs text-[var(--color-text-secondary)]">
+                Đang tải nhận xét...
+              </div>
             }
           </div>
         </div>
-      </section>
+      </div>
     }
   `,
 })
