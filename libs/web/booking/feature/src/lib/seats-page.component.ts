@@ -27,15 +27,13 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="cinema-container py-8 sm:py-12">
-      <!-- Header -->
+      <!-- Breadcrumb and Steps -->
       <div class="mb-6 space-y-1">
-        <span class="cinema-eyebrow">Bước 1 / 3 · Sơ đồ phòng chiếu</span>
-        <h1
-          class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
-        >
+        <span class="cinema-eyebrow">Bước 1 / 3 · Phòng chiếu</span>
+        <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
           Chọn ghế ngồi & Góc nhìn 3D POV
         </h1>
-        <p class="text-xs text-[var(--cinema-text-muted)]">
+        <p class="text-xs text-[var(--color-text-secondary)]">
           {{ store.movieTitle() }} · {{ store.cinemaName() }} · Suất {{ store.showTime() }} ({{
             store.format()
           }})
@@ -44,7 +42,7 @@ import {
 
       <div class="grid gap-8 lg:grid-cols-12 lg:gap-8">
         <!-- 3D Seat Map Column -->
-        <div class="cinema-panel p-4 sm:p-6 lg:col-span-8">
+        <div class="cinema-panel p-5 sm:p-7 lg:col-span-8 shadow-xs">
           <ch-seat-map-3d
             [layout]="auditoriumLayout()"
             [seats]="seats()"
@@ -52,7 +50,7 @@ import {
           />
         </div>
 
-        <!-- Right Sidebar: 3D POV Scene + Summary Card + Proceed Action -->
+        <!-- Right Column: 3D POV Scene + Summary Card + Proceed Action -->
         <div class="space-y-5 lg:col-span-4">
           <ch-seat-pov-scene [layout]="auditoriumLayout()" [activeSeat]="lastActiveSeat()" />
 
@@ -66,11 +64,11 @@ import {
             [totalAmount]="store.seatsSubtotal()"
           />
 
-          <!-- Solid Action Button (No Gradients) -->
+          <!-- Solid CineHub Burgundy CTA -->
           <button
             type="button"
             (click)="proceedToCheckout()"
-            class="cinema-btn-primary w-full !min-h-[46px] !text-sm font-semibold"
+            class="cinema-btn-primary w-full !min-h-[46px] !text-sm font-bold shadow-sm"
           >
             Tiếp tục thanh toán ({{ store.selectedSeats().length }} ghế)
           </button>

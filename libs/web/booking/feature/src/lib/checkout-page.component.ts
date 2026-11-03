@@ -16,26 +16,23 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
   template: `
     <div class="cinema-container max-w-5xl py-8 sm:py-12">
       <div class="mb-6 space-y-1">
-        <span class="cinema-eyebrow">Bước 2 / 3 · Thủ tục đặt vé</span>
-        <h1
-          class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
-        >
-          Thanh toán & Xác nhận vé điện tử
+        <span class="cinema-eyebrow">Bước 2 / 3 · Thanh toán & Đơn vé</span>
+        <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
+          Xác nhận đơn vé điện tử
         </h1>
-        <p class="text-xs text-[var(--cinema-text-muted)]">
-          Kiểm tra thông tin chi tiết vé, mã giảm giá và lựa chọn cổng thanh toán trực tuyến an
-          toàn.
+        <p class="text-xs text-[var(--color-text-secondary)]">
+          Kiểm tra thông tin chi tiết vé, nhập mã giảm giá và chọn phương thức thanh toán an toàn.
         </p>
       </div>
 
-      <div class="grid gap-8 lg:grid-cols-12 lg:gap-8">
-        <!-- Left: Gateway & Voucher Selection -->
+      <div class="grid gap-8 lg:grid-cols-12 lg:gap-8 items-start">
+        <!-- Left: Gateways & Voucher Selection -->
         <div class="space-y-6 lg:col-span-7">
           <!-- Payment Gateway Selection -->
-          <div class="cinema-panel p-5 space-y-4">
+          <div class="cinema-panel p-6 space-y-4 shadow-xs">
             <div>
               <span class="cinema-eyebrow">Phương thức thanh toán</span>
-              <h2 class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
+              <h2 class="font-display text-base font-bold text-[var(--color-text-primary)]">
                 Chọn cổng thanh toán trực tuyến
               </h2>
             </div>
@@ -47,30 +44,32 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
                   role="radio"
                   [attr.aria-checked]="bookingStore.paymentMethod() === m.code"
                   (click)="bookingStore.setPaymentMethod(m.code)"
-                  class="rounded-[3px] border p-3.5 text-left transition-colors"
+                  class="rounded-[4px] border p-4 text-left transition-all"
                   [class]="
                     bookingStore.paymentMethod() === m.code
-                      ? 'border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)] font-semibold'
-                      : 'border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] text-[var(--cinema-text-secondary)] hover:border-[var(--cinema-border-subtle)] hover:text-[var(--cinema-text-primary)]'
+                      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-subtle)] text-[var(--color-brand-primary)] font-bold shadow-xs'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-surface-secondary)]'
                   "
                 >
-                  <div class="text-sm font-semibold">{{ m.name }}</div>
-                  <div class="mt-0.5 text-[11px] text-[var(--cinema-text-muted)]">{{ m.desc }}</div>
+                  <div class="text-sm font-bold">{{ m.name }}</div>
+                  <div class="mt-1 text-[11px] text-[var(--color-text-secondary)]">
+                    {{ m.desc }}
+                  </div>
                 </button>
               }
             </div>
           </div>
 
-          <!-- Voucher Form (Contract-First Zod Validator) -->
-          <div class="cinema-panel p-5 space-y-3">
+          <!-- Voucher Form -->
+          <div class="cinema-panel p-6 space-y-3 shadow-xs">
             <div>
-              <span class="cinema-eyebrow">Mã ưu đãi</span>
-              <h2 class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
-                Phiếu giảm giá / Thẻ quà tặng
+              <span class="cinema-eyebrow">Ưu đãi thành viên</span>
+              <h2 class="font-display text-base font-bold text-[var(--color-text-primary)]">
+                Mã giảm giá / Thẻ quà tặng
               </h2>
             </div>
 
-            <form [formGroup]="voucherForm" (ngSubmit)="applyVoucher()" class="flex gap-2">
+            <form [formGroup]="voucherForm" (ngSubmit)="applyVoucher()" class="flex gap-2.5">
               <input
                 type="text"
                 formControlName="code"
@@ -78,13 +77,15 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
                 aria-label="Mã giảm giá"
                 class="cinema-input flex-1 uppercase"
               />
-              <button type="submit" class="cinema-btn-secondary !min-h-[44px] !px-4">
+              <button type="submit" class="cinema-btn-secondary !min-h-[42px] !px-5 font-bold">
                 Áp dụng
               </button>
             </form>
 
             @if (voucherMessage()) {
-              <p class="text-xs text-[var(--cinema-accent)]">{{ voucherMessage() }}</p>
+              <p class="text-xs font-semibold text-[var(--color-brand-primary)]">
+                {{ voucherMessage() }}
+              </p>
             }
           </div>
         </div>
@@ -102,32 +103,34 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
           />
 
           <!-- Line Items Breakdown -->
-          <div class="cinema-panel p-4 space-y-2 text-xs text-[var(--cinema-text-secondary)]">
+          <div
+            class="cinema-panel p-5 space-y-2.5 text-xs text-[var(--color-text-secondary)] shadow-xs"
+          >
             <div class="flex justify-between">
               <span>Tiền ghế ({{ seatLabels().length }} ghế):</span>
-              <span class="text-[var(--cinema-text-primary)]">{{
+              <span class="font-semibold text-[var(--color-text-primary)]">{{
                 formatCurrency(bookingStore.seatsSubtotal())
               }}</span>
             </div>
             <div class="flex justify-between">
               <span>Combo Bắp & Nước:</span>
-              <span class="text-[var(--cinema-text-primary)]">{{
+              <span class="font-semibold text-[var(--color-text-primary)]">{{
                 formatCurrency(concessionsStore.totalAmount())
               }}</span>
             </div>
             @if (bookingStore.discountAmount() > 0) {
-              <div class="flex justify-between text-[var(--cinema-success)]">
+              <div class="flex justify-between text-[var(--color-success)] font-semibold">
                 <span>Ưu đãi voucher:</span>
                 <span>− {{ formatCurrency(bookingStore.discountAmount()) }}</span>
               </div>
             }
           </div>
 
-          <!-- Solid Action Button (No Gradients) -->
+          <!-- Solid CineHub Burgundy Action Button -->
           <button
             type="button"
             (click)="confirmPayment()"
-            class="cinema-btn-primary w-full !min-h-[48px] !text-sm font-semibold"
+            class="cinema-btn-primary w-full !min-h-[48px] !text-sm font-bold shadow-sm"
           >
             Xác nhận thanh toán · {{ formatCurrency(grandTotal()) }}
           </button>
@@ -135,7 +138,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
           <div class="text-center">
             <a
               routerLink="/concessions"
-              class="text-xs font-medium text-[var(--cinema-text-secondary)] hover:text-[var(--cinema-accent)] hover:underline"
+              class="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
             >
               + Đặt thêm Combo Bắp & Nước quầy ưu tiên
             </a>
