@@ -12,23 +12,21 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
   template: `
     <div class="cinema-container max-w-5xl py-8 sm:py-12">
       <div
-        class="mb-6 flex flex-col justify-between gap-4 border-b border-[var(--cinema-border)] pb-6 sm:flex-row sm:items-end"
+        class="mb-6 flex flex-col justify-between gap-4 border-b border-[var(--color-border)] pb-6 sm:flex-row sm:items-end"
       >
         <div class="space-y-1">
           <span class="cinema-eyebrow">Tài khoản thành viên</span>
-          <h1
-            class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
-          >
+          <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
             Vé điện tử của tôi
           </h1>
-          <p class="text-xs text-[var(--cinema-text-muted)]">
+          <p class="text-xs text-[var(--color-text-secondary)]">
             Quản lý lịch sử đặt vé, trạng thái thanh toán và mã QR vào phòng chiếu.
           </p>
         </div>
 
         <!-- Status Filter Tabs -->
         <div
-          class="inline-flex rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] p-1"
+          class="inline-flex rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-2xs"
           role="tablist"
           aria-label="Lọc vé theo trạng thái"
         >
@@ -38,11 +36,11 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
               role="tab"
               [attr.aria-selected]="ticketsStore.statusFilter() === tab.key"
               (click)="ticketsStore.setStatusFilter(tab.key)"
-              class="rounded-[2px] px-3.5 py-1.5 text-xs font-semibold transition-colors"
+              class="rounded-[3px] px-4 py-1.5 text-xs font-bold transition-colors"
               [class]="
                 ticketsStore.statusFilter() === tab.key
-                  ? 'bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)] shadow-sm'
-                  : 'text-[var(--cinema-text-muted)] hover:text-[var(--cinema-text-primary)]'
+                  ? 'bg-[var(--color-brand-primary)] text-[#fffdf9] shadow-xs'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
               "
             >
               {{ tab.label }}
@@ -52,26 +50,26 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
       </div>
 
       <!-- Tickets Grid -->
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-5 md:grid-cols-2">
         @for (ticket of filteredTickets(); track ticket.id) {
           <article
-            class="cinema-panel flex flex-col justify-between p-5 transition-colors hover:border-[var(--cinema-accent)]"
+            class="cinema-panel flex flex-col justify-between p-5 transition-all hover:border-[var(--color-brand-primary)] hover:shadow-sm"
           >
             <div class="space-y-3">
               <div
-                class="flex items-center justify-between border-b border-[var(--cinema-border-subtle)] pb-2.5"
+                class="flex items-center justify-between border-b border-dashed border-[var(--color-border)] pb-3"
               >
                 <span
-                  class="font-mono text-xs font-bold tracking-wider text-[var(--cinema-accent)]"
+                  class="font-mono text-xs font-bold tracking-wider text-[var(--color-brand-primary)]"
                 >
                   {{ ticket.bookingCode }}
                 </span>
                 <span
-                  class="rounded-[2px] border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                  class="rounded-[3px] border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                   [class]="
                     ticket.status === 'VALID'
-                      ? 'border-[var(--cinema-success)] bg-[var(--cinema-success-bg)] text-[var(--cinema-success)]'
-                      : 'border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] text-[var(--cinema-text-muted)]'
+                      ? 'border-[var(--color-success)] bg-[var(--color-success-bg)] text-[var(--color-success)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface-secondary)] text-[var(--color-text-muted)]'
                   "
                 >
                   {{ ticket.status === 'VALID' ? 'Còn hiệu lực' : 'Đã sử dụng' }}
@@ -80,25 +78,25 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
 
               <div>
                 <h2
-                  class="font-display text-base font-semibold leading-tight text-[var(--cinema-text-primary)]"
+                  class="font-display text-base font-bold leading-tight text-[var(--color-text-primary)]"
                 >
                   {{ ticket.movieTitle }}
                 </h2>
-                <div class="mt-1 text-xs text-[var(--cinema-text-muted)]">
+                <div class="mt-1 text-xs text-[var(--color-text-secondary)]">
                   {{ ticket.cinemaName }} · {{ ticket.screenName }}
                 </div>
               </div>
 
-              <div class="text-xs text-[var(--cinema-text-secondary)] space-y-0.5">
+              <div class="text-xs text-[var(--color-text-secondary)] space-y-0.5">
                 <div>
-                  <span class="text-[var(--cinema-text-muted)]">Suất:</span>
-                  <span class="ml-1 font-medium text-[var(--cinema-text-primary)]"
+                  <span class="text-[var(--color-text-secondary)]">Suất:</span>
+                  <span class="ml-1 font-semibold text-[var(--color-text-primary)]"
                     >{{ ticket.showTime }} ({{ ticket.format }})</span
                   >
                 </div>
                 <div>
-                  <span class="text-[var(--cinema-text-muted)]">Ghế:</span>
-                  <span class="ml-1 font-semibold text-[var(--cinema-accent)]">{{
+                  <span class="text-[var(--color-text-secondary)]">Ghế:</span>
+                  <span class="ml-1 font-bold text-[var(--color-brand-primary)]">{{
                     ticket.seats.join(', ')
                   }}</span>
                 </div>
@@ -106,20 +104,20 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
             </div>
 
             <div
-              class="mt-5 flex items-center justify-between border-t border-[var(--cinema-border-subtle)] pt-3"
+              class="mt-5 flex items-center justify-between border-t border-[var(--color-border-subtle)] pt-3"
             >
               <div>
-                <div class="text-[10px] text-[var(--cinema-text-muted)]">
+                <div class="text-[10px] text-[var(--color-text-secondary)]">
                   Đã thanh toán ({{ ticket.paymentMethod }})
                 </div>
-                <div class="font-display text-sm font-semibold text-[var(--cinema-text-primary)]">
+                <div class="font-display text-sm font-bold text-[var(--color-brand-primary)]">
                   {{ formatCurrency(ticket.totalPaid) }}
                 </div>
               </div>
 
               <a
                 [routerLink]="['/result', ticket.id]"
-                class="cinema-btn-secondary !min-h-[34px] !px-3 !py-1 !text-xs"
+                class="cinema-btn-secondary !min-h-[36px] !px-3.5 !py-1 !text-xs font-bold"
               >
                 Xem mã vé QR
               </a>
@@ -127,7 +125,7 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
           </article>
         } @empty {
           <div
-            class="cinema-panel col-span-full p-12 text-center text-sm text-[var(--cinema-text-muted)]"
+            class="cinema-panel col-span-full p-12 text-center text-sm text-[var(--color-text-secondary)]"
           >
             Chưa có vé nào trong danh mục này.
           </div>
