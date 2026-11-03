@@ -10,90 +10,91 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
   imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <h1 class="mb-6 text-2xl font-black text-white sm:text-3xl">Hồ sơ thành viên CineHub</h1>
+    <div class="cinema-container max-w-4xl py-8 sm:py-12">
+      <div class="mb-6 space-y-1">
+        <span class="cinema-eyebrow">Hồ sơ cá nhân</span>
+        <h1
+          class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
+        >
+          Tài khoản thành viên CineHub
+        </h1>
+        <p class="text-xs text-[var(--cinema-text-muted)]">
+          Quản lý thông tin định danh, điểm tích lũy và sở thích xem phim.
+        </p>
+      </div>
 
-      <div class="grid gap-6 md:grid-cols-12">
-        <div class="md:col-span-5 rounded-2xl border border-amber-500/30 bg-slate-900/90 p-6">
+      <div class="grid gap-6 md:grid-cols-12 md:gap-8">
+        <!-- Membership Card Panel -->
+        <div class="cinema-panel-raised p-6 md:col-span-5 space-y-6">
           <div class="flex items-center gap-4">
+            <!-- Monogram Avatar (Clean Editorial, No AI Gradients) -->
             <div
-              class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-rose-600 text-2xl font-black text-slate-950"
+              class="flex h-14 w-14 items-center justify-center rounded-[3px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-inset)] font-display text-xl font-semibold text-[var(--cinema-text-primary)]"
             >
               {{ (authStore.user()?.fullName ?? 'K')[0] }}
             </div>
             <div>
-              <div class="text-lg font-extrabold text-white">
+              <div class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
                 {{ authStore.user()?.fullName ?? 'Khách hàng VIP' }}
               </div>
-              <div class="text-xs text-slate-400">
+              <div class="text-xs text-[var(--cinema-text-muted)]">
                 {{ authStore.user()?.email ?? 'khach@cinehub.vn' }}
               </div>
               <span
-                class="mt-1.5 inline-block rounded-md bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-300"
+                class="mt-1.5 inline-block rounded-[2px] border border-[var(--cinema-accent)]/60 bg-[var(--cinema-surface)] px-2 py-0.5 text-[11px] font-semibold text-[var(--cinema-accent)]"
               >
                 {{ authStore.user()?.tier ?? 'Gold VIP' }} ·
-                {{ authStore.user()?.points ?? 1850 }} điểm
+                {{ authStore.user()?.points ?? 1850 }} điểm thưởng
               </span>
             </div>
           </div>
 
-          <div class="mt-6 space-y-2 border-t border-slate-800 pt-4 text-xs">
-            <div class="flex justify-between text-slate-300">
-              <span>Thành phố ưu tiên:</span>
-              <strong class="text-amber-300">{{ accountStore.preferredCity() }}</strong>
+          <div
+            class="space-y-2 border-t border-[var(--cinema-border-subtle)] pt-4 text-xs text-[var(--cinema-text-secondary)]"
+          >
+            <div class="flex justify-between">
+              <span class="text-[var(--cinema-text-muted)]">Khu vực ưu tiên:</span>
+              <strong class="text-[var(--cinema-text-primary)]">{{
+                accountStore.preferredCity()
+              }}</strong>
             </div>
-            <div class="flex justify-between text-slate-300">
-              <span>Định dạng yêu thích:</span>
-              <strong class="text-amber-300">{{ accountStore.preferredFormat() }}</strong>
+            <div class="flex justify-between">
+              <span class="text-[var(--cinema-text-muted)]">Định dạng ưa chuộng:</span>
+              <strong class="text-[var(--cinema-text-primary)]">{{
+                accountStore.preferredFormat()
+              }}</strong>
             </div>
           </div>
         </div>
 
-        <div class="md:col-span-7 rounded-2xl border border-slate-800 bg-slate-900/85 p-6">
-          <h2 class="text-base font-bold text-white">Cập nhật thông tin cá nhân</h2>
-          <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="mt-4 space-y-4">
+        <!-- Update Info Panel -->
+        <div class="cinema-panel p-6 md:col-span-7 space-y-4">
+          <div>
+            <span class="cinema-eyebrow">Cập nhật hồ sơ</span>
+            <h2 class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
+              Thông tin liên hệ
+            </h2>
+          </div>
+
+          <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="space-y-4">
             <div>
-              <label for="prof-name" class="block text-xs font-semibold text-slate-300">
-                Họ và tên
-              </label>
-              <input
-                id="prof-name"
-                type="text"
-                formControlName="fullName"
-                class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
-              />
+              <label for="prof-name" class="cinema-label">Họ và tên</label>
+              <input id="prof-name" type="text" formControlName="fullName" class="cinema-input" />
             </div>
 
             <div>
-              <label for="prof-phone" class="block text-xs font-semibold text-slate-300">
-                Số điện thoại
-              </label>
-              <input
-                id="prof-phone"
-                type="tel"
-                formControlName="phone"
-                class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
-              />
+              <label for="prof-phone" class="cinema-label">Số điện thoại</label>
+              <input id="prof-phone" type="tel" formControlName="phone" class="cinema-input" />
             </div>
 
             <div class="flex items-center gap-3 pt-2">
-              <button
-                type="submit"
-                class="rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-extrabold text-slate-950 transition hover:bg-amber-400"
-              >
-                Lưu thay đổi
-              </button>
-              <a
-                routerLink="/my-tickets"
-                class="rounded-xl border border-slate-700 px-4 py-2.5 text-xs font-bold text-slate-300 hover:border-amber-400"
-              >
-                Lịch sử đặt vé
-              </a>
+              <button type="submit" class="cinema-btn-primary">Lưu thay đổi</button>
+              <a routerLink="/my-tickets" class="cinema-btn-secondary"> Lịch sử đặt vé </a>
             </div>
           </form>
         </div>
       </div>
-    </section>
+    </div>
   `,
 })
 export class ProfilePageComponent {
