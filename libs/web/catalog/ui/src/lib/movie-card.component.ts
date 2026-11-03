@@ -10,12 +10,12 @@ import type { Movie } from '@cinehub/web/shared/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article
-      class="group cinema-panel flex flex-col overflow-hidden transition-all duration-200 hover:border-[var(--cinema-accent)]"
+      class="group cinema-panel flex flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-[var(--color-brand-primary)]"
     >
       <!-- Poster Frame 2:3 ratio -->
       <a
         [routerLink]="['/movie', movie().id]"
-        class="cinema-poster-frame aspect-[2/3] w-full block"
+        class="cinema-poster-frame aspect-[2/3] w-full block relative"
         [attr.aria-label]="'Chi tiết phim ' + movie().title"
       >
         <img
@@ -26,21 +26,21 @@ import type { Movie } from '@cinehub/web/shared/util';
           class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
 
-        <!-- Subtle Top Metadata Tags -->
+        <!-- Top Badges -->
         <div
           class="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none"
         >
           <span
-            class="inline-flex items-center justify-center rounded-[2px] border border-[#39352f] bg-[#211f1c]/90 px-1.5 py-0.5 font-ui text-[11px] font-semibold tracking-wider text-[var(--cinema-text-primary)] uppercase backdrop-blur-sm"
+            class="inline-flex items-center justify-center rounded-[3px] border border-[var(--color-border)] bg-[#ffffff]/95 px-1.5 py-0.5 font-ui text-[11px] font-bold tracking-wider text-[var(--color-text-primary)] uppercase shadow-xs backdrop-blur-xs"
           >
             {{ movie().age }}
           </span>
 
           <span
-            class="inline-flex items-center gap-1 rounded-[2px] border border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)]/90 px-1.5 py-0.5 font-ui text-[11px] font-semibold text-[var(--cinema-text-primary)] backdrop-blur-sm"
+            class="inline-flex items-center gap-1 rounded-[3px] border border-[var(--color-border)] bg-[#ffffff]/95 px-1.5 py-0.5 font-ui text-[11px] font-bold text-[var(--color-text-primary)] shadow-xs backdrop-blur-xs"
           >
             <svg
-              class="h-3 w-3 text-[var(--cinema-accent)]"
+              class="h-3 w-3 text-[var(--color-brand-accent)]"
               viewBox="0 0 24 24"
               fill="currentColor"
               aria-hidden="true"
@@ -55,31 +55,31 @@ import type { Movie } from '@cinehub/web/shared/util';
       </a>
 
       <!-- Content Area -->
-      <div class="flex flex-1 flex-col justify-between p-3.5">
+      <div class="flex flex-1 flex-col justify-between p-4">
         <div>
           <a
             [routerLink]="['/movie', movie().id]"
-            class="font-display line-clamp-1 text-base font-semibold text-[var(--cinema-text-primary)] no-underline transition-colors group-hover:text-[var(--cinema-accent)]"
+            class="font-display line-clamp-1 text-base font-bold text-[var(--color-text-primary)] no-underline transition-colors group-hover:text-[var(--color-brand-primary)]"
           >
             {{ movie().title }}
           </a>
-          <p class="mt-1 line-clamp-1 text-xs text-[var(--cinema-text-muted)]">
+          <p class="mt-1 line-clamp-1 text-xs text-[var(--color-text-secondary)]">
             {{ movie().genre }} · {{ movie().duration }}
           </p>
         </div>
 
         <!-- Solid Actions -->
-        <div class="mt-3.5 grid grid-cols-2 gap-2">
+        <div class="mt-4 grid grid-cols-2 gap-2">
           <a
             [routerLink]="['/movie', movie().id]"
-            class="cinema-btn-primary !min-h-[34px] !px-2.5 !py-1 !text-xs text-center"
+            class="cinema-btn-primary !min-h-[36px] !px-2.5 !py-1 !text-xs text-center font-bold"
           >
             Đặt vé
           </a>
           <a
             [routerLink]="['/showtimes']"
             [queryParams]="{ movieId: movie().id }"
-            class="cinema-btn-secondary !min-h-[34px] !px-2 !py-1 !text-xs text-center"
+            class="cinema-btn-secondary !min-h-[36px] !px-2 !py-1 !text-xs text-center font-semibold"
           >
             Suất chiếu
           </a>

@@ -13,32 +13,46 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
   template: `
     @if (resolvedMovie(); as m) {
       <div class="cinema-container py-8 sm:py-12">
-        <div class="grid gap-8 lg:grid-cols-12 lg:gap-12">
-          <!-- Poster Column (2:3 Frame) -->
+        <!-- Breadcrumb / Back Link -->
+        <div class="mb-6 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+          <a
+            routerLink="/"
+            class="text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-brand-primary)]"
+          >
+            ← Danh mục phim
+          </a>
+          <span class="text-[var(--color-border)]">/</span>
+          <span class="text-[var(--color-text-primary)] font-semibold">{{ m.title }}</span>
+        </div>
+
+        <div class="grid gap-10 lg:grid-cols-12 lg:gap-12 items-start">
+          <!-- Poster Column (Natural Aspect Ratio, Crisp Artwork Presentation) -->
           <div class="lg:col-span-4">
-            <div class="cinema-poster-frame sticky top-24 aspect-[2/3] w-full">
+            <div
+              class="sticky top-24 overflow-hidden rounded-[var(--radius-poster)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md"
+            >
               <img
                 [ngSrc]="m.poster"
                 [alt]="m.title"
                 width="480"
                 height="720"
                 priority
-                class="h-full w-full object-cover"
+                class="h-auto w-full object-cover"
               />
             </div>
           </div>
 
-          <!-- Editorial Metadata & Quick Showtime Selector -->
+          <!-- Editorial Content & Showtimes Column -->
           <div class="space-y-8 lg:col-span-8">
-            <!-- Title & Primary Details -->
-            <div class="space-y-3">
+            <!-- Movie Header & Key Metadata -->
+            <div class="space-y-3.5">
               <div class="flex flex-wrap items-center gap-2.5">
                 <ch-age-badge [age]="m.age" />
                 <span
-                  class="inline-flex items-center gap-1 rounded-[2px] border border-[var(--cinema-border)] bg-[var(--cinema-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--cinema-text-primary)]"
+                  class="inline-flex items-center gap-1 rounded-[3px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-primary)] shadow-2xs"
                 >
                   <svg
-                    class="h-3 w-3 text-[var(--cinema-accent)]"
+                    class="h-3.5 w-3.5 text-[var(--color-brand-accent)]"
                     viewBox="0 0 24 24"
                     fill="currentColor"
                     aria-hidden="true"
@@ -48,123 +62,144 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
                     />
                   </svg>
                   <span>{{ m.rating }}</span>
-                  <span class="text-[var(--cinema-text-muted)] font-normal"
+                  <span class="text-[var(--color-text-secondary)] font-normal text-[11px]"
                     >({{ m.votes }} đánh giá)</span
                   >
                 </span>
-                <span class="text-xs text-[var(--cinema-text-muted)]">{{ m.duration }}</span>
+                <span class="text-xs text-[var(--color-text-secondary)]">· {{ m.duration }}</span>
               </div>
 
               <h1
-                class="font-display text-[var(--text-h1)] font-semibold leading-tight text-[var(--cinema-text-primary)]"
+                class="font-display text-[var(--text-h1)] font-bold leading-tight text-[var(--color-text-primary)]"
               >
                 {{ m.title }}
               </h1>
 
+              <!-- Structured Metadata Grid -->
               <div
-                class="grid gap-2 border-t border-[var(--cinema-border-subtle)] pt-3 text-xs sm:grid-cols-2"
+                class="grid gap-3 border-y border-[var(--color-border)] py-4 text-xs sm:grid-cols-2"
               >
                 <div>
-                  <span class="text-[var(--cinema-text-muted)]">Thể loại:</span>
-                  <span class="ml-1 text-[var(--cinema-text-primary)] font-medium">{{
+                  <span class="text-[var(--color-text-secondary)]">Thể loại:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
                     m.genre
                   }}</span>
                 </div>
                 <div>
-                  <span class="text-[var(--cinema-text-muted)]">Đạo diễn:</span>
-                  <span class="ml-1 text-[var(--cinema-text-primary)] font-medium">{{
+                  <span class="text-[var(--color-text-secondary)]">Đạo diễn:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
                     m.director
                   }}</span>
                 </div>
                 <div class="sm:col-span-2">
-                  <span class="text-[var(--cinema-text-muted)]">Diễn viên:</span>
-                  <span class="ml-1 text-[var(--cinema-text-primary)] font-medium">{{
+                  <span class="text-[var(--color-text-secondary)]">Diễn viên chính:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
                     m.cast
                   }}</span>
                 </div>
                 <div>
-                  <span class="text-[var(--cinema-text-muted)]">Khởi chiếu:</span>
-                  <span class="ml-1 text-[var(--cinema-text-primary)] font-medium">{{
+                  <span class="text-[var(--color-text-secondary)]">Ngày khởi chiếu:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
                     m.release
                   }}</span>
+                </div>
+                <div>
+                  <span class="text-[var(--color-text-secondary)]">Định dạng phát hành:</span>
+                  <span class="ml-1.5 font-semibold text-[var(--color-brand-primary)]"
+                    >2D Digital, 3D, IMAX Laser</span
+                  >
                 </div>
               </div>
             </div>
 
-            <!-- Synopsis Panel -->
-            <div class="cinema-panel p-5">
-              <span class="cinema-eyebrow">Tóm tắt nội dung</span>
+            <!-- Synopsis Section (Editorial Whitespace) -->
+            <div class="cinema-panel p-6 space-y-2">
+              <span class="cinema-eyebrow">Nội dung phim</span>
               <p
-                class="mt-2 text-sm leading-relaxed text-[var(--cinema-text-secondary)] whitespace-pre-line"
+                class="text-sm leading-relaxed text-[var(--color-text-secondary)] whitespace-pre-line"
               >
                 {{ m.synopsis }}
               </p>
             </div>
 
-            <!-- Date Picker & Showtime Selector -->
-            <div class="cinema-panel p-5 sm:p-6 space-y-5">
-              <div>
-                <span class="cinema-eyebrow">Đặt vé nhanh</span>
-                <h2
-                  class="font-display mt-0.5 text-lg font-semibold text-[var(--cinema-text-primary)]"
-                >
-                  Chọn ngày & suất chiếu tại rạp
-                </h2>
+            <!-- Showtime Selection Section -->
+            <div class="cinema-panel-raised p-6 sm:p-7 space-y-6">
+              <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                  <span class="cinema-eyebrow">Đặt vé xem phim</span>
+                  <h2
+                    class="font-display mt-0.5 text-xl font-bold text-[var(--color-text-primary)]"
+                  >
+                    Lịch chiếu & Suất xem tại rạp
+                  </h2>
+                </div>
+                <span class="text-xs text-[var(--color-text-secondary)]">
+                  Suất chiếu cập nhật thời gian thực
+                </span>
               </div>
 
-              <!-- Date Strip -->
-              <div class="flex flex-wrap gap-2">
+              <!-- Date Selection Strip -->
+              <div class="flex flex-wrap gap-2" role="tablist" aria-label="Chọn ngày xem">
                 @for (d of days; track d.offset) {
                   <button
                     type="button"
                     (click)="selectedDayOffset.set(d.offset)"
-                    class="rounded-[2px] border px-3.5 py-2 text-xs transition-colors"
+                    class="rounded-[4px] border px-4 py-2.5 text-xs transition-colors"
                     [class]="
                       selectedDayOffset() === d.offset
-                        ? 'border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)] font-semibold'
-                        : 'border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] text-[var(--cinema-text-secondary)] hover:border-[var(--cinema-border-subtle)] hover:text-[var(--cinema-text-primary)]'
+                        ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[#fffdf9] font-bold shadow-xs'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)]'
                     "
                   >
-                    <div class="font-medium">{{ d.short }}</div>
-                    <div class="text-[11px] text-[var(--cinema-text-muted)]">{{ d.num }}</div>
+                    <div class="font-bold">{{ d.short }}</div>
+                    <div
+                      class="text-[11px]"
+                      [class]="
+                        selectedDayOffset() === d.offset
+                          ? 'text-[#fffdf9]/80'
+                          : 'text-[var(--color-text-secondary)]'
+                      "
+                    >
+                      {{ d.num }}
+                    </div>
                   </button>
                 }
               </div>
 
-              <!-- Cinema Venues & Showtime Slots -->
-              <div class="space-y-3.5">
+              <!-- Venues & Showtimes List -->
+              <div class="space-y-4">
                 @for (cinema of store.cinemas().slice(0, 4); track cinema.id; let idx = $index) {
                   <div
-                    class="rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] p-4"
+                    class="rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5"
                   >
-                    <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center justify-between gap-3">
                       <div>
-                        <div class="text-sm font-semibold text-[var(--cinema-text-primary)]">
+                        <div class="text-sm font-bold text-[var(--color-text-primary)]">
                           {{ cinema.name }}
                         </div>
-                        <div class="text-xs text-[var(--cinema-text-muted)]">
+                        <div class="text-xs text-[var(--color-text-secondary)]">
                           {{ cinema.address }}
                         </div>
                       </div>
                       <span
-                        class="rounded-[2px] border border-[var(--cinema-border-subtle)] bg-[var(--cinema-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--cinema-accent)]"
+                        class="rounded-[3px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-brand-accent)]"
                       >
                         {{ cinema.dist }}
                       </span>
                     </div>
 
-                    <div class="mt-3.5 flex flex-wrap gap-2">
+                    <div class="mt-4 flex flex-wrap gap-2.5">
                       @for (slot of getCinemaShows(m.id, idx); track slot.time) {
                         <a
                           [routerLink]="[
                             '/seats',
                             m.id + '__' + cinema.id + '__' + slot.time + '__' + slot.format,
                           ]"
-                          class="inline-flex items-center gap-1.5 rounded-[2px] border border-[var(--cinema-border)] bg-[var(--cinema-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--cinema-text-primary)] no-underline transition-colors hover:border-[var(--cinema-accent)] hover:bg-[var(--cinema-surface-raised)]"
+                          class="inline-flex items-center gap-2 rounded-[4px] border border-[var(--color-border)] bg-[#ffffff] px-3.5 py-2 text-xs font-bold text-[var(--color-text-primary)] no-underline transition-all hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)] hover:text-[var(--color-brand-primary)] shadow-2xs"
                         >
-                          <span>{{ slot.time }}</span>
+                          <span class="text-sm">{{ slot.time }}</span>
                           <span
-                            class="rounded-[2px] bg-[var(--cinema-surface-inset)] px-1.5 py-0.2 text-[10px] text-[var(--cinema-accent)]"
+                            class="rounded-[2px] bg-[var(--color-surface-secondary)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-brand-primary)]"
                           >
                             {{ slot.format }}
                           </span>
@@ -176,30 +211,30 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
               </div>
             </div>
 
-            <!-- Editorial Audience Reviews -->
+            <!-- Audience Reviews (Restrained Editorial Format) -->
             @defer (on viewport) {
-              <div class="cinema-panel p-5 space-y-4">
+              <div class="cinema-panel p-6 space-y-4">
                 <div>
-                  <span class="cinema-eyebrow">Ý kiến khán giả</span>
+                  <span class="cinema-eyebrow">Cộng đồng khán giả</span>
                   <h2
-                    class="font-display mt-0.5 text-base font-semibold text-[var(--cinema-text-primary)]"
+                    class="font-display mt-0.5 text-base font-bold text-[var(--color-text-primary)]"
                   >
-                    Đánh giá từ khán giả CineHub
+                    Nhận xét từ người xem CineHub
                   </h2>
                 </div>
 
                 <div class="space-y-3">
                   @for (rev of reviews; track rev.name) {
                     <div
-                      class="rounded-[2px] border border-[var(--cinema-border-subtle)] bg-[var(--cinema-surface-inset)] p-3.5 text-xs"
+                      class="rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] p-4 text-xs"
                     >
                       <div class="flex items-center justify-between">
-                        <span class="font-semibold text-[var(--cinema-text-primary)]">{{
+                        <span class="font-bold text-[var(--color-text-primary)]">{{
                           rev.name
                         }}</span>
-                        <span class="text-[var(--cinema-text-muted)]">{{ rev.when }}</span>
+                        <span class="text-[var(--color-text-muted)]">{{ rev.when }}</span>
                       </div>
-                      <p class="mt-1.5 leading-relaxed text-[var(--cinema-text-secondary)] italic">
+                      <p class="mt-1.5 leading-relaxed text-[var(--color-text-secondary)]">
                         "{{ rev.text }}"
                       </p>
                     </div>
@@ -207,8 +242,8 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
                 </div>
               </div>
             } @placeholder {
-              <div class="cinema-panel p-4 text-xs text-[var(--cinema-text-muted)]">
-                Đang tải đánh giá từ khán giả...
+              <div class="cinema-panel p-4 text-xs text-[var(--color-text-secondary)]">
+                Đang tải nhận xét...
               </div>
             }
           </div>
