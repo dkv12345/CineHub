@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "home": "Home",
+    "showtimes": "Showtimes",
+    "concessions": "Concessions",
+    "tickets": "My Tickets",
+    "profile": "Account",
+    "login": "Sign In",
+    "logout": "Sign Out"
+  },
+  "home": {
+    "nowShowing": "Now Showing",
+    "comingSoon": "Coming Soon",
+    "bookNow": "Book Tickets",
+    "watchTrailer": "Watch Trailer",
+    "aiRecommendations": "AI Picks For You"
+  },
+  "booking": {
+    "selectSeats": "Select Your Seats",
+    "seatPov": "3D Seat Point-of-View",
+    "continueToCheckout": "Proceed to Checkout",
+    "checkout": "Checkout",
+    "result": "Booking Confirmation"
+  },
+  "auth": {
+    "loginTitle": "Sign In to CineHub",
+    "registerTitle": "Create Account",
+    "verifyEmailTitle": "Verify Your Email",
+    "resetPasswordTitle": "Reset Password"
+  }
+}

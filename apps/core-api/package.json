@@ -1,0 +1,38 @@
+{
+  "name": "@cinehub/core-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/bootstrap/server.js",
+    "start": "node src/bootstrap/server.js",
+    "embed:movies": "node --env-file=../../.env src/jobs/embed-movies.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cinehub/db": "*",
+    "@cinehub/contracts": "*",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.0.1",
+    "express-rate-limit": "^7.5.0",
+    "google-auth-library": "^9.15.0",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.21.0",
+    "nodemailer": "^10.2.1",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.0.0",
+    "supertest": "^7.0.0",
+    "vitest": "^3.0.5"
+  }
+}

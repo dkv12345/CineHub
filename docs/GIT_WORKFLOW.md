@@ -1,6 +1,6 @@
 # Git and GitHub Workflow Specification - CineHub Engineering
 
-This document establishes the official version control policy and branch lifecycle standards for the CineHub engineering team. Adherence to this specification guarantees a clean, linear commit history, prevents merge conflicts, and ensures high software reliability across the monorepo.
+This document establishes the official version control policy, Nx project scope conventions, and branch lifecycle standards for the CineHub engineering team. Adherence to this specification guarantees a clean, linear commit history, prevents merge conflicts, and ensures high software reliability across the Nx monorepo.
 
 ---
 
@@ -9,7 +9,7 @@ This document establishes the official version control policy and branch lifecyc
 1. Direct commits and pushes to the `main` branch are strictly prohibited.
 2. Every feature, bug fix, or refactor must be developed in its own isolated branch.
 3. Always synchronize local `main` with the latest remote state before creating any new branch.
-4. Strictly follow the Conventional Commits specification for all commit messages.
+4. Strictly follow the Conventional Commits specification for all commit messages, where `scope` is the **Nx project name** (enforced by Commitlint).
 5. Never commit sensitive data or build artifacts. All `.env` files, credentials, logs, and dependencies must remain in `.gitignore`.
 
 ---
@@ -19,12 +19,13 @@ This document establishes the official version control policy and branch lifecyc
 ```mermaid
 graph LR
     A[Synchronized main] --> B[Create Topic Branch]
-    B --> C[Develop and Commit]
-    C --> D[Fetch and Rebase origin/main]
-    D --> E[Push to Remote and Open PR]
-    E --> F[Code Review and Merge]
-    F --> G[Prune Local Branch]
-    G --> A
+    B --> C[Develop and Commit with Nx Scope]
+    C --> D[Run nx affected checks]
+    D --> E[Fetch and Rebase origin/main]
+    E --> F[Push to Remote and Open PR]
+    F --> G[Code Review and Merge]
+    G --> H[Prune Local Branch]
+    H --> A
 ```
 
 ---
@@ -61,15 +62,22 @@ git checkout -b feat/your-task-slug
 
 ### Step 3: Implement Changes and Create Atomic Commits
 
-Break work down into cohesive, atomic commits with explicit commit messages:
+Break work down into cohesive, atomic commits with explicit commit messages where `<scope>` matches the affected Nx project name:
 
 ```bash
 git status
 git add .
-git commit -m "feat(web): integrate vnpay checkout component"
+git commit -m "feat(booking): integrate vnpay checkout component"
 ```
 
-Conventional Commits standard format:
+#### Allowed Scopes (Enforced by Commitlint)
+
+- **Apps**: `web`, `web-e2e`, `core-api`, `aggregator`
+- **Shared & DB Libraries**: `contracts`, `db`
+- **Frontend Domain Libraries**: `shell`, `core`, `shared-ui`, `shared-util`, `shared-data-access`, `auth`, `catalog`, `showtimes`, `booking`, `seat-3d`, `concessions`, `tickets`, `account`, `assistant`, `testing`
+- **Cross-Cutting**: `workspace`, `infra`, `docs`, `ci`, `tools`
+
+#### Conventional Commits Format
 
 - `feat(scope): concise description`: New functionality
 - `fix(scope): concise description`: Bug remediation
@@ -82,22 +90,15 @@ Rule: Subject lines must remain all-lowercase and must not terminate with a peri
 
 ---
 
-### Step 4: Rebase Against Remote Main (Mandatory Zero-Conflict Check)
+### Step 4: Verify Affected Projects & Rebase Against Remote Main
 
-During branch development, other team members may have merged changes into `main`. To maintain a linear commit history and eliminate merge conflicts before creating a Pull Request, rebase against remote `main`:
+Run affected checks locally and rebase against `origin/main` before opening a Pull Request:
 
 ```bash
+npm run affected:test
 git fetch origin
 git rebase origin/main
 ```
-
-- If no conflicts occur: Git will output `Successfully rebased and updated`.
-- If a conflict occurs:
-  1. Inspect the conflicting files highlighted in your editor.
-  2. Resolve the conflicts by selecting the correct code version.
-  3. Stage the resolved files: `git add <file-path>`.
-  4. Continue the rebase: `git rebase --continue`.
-  5. Never execute `git rebase --skip` unless you fully understand the consequences.
 
 ---
 
@@ -108,13 +109,6 @@ Once rebased cleanly on top of `origin/main`:
 ```bash
 git push -u origin feat/your-task-slug
 ```
-
-GitHub PR procedure:
-
-1. Navigate to the repository on GitHub and click `Compare & pull request`.
-2. Provide a descriptive title and fill out the Pull Request template (overview, technical decisions, test verification).
-3. Assign designated reviewers.
-4. Ensure all continuous integration (CI) status checks pass before merging.
 
 ---
 
@@ -129,47 +123,16 @@ git branch -d feat/your-task-slug
 git fetch --prune
 ```
 
-Your local environment is now synchronized with `main`. Repeat Step 1 and Step 2 to begin the next task.
-
 ---
 
 ## 4. Command Quick Reference
 
-| Operational Goal                  | Git Command                                                                     |
+| Operational Goal                  | Command                                                                         |
 | :-------------------------------- | :------------------------------------------------------------------------------ |
 | Start a new task                  | `git checkout main && git pull origin main && git checkout -b feat/<task-slug>` |
-| Inspect workspace status          | `git status`                                                                    |
+| Verify affected projects          | `npm run affected:test`                                                         |
+| Inspect dependency graph          | `npm run graph`                                                                 |
 | Create atomic commit              | `git add . && git commit -m "feat(scope): message"`                             |
 | Synchronize and prevent conflicts | `git fetch origin && git rebase origin/main`                                    |
 | Publish branch to remote          | `git push -u origin <branch-name>`                                              |
 | Clean up branch post-merge        | `git checkout main && git pull origin main && git branch -d <branch-name>`      |
-| Prune stale remote tracking refs  | `git fetch --prune`                                                             |
-| List local and remote branches    | `git branch -a`                                                                 |
-
----
-
-## 5. Emergency Runbook and Edge Cases
-
-### 1. Uncommitted work started on main by mistake
-
-Transfer all uncommitted working tree modifications to a new topic branch immediately:
-
-```bash
-git checkout -b feat/new-task-name
-```
-
-### 2. Discard all uncommitted local modifications
-
-Reset the working tree to the last committed state:
-
-```bash
-git restore .
-```
-
-### 3. Deleting a branch rejected by Git (`error: The branch ... is not fully merged`)
-
-If the changes have already been squashed or rebased and merged into `main` on GitHub, force-delete the local reference:
-
-```bash
-git branch -D feat/old-branch-name
-```

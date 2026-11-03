@@ -1,0 +1,21 @@
+# CineHub Monorepo Ownership Matrix
+*                       @dkv12345
+
+# Applications
+/apps/web/              @dkv12345
+/apps/web-e2e/          @dkv12345
+/apps/core-api/         @dkv12345
+/apps/aggregator/       @dkv12345
+
+# Frontend Domain Libraries
+/libs/web/              @dkv12345
+
+# Shared Contracts & Persistence Tier
+/libs/shared/contracts/ @dkv12345
+/libs/db/               @dkv12345
+
+# Infrastructure & Architecture Governance
+/infra/                 @dkv12345
+/docs/                  @dkv12345
+/.github/               @dkv12345
+

@@ -1,0 +1,20 @@
+# syntax=docker/dockerfile:1
+FROM node:20-alpine AS deps
+WORKDIR /workspace
+COPY package.json package-lock.json nx.json tsconfig.base.json ./
+COPY apps/aggregator/package.json ./apps/aggregator/
+COPY libs/db/package.json ./libs/db/
+COPY libs/db/prisma ./libs/db/prisma
+COPY libs/shared/contracts/package.json ./libs/shared/contracts/
+RUN npm ci --workspace=@cinehub/aggregator --workspace=@cinehub/db --workspace=@cinehub/contracts --include-workspace-root
+
+FROM node:20-alpine AS runner
+WORKDIR /workspace
+ENV NODE_ENV=production
+COPY --from=deps /workspace/node_modules ./node_modules
+COPY package.json ./
+COPY libs/db ./libs/db
+COPY libs/shared/contracts ./libs/shared/contracts
+COPY apps/aggregator ./apps/aggregator
+CMD ["node", "apps/aggregator/src/jobs/crawl-galaxy.js"]
+

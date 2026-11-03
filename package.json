@@ -8,39 +8,71 @@
   },
   "workspaces": [
     "apps/*",
-    "services/*",
-    "packages/*"
+    "libs/*",
+    "libs/shared/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @cinehub/core-api\" \"npm run dev -w @cinehub/web\"",
+    "dev": "npx nx run-many -t serve -p web,core-api",
     "dev:all": "npm run dev",
-    "dev:api": "npm run dev -w @cinehub/core-api",
-    "dev:web": "npm run dev -w @cinehub/web",
-    "build": "npm run build -w @cinehub/web",
+    "dev:api": "npx nx serve core-api",
+    "dev:web": "npx nx serve web",
+    "build": "npx nx run-many -t build",
+    "build:web": "npx nx build web",
+    "test": "npx nx run-many -t test",
+    "affected:test": "npx nx affected -t lint test build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "e2e": "npx nx e2e web-e2e",
+    "graph": "npx nx graph",
+    "api:spec": "node tools/openapi/generate-openapi.mjs",
+    "api:client": "node tools/openapi/generate-angular-client.mjs",
     "crawl:galaxy": "npm run crawl:galaxy -w @cinehub/aggregator && node tools/sync-data.js",
     "sync:live": "node tools/sync-data.js",
-    "infra:up": "docker compose up -d",
-    "infra:down": "docker compose down",
+    "infra:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker/docker-compose.yml down",
     "db:migrate": "npm run migrate -w @cinehub/db",
     "db:seed": "npm run seed -w @cinehub/db",
     "db:studio": "npm run studio -w @cinehub/db",
     "db:validate": "npm run validate -w @cinehub/db",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "test": "npm run test --workspaces --if-present",
+    "generate": "npm run generate -w @cinehub/db",
     "prepare": "husky"
   },
+  "dependencies": {
+    "@angular/cdk": "20.2.2",
+    "@angular/common": "20.2.4",
+    "@angular/compiler": "20.2.4",
+    "@angular/core": "20.2.4",
+    "@angular/forms": "20.2.4",
+    "@angular/platform-browser": "20.2.4",
+    "@angular/platform-server": "20.2.4",
+    "@angular/router": "20.2.4",
+    "@angular/ssr": "20.2.2",
+    "@jsverse/transloco": "^7.6.1",
+    "@ngrx/signals": "^20.1.0",
+    "rxjs": "~7.8.1"
+  },
   "devDependencies": {
+    "@angular/build": "20.2.2",
+    "@angular/cli": "20.2.2",
+    "@angular/compiler-cli": "20.2.4",
+    "@axe-core/playwright": "^4.10.2",
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "@eslint/js": "^9.21.0",
+    "@nx/eslint-plugin": "^21.1.3",
+    "@playwright/test": "^1.51.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "angular-eslint": "^19.3.0",
     "concurrently": "^9.1.2",
     "eslint": "^9.21.0",
-    "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
+    "msw": "^2.7.0",
+    "nx": "^21.1.3",
+    "postcss": "^8.5.3",
     "prettier": "^3.5.2",
+    "typescript": "~5.8.2",
     "typescript-eslint": "^8.71.1"
   },
   "lint-staged": {
@@ -48,7 +80,7 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md,yml,yaml,css}": [
+    "*.{json,md,yml,yaml,css,html}": [
       "prettier --write"
     ]
   }

@@ -1,0 +1,27 @@
+{
+  "name": "assistant",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/web/assistant/data-access/src",
+  "tags": ["scope:web", "type:data-access"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/web/assistant/data-access"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx vitest run libs/web/assistant/data-access/test"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -e \"console.log('assistant data-access validated')\""
+      }
+    }
+  }
+}

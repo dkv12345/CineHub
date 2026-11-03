@@ -9,6 +9,9 @@ coverage/
 data/raw/
 .husky/_
 .turbo/
+.nx/
+.angular/
+out-tsc/
 *.log
 .DS_Store
 .vscode/*

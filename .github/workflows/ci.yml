@@ -17,6 +17,47 @@ jobs:
       JWT_ACCESS_SECRET: ci-access-secret-0123456789012345
       JWT_REFRESH_SECRET: ci-refresh-secret-0123456789012345
       QR_HMAC_SECRET: ci-qr-secret-01234567890123456789
+      CLIENT_URL: http://localhost:4200
+      CORS_ORIGIN: http://localhost:4200
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-
+      - run: npm ci
+      - run: npm run db:validate
+      - name: Verify OpenAPI and generated Angular API client are in sync
+        run: |
+          npm run api:spec
+          npm run api:client
+          git diff --exit-code docs/api/openapi.json libs/web/shared/data-access
+      - name: Run Nx affected lint, test, and build
+        run: npx nx affected -t lint test build --base=origin/main --head=HEAD
+
+  e2e:
+    if: github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      DATABASE_URL: mysql://root:root@localhost:3306/cinehub
+      REDIS_URL: redis://localhost:6379
+      MONGODB_URI: mongodb://localhost:27017/cinehub
+      JWT_ACCESS_SECRET: ci-access-secret-0123456789012345
+      JWT_REFRESH_SECRET: ci-refresh-secret-0123456789012345
+      QR_HMAC_SECRET: ci-qr-secret-01234567890123456789
+      CLIENT_URL: http://localhost:4200
+      CORS_ORIGIN: http://localhost:4200
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,6 +65,5 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run lint
-      - run: npm run db:validate
-      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e

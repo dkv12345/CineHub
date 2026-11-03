@@ -1,0 +1,41 @@
+import type { ZodObject, ZodRawShape } from 'zod';
+
+export declare const ERROR_CODES: Readonly<Record<string, string>>;
+export declare const MAX_SEATS_PER_BOOKING: number;
+export declare const SEAT_HOLD_SECONDS: number;
+export declare const AUTH_PROVIDERS: Readonly<Record<string, string>>;
+export declare const USER_ROLES: Readonly<Record<string, string>>;
+export declare const USER_STATUS: Readonly<Record<string, string>>;
+export declare const MOVIE_STATUS: Readonly<Record<string, string>>;
+export declare const AGE_RATINGS: Readonly<Record<string, string>>;
+export declare const SCREEN_FORMATS: Readonly<Record<string, string>>;
+export declare const ROOM_TIERS: Readonly<Record<string, string>>;
+export declare const SHOWTIME_KINDS: Readonly<Record<string, string>>;
+export declare const CAPTION_MODES: Readonly<Record<string, string>>;
+export declare const SEAT_STATES: Readonly<Record<string, string>>;
+export declare const BOOKING_STATUS: Readonly<Record<string, string>>;
+export declare const PAYMENT_PROVIDERS: Readonly<Record<string, string>>;
+export declare const PAYMENT_STATUS: Readonly<Record<string, string>>;
+export declare const TICKET_STATUS: Readonly<Record<string, string>>;
+export declare const VOUCHER_TYPES: Readonly<Record<string, string>>;
+export declare const REDEMPTION_STATUS: Readonly<Record<string, string>>;
+export declare const CONCESSION_CATEGORIES: Readonly<Record<string, string>>;
+export declare const PRICE_SOURCES: Readonly<Record<string, string>>;
+export declare const DAY_TYPES: Readonly<Record<string, string>>;
+
+export declare const paginationQuery: ZodObject<ZodRawShape>;
+export declare const registerBody: ZodObject<ZodRawShape>;
+export declare const loginBody: ZodObject<ZodRawShape>;
+export declare const verifyEmailBody: ZodObject<ZodRawShape>;
+export declare const resendVerificationBody: ZodObject<ZodRawShape>;
+export declare const refreshTokenBody: ZodObject<ZodRawShape>;
+export declare const googleAuthBody: ZodObject<ZodRawShape>;
+export declare const forgotPasswordBody: ZodObject<ZodRawShape>;
+export declare const resetPasswordBody: ZodObject<ZodRawShape>;
+export declare const lockSeatsSchema: ZodObject<ZodRawShape>;
+export declare const updateConcessionsSchema: ZodObject<ZodRawShape>;
+export declare const applyVoucherSchema: ZodObject<ZodRawShape>;
+export declare const chatMessageBody: ZodObject<ZodRawShape>;
+export declare const recommendationsBody: ZodObject<ZodRawShape>;
+
+export declare function generateOpenApiDocument(): Record<string, unknown>;
