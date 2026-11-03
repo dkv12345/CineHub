@@ -26,23 +26,25 @@ import {
   imports: [SeatMap3DComponent, SeatPOVSceneComponent, BookingSummaryCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-black text-white sm:text-3xl">
-            Chọn ghế ngồi & Góc nhìn 3D POV
-          </h1>
-          <p class="mt-1 text-xs text-slate-400">
-            {{ store.movieTitle() }} · {{ store.cinemaName() }} · Suất {{ store.showTime() }} ({{
-              store.format()
-            }})
-          </p>
-        </div>
+    <div class="cinema-container py-8 sm:py-12">
+      <!-- Header -->
+      <div class="mb-6 space-y-1">
+        <span class="cinema-eyebrow">Bước 1 / 3 · Sơ đồ phòng chiếu</span>
+        <h1
+          class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
+        >
+          Chọn ghế ngồi & Góc nhìn 3D POV
+        </h1>
+        <p class="text-xs text-[var(--cinema-text-muted)]">
+          {{ store.movieTitle() }} · {{ store.cinemaName() }} · Suất {{ store.showTime() }} ({{
+            store.format()
+          }})
+        </p>
       </div>
 
-      <div class="grid gap-8 lg:grid-cols-12">
+      <div class="grid gap-8 lg:grid-cols-12 lg:gap-8">
         <!-- 3D Seat Map Column -->
-        <div class="lg:col-span-8 rounded-2xl border border-slate-800 bg-slate-900/75 p-4 sm:p-6">
+        <div class="cinema-panel p-4 sm:p-6 lg:col-span-8">
           <ch-seat-map-3d
             [layout]="auditoriumLayout()"
             [seats]="seats()"
@@ -50,8 +52,8 @@ import {
           />
         </div>
 
-        <!-- Right Sidebar: 3D POV Scene + Summary Card -->
-        <div class="lg:col-span-4 space-y-5">
+        <!-- Right Sidebar: 3D POV Scene + Summary Card + Proceed Action -->
+        <div class="space-y-5 lg:col-span-4">
           <ch-seat-pov-scene [layout]="auditoriumLayout()" [activeSeat]="lastActiveSeat()" />
 
           <ch-booking-summary-card
@@ -64,16 +66,17 @@ import {
             [totalAmount]="store.seatsSubtotal()"
           />
 
+          <!-- Solid Action Button (No Gradients) -->
           <button
             type="button"
             (click)="proceedToCheckout()"
-            class="w-full rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 py-3.5 text-sm font-extrabold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:from-amber-300 hover:to-amber-400"
+            class="cinema-btn-primary w-full !min-h-[46px] !text-sm font-semibold"
           >
             Tiếp tục thanh toán ({{ store.selectedSeats().length }} ghế)
           </button>
         </div>
       </div>
-    </section>
+    </div>
   `,
 })
 export class SeatsPageComponent implements OnInit {

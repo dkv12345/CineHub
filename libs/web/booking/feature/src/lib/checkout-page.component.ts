@@ -14,60 +14,83 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
   imports: [ReactiveFormsModule, RouterLink, BookingSummaryCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <h1 class="mb-6 text-2xl font-black text-white sm:text-3xl">
-        Thanh toán & Xác nhận vé điện tử
-      </h1>
+    <div class="cinema-container max-w-5xl py-8 sm:py-12">
+      <div class="mb-6 space-y-1">
+        <span class="cinema-eyebrow">Bước 2 / 3 · Thủ tục đặt vé</span>
+        <h1
+          class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
+        >
+          Thanh toán & Xác nhận vé điện tử
+        </h1>
+        <p class="text-xs text-[var(--cinema-text-muted)]">
+          Kiểm tra thông tin chi tiết vé, mã giảm giá và lựa chọn cổng thanh toán trực tuyến an
+          toàn.
+        </p>
+      </div>
 
-      <div class="grid gap-8 lg:grid-cols-12">
-        <div class="lg:col-span-7 space-y-6">
-          <!-- Payment Gateway Picker -->
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/85 p-5">
-            <h2 class="text-base font-bold text-white">Chọn phương thức thanh toán</h2>
-            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+      <div class="grid gap-8 lg:grid-cols-12 lg:gap-8">
+        <!-- Left: Gateway & Voucher Selection -->
+        <div class="space-y-6 lg:col-span-7">
+          <!-- Payment Gateway Selection -->
+          <div class="cinema-panel p-5 space-y-4">
+            <div>
+              <span class="cinema-eyebrow">Phương thức thanh toán</span>
+              <h2 class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
+                Chọn cổng thanh toán trực tuyến
+              </h2>
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Cổng thanh toán">
               @for (m of gateways; track m.code) {
                 <button
                   type="button"
+                  role="radio"
+                  [attr.aria-checked]="bookingStore.paymentMethod() === m.code"
                   (click)="bookingStore.setPaymentMethod(m.code)"
-                  class="rounded-xl border p-3.5 text-left transition"
+                  class="rounded-[3px] border p-3.5 text-left transition-colors"
                   [class]="
                     bookingStore.paymentMethod() === m.code
-                      ? 'border-amber-400 bg-amber-500/15 text-amber-200'
-                      : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700'
+                      ? 'border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)] font-semibold'
+                      : 'border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] text-[var(--cinema-text-secondary)] hover:border-[var(--cinema-border-subtle)] hover:text-[var(--cinema-text-primary)]'
                   "
                 >
-                  <div class="text-sm font-extrabold">{{ m.name }}</div>
-                  <div class="mt-0.5 text-[11px] opacity-75">{{ m.desc }}</div>
+                  <div class="text-sm font-semibold">{{ m.name }}</div>
+                  <div class="mt-0.5 text-[11px] text-[var(--cinema-text-muted)]">{{ m.desc }}</div>
                 </button>
               }
             </div>
           </div>
 
           <!-- Voucher Form (Contract-First Zod Validator) -->
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/85 p-5">
-            <h2 class="text-base font-bold text-white">Mã giảm giá / Voucher</h2>
-            <form [formGroup]="voucherForm" (ngSubmit)="applyVoucher()" class="mt-3 flex gap-2">
+          <div class="cinema-panel p-5 space-y-3">
+            <div>
+              <span class="cinema-eyebrow">Mã ưu đãi</span>
+              <h2 class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
+                Phiếu giảm giá / Thẻ quà tặng
+              </h2>
+            </div>
+
+            <form [formGroup]="voucherForm" (ngSubmit)="applyVoucher()" class="flex gap-2">
               <input
                 type="text"
                 formControlName="code"
                 placeholder="Nhập mã (VD: CINEHUB50, GALAXY30)"
                 aria-label="Mã giảm giá"
-                class="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-sm text-white uppercase placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                class="cinema-input flex-1 uppercase"
               />
-              <button
-                type="submit"
-                class="rounded-xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 transition hover:bg-amber-400"
-              >
+              <button type="submit" class="cinema-btn-secondary !min-h-[44px] !px-4">
                 Áp dụng
               </button>
             </form>
+
             @if (voucherMessage()) {
-              <p class="mt-2 text-xs text-amber-300">{{ voucherMessage() }}</p>
+              <p class="text-xs text-[var(--cinema-accent)]">{{ voucherMessage() }}</p>
             }
           </div>
         </div>
 
-        <div class="lg:col-span-5 space-y-5">
+        <!-- Right: Order Summary & Confirmation Action -->
+        <div class="space-y-5 lg:col-span-5">
           <ch-booking-summary-card
             [movieTitle]="bookingStore.movieTitle()"
             [cinemaName]="bookingStore.cinemaName()"
@@ -78,39 +101,48 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
             [totalAmount]="grandTotal()"
           />
 
-          <div
-            class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 text-xs space-y-2 text-slate-300"
-          >
+          <!-- Line Items Breakdown -->
+          <div class="cinema-panel p-4 space-y-2 text-xs text-[var(--cinema-text-secondary)]">
             <div class="flex justify-between">
-              <span>Tiền ghế:</span>
-              <span>{{ formatCurrency(bookingStore.seatsSubtotal()) }}</span>
+              <span>Tiền ghế ({{ seatLabels().length }} ghế):</span>
+              <span class="text-[var(--cinema-text-primary)]">{{
+                formatCurrency(bookingStore.seatsSubtotal())
+              }}</span>
             </div>
             <div class="flex justify-between">
               <span>Combo Bắp & Nước:</span>
-              <span>{{ formatCurrency(concessionsStore.totalAmount()) }}</span>
+              <span class="text-[var(--cinema-text-primary)]">{{
+                formatCurrency(concessionsStore.totalAmount())
+              }}</span>
             </div>
-            <div class="flex justify-between text-emerald-400">
-              <span>Giảm giá Voucher:</span>
-              <span>− {{ formatCurrency(bookingStore.discountAmount()) }}</span>
-            </div>
+            @if (bookingStore.discountAmount() > 0) {
+              <div class="flex justify-between text-[var(--cinema-success)]">
+                <span>Ưu đãi voucher:</span>
+                <span>− {{ formatCurrency(bookingStore.discountAmount()) }}</span>
+              </div>
+            }
           </div>
 
+          <!-- Solid Action Button (No Gradients) -->
           <button
             type="button"
             (click)="confirmPayment()"
-            class="w-full rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:from-emerald-300 hover:to-teal-400"
+            class="cinema-btn-primary w-full !min-h-[48px] !text-sm font-semibold"
           >
             Xác nhận thanh toán · {{ formatCurrency(grandTotal()) }}
           </button>
 
           <div class="text-center">
-            <a routerLink="/concessions" class="text-xs text-amber-400 hover:underline">
-              + Thêm Combo Bắp & Nước
+            <a
+              routerLink="/concessions"
+              class="text-xs font-medium text-[var(--cinema-text-secondary)] hover:text-[var(--cinema-accent)] hover:underline"
+            >
+              + Đặt thêm Combo Bắp & Nước quầy ưu tiên
             </a>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   `,
 })
 export class CheckoutPageComponent {
@@ -123,9 +155,9 @@ export class CheckoutPageComponent {
   readonly voucherMessage = signal<string | null>(null);
 
   readonly gateways = [
-    { code: 'VNPAY' as const, name: 'VNPay QR', desc: 'Quét QR ngân hàng' },
-    { code: 'MOMO' as const, name: 'Ví MoMo', desc: 'Thanh toán siêu tốc' },
-    { code: 'ZALOPAY' as const, name: 'ZaloPay', desc: 'Miễn phí giao dịch' },
+    { code: 'VNPAY' as const, name: 'VNPay QR', desc: 'Quét mã VietQR ngân hàng' },
+    { code: 'MOMO' as const, name: 'Ví MoMo', desc: 'Thanh toán tức thời' },
+    { code: 'ZALOPAY' as const, name: 'ZaloPay', desc: 'Ví điện tử ZaloPay' },
   ];
 
   readonly voucherForm = this.fb.nonNullable.group(

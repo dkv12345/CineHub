@@ -10,63 +10,110 @@ import { fmt } from '@cinehub/web/shared/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (ticket(); as t) {
-      <section class="mx-auto max-w-xl px-4 py-12 sm:px-6">
-        <div class="rounded-3xl border border-emerald-500/40 bg-slate-900/95 p-6 shadow-2xl sm:p-8">
-          <div class="text-center">
-            <span
-              class="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-2xl text-emerald-300"
+      <div class="cinema-container max-w-lg py-12">
+        <div class="cinema-panel-raised overflow-hidden p-6 sm:p-8 space-y-6">
+          <!-- Top Confirmation Status -->
+          <div class="text-center space-y-2">
+            <div
+              class="mx-auto flex h-12 w-12 items-center justify-center rounded-[3px] border border-[var(--cinema-success)] bg-[var(--cinema-success-bg)] text-[var(--cinema-success)]"
             >
-              ✓
-            </span>
-            <h1 class="mt-3 text-2xl font-black text-white">Đặt vé thành công!</h1>
-            <p class="mt-1 text-xs text-slate-400">
-              Xuất trình mã vé QR dưới đây tại quầy soát vé rạp Galaxy Cinema
+              <svg
+                class="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <span class="cinema-eyebrow">Thanh toán hoàn tất</span>
+            <h1
+              class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
+            >
+              Vé điện tử xác nhận
+            </h1>
+            <p class="text-xs text-[var(--cinema-text-muted)]">
+              Xuất trình mã vé hoặc mã QR tại quầy soát vé khi vào phòng chiếu.
             </p>
           </div>
 
-          <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3 text-xs">
-            <div class="flex justify-between">
-              <span class="text-slate-400">Mã đặt vé (Booking Code):</span>
-              <strong class="text-base font-black text-amber-300">{{ t.bookingCode }}</strong>
+          <!-- Cinema Ticket Perforated Card Stub -->
+          <div
+            class="rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] p-5 space-y-3.5 text-xs relative"
+          >
+            <!-- Booking Reference Code -->
+            <div
+              class="flex items-center justify-between border-b border-dashed border-[var(--cinema-border)] pb-3"
+            >
+              <span class="text-[var(--cinema-text-muted)]">Mã đặt vé:</span>
+              <strong
+                class="font-mono text-base font-bold tracking-widest text-[var(--cinema-accent)]"
+              >
+                {{ t.bookingCode }}
+              </strong>
             </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Phim:</span>
-              <strong class="text-white">{{ t.movieTitle }}</strong>
+
+            <!-- Details -->
+            <div class="space-y-2 text-[var(--cinema-text-secondary)]">
+              <div class="flex justify-between">
+                <span class="text-[var(--cinema-text-muted)]">Phim:</span>
+                <strong class="font-display text-sm text-[var(--cinema-text-primary)]">{{
+                  t.movieTitle
+                }}</strong>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--cinema-text-muted)]">Cụm rạp:</span>
+                <span class="text-[var(--cinema-text-primary)] font-medium"
+                  >{{ t.cinemaName }} · {{ t.screenName }}</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--cinema-text-muted)]">Suất chiếu:</span>
+                <span class="text-[var(--cinema-text-primary)] font-medium"
+                  >{{ t.showTime }} ({{ t.format }})</span
+                >
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--cinema-text-muted)]">Ghế ngồi:</span>
+                <strong class="text-[var(--cinema-accent)]">{{ t.seats.join(', ') }}</strong>
+              </div>
             </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Rạp & Phòng chiếu:</span>
-              <span class="text-slate-200">{{ t.cinemaName }} · {{ t.screenName }}</span>
+
+            <!-- Total and Payment Method -->
+            <div
+              class="flex items-center justify-between border-t border-dashed border-[var(--cinema-border)] pt-3 text-sm font-semibold"
+            >
+              <span class="text-[var(--cinema-text-secondary)]"
+                >Tổng thanh toán ({{ t.paymentMethod }}):</span
+              >
+              <span class="font-display text-base text-[var(--cinema-text-primary)]">
+                {{ formatCurrency(t.totalPaid) }}
+              </span>
             </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Suất chiếu:</span>
-              <span class="text-amber-300 font-bold">{{ t.showTime }} ({{ t.format }})</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Ghế ngồi:</span>
-              <strong class="text-emerald-400">{{ t.seats.join(', ') }}</strong>
-            </div>
-            <div class="flex justify-between border-t border-slate-800 pt-3 text-sm font-bold">
-              <span class="text-slate-300">Đã thanh toán ({{ t.paymentMethod }}):</span>
-              <span class="text-amber-300">{{ formatCurrency(t.totalPaid) }}</span>
+
+            <!-- QR Code Verification Badge -->
+            <div
+              class="mt-3 flex items-center justify-center rounded-[2px] border border-[var(--cinema-border-subtle)] bg-[var(--cinema-surface)] py-3 text-[11px] text-[var(--cinema-text-muted)]"
+            >
+              <span>Mã QR điện tử CineHub đã kích hoạt</span>
             </div>
           </div>
 
-          <div class="mt-6 flex flex-wrap gap-3">
-            <a
-              routerLink="/my-tickets"
-              class="flex-1 rounded-xl bg-amber-500 py-3 text-center text-xs font-extrabold text-slate-950 transition hover:bg-amber-400"
-            >
+          <!-- Actions -->
+          <div class="flex flex-col gap-2.5 sm:flex-row">
+            <a routerLink="/my-tickets" class="cinema-btn-primary flex-1 !min-h-[44px] text-center">
               Xem trong Vé của tôi
             </a>
-            <a
-              routerLink="/"
-              class="flex-1 rounded-xl border border-slate-700 py-3 text-center text-xs font-bold text-slate-200 transition hover:border-amber-400"
-            >
+            <a routerLink="/" class="cinema-btn-secondary flex-1 !min-h-[44px] text-center">
               Về trang chủ
             </a>
           </div>
         </div>
-      </section>
+      </div>
     }
   `,
 })
