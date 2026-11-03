@@ -3,51 +3,75 @@
 @source '../';
 
 /*
- * Cinematic Luxury Design System Tokens
- * Synthesizing editorial restraint (Everyman), film-programming clarity (Alamo Drafthouse),
- * and commercial session/booking usability (HOYTS) for CineHub.
+ * ==========================================================================
+ * CINEHUB — BRIGHT PREMIUM CINEMA DESIGN SYSTEM TOKENS
+ * Synthesizing Everyman (Brand Sophistication & Editorial Whitespace),
+ * Alamo Drafthouse (Film Discovery & Cinema Personality),
+ * and HOYTS (Clear Session Visibility & Commercial E-commerce UX).
+ * ==========================================================================
  */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Core surfaces */
-  --cinema-canvas: #11100f;
-  --cinema-surface: #191816;
-  --cinema-surface-raised: #211f1c;
-  --cinema-surface-inset: #0b0b0a;
+  /* CineHub Signature Color System */
+  --color-brand-primary: #7c2638; /* CineHub Burgundy */
+  --color-brand-deep: #5e1d2b; /* Deep Burgundy (Hover / active) */
+  --color-brand-accent: #b28a50; /* Champagne Gold */
+  --color-brand-subtle: #f3e9e7; /* Soft Burgundy (Selected/highlighted) */
+  --color-brand-subtle-hover: #ebe0de;
 
-  /* Typography colors */
-  --cinema-text-primary: #f2eee6;
-  --cinema-text-secondary: #b9b1a5;
-  --cinema-text-muted: #9b9286;
+  --color-background: #f7f3ec; /* Warm Ivory (Main page canvas) */
+  --color-surface: #fffdf9; /* Porcelain White (Content surfaces) */
+  --color-surface-secondary: #efe8dc; /* Sand (Secondary background/tags) */
+  --color-border: #ddd3c5; /* Stone (Borders and dividers) */
+  --color-border-subtle: #eae2d6; /* Subtle fine rules */
 
-  /* Borders and accents */
-  --cinema-border: #39352f;
-  --cinema-border-subtle: #292621;
-  --cinema-accent: #c2a16b;
-  --cinema-accent-hover: #d0b47f;
-  --cinema-action: #f2eee6;
-  --cinema-action-text: #171512;
+  --color-text-primary: #24201d; /* Espresso (Primary text) */
+  --color-text-secondary: #736a60; /* Warm Gray (Secondary metadata) */
+  --color-text-muted: #958c82; /* Muted caption text */
+  --color-text-inverted: #fffdf9;
 
-  /* Semantic colors */
-  --cinema-danger: #d77870;
-  --cinema-danger-bg: #2a1615;
-  --cinema-success: #8fb49a;
-  --cinema-success-bg: #142219;
-  --cinema-warning: #d3ac65;
-  --cinema-warning-bg: #272012;
+  /* Semantic feedback */
+  --color-danger: #b53835;
+  --color-danger-bg: #fdf2f2;
+  --color-success: #2b7442;
+  --color-success-bg: #edf7f0;
+  --color-warning: #a06e1e;
+  --color-warning-bg: #fdf8ee;
 
-  /* Typography */
-  --font-display: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  /* Backward Compatibility Aliases */
+  --cinema-canvas: var(--color-background);
+  --cinema-surface: var(--color-surface);
+  --cinema-surface-raised: #ffffff;
+  --cinema-surface-inset: var(--color-surface-secondary);
+  --cinema-text-primary: var(--color-text-primary);
+  --cinema-text-secondary: var(--color-text-secondary);
+  --cinema-text-muted: var(--color-text-muted);
+  --cinema-border: var(--color-border);
+  --cinema-border-subtle: var(--color-border-subtle);
+  --cinema-accent: var(--color-brand-primary);
+  --cinema-accent-hover: var(--color-brand-deep);
+  --cinema-action: var(--color-brand-primary);
+  --cinema-action-text: var(--color-text-inverted);
+  --cinema-danger: var(--color-danger);
+  --cinema-danger-bg: var(--color-danger-bg);
+  --cinema-success: var(--color-success);
+  --cinema-success-bg: var(--color-success-bg);
+  --cinema-warning: var(--color-warning);
+  --cinema-warning-bg: var(--color-warning-bg);
+
+  /* Editorial & Interface Typography */
+  --font-display: 'Source Serif 4', 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-ui:
-    'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    'Source Sans 3', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
 
   /* Type scale */
-  --text-display: clamp(2.5rem, 5vw, 4.25rem);
-  --text-h1: clamp(2rem, 3.5vw, 3rem);
-  --text-h2: clamp(1.5rem, 2.2vw, 2rem);
+  --text-display: clamp(2.25rem, 4.5vw, 3.5rem);
+  --text-h1: clamp(1.875rem, 3.2vw, 2.75rem);
+  --text-h2: clamp(1.375rem, 2vw, 1.875rem);
   --text-h3: 1.25rem;
-  --text-body-lg: 1.125rem;
+  --text-body-lg: 1.0625rem;
   --text-body: 0.9375rem;
   --text-meta: 0.8125rem;
   --text-micro: 0.75rem;
@@ -61,43 +85,18 @@
   --space-8: 2rem;
   --space-12: 3rem;
   --space-16: 4rem;
-  --space-20: 5rem;
-  --space-24: 6rem;
 
   /* Shape and motion */
-  --radius-control: 3px;
-  --radius-panel: 5px;
-  --radius-poster: 2px;
+  --radius-control: 4px;
+  --radius-panel: 6px;
+  --radius-poster: 4px;
   --duration-fast: 140ms;
   --duration-normal: 200ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
   /* Layout */
-  --content-max: 1320px;
-  --page-gutter: clamp(1.25rem, 4vw, 4rem);
-}
-
-.cinema-theme-light {
-  color-scheme: light;
-  --cinema-canvas: #f4efe6;
-  --cinema-surface: #ebe4d8;
-  --cinema-surface-raised: #ffffff;
-  --cinema-surface-inset: #e2dacb;
-  --cinema-text-primary: #171512;
-  --cinema-text-secondary: #4a453e;
-  --cinema-text-muted: #6e675d;
-  --cinema-border: #cfc6b8;
-  --cinema-border-subtle: #ded6c8;
-  --cinema-accent: #8c6930;
-  --cinema-accent-hover: #735524;
-  --cinema-action: #171512;
-  --cinema-action-text: #f2eee6;
-  --cinema-danger: #b53c32;
-  --cinema-danger-bg: #faeae8;
-  --cinema-success: #2d6a43;
-  --cinema-success-bg: #e6f2ea;
-  --cinema-warning: #94681d;
-  --cinema-warning-bg: #f9f1e1;
+  --content-max: 1280px;
+  --page-gutter: clamp(1.25rem, 3.5vw, 3.5rem);
 }
 
 *,
@@ -110,8 +109,8 @@ body,
 .cinema-app {
   margin: 0;
   min-height: 100vh;
-  color: var(--cinema-text-primary);
-  background-color: var(--cinema-canvas);
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
   font-family: var(--font-ui);
   font-size: var(--text-body);
   line-height: 1.55;
@@ -124,14 +123,14 @@ body,
 }
 
 .cinema-app :where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--cinema-accent);
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
 }
 
-/* Typography helpers */
+/* Typography classes */
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
 }
 
 .font-ui {
@@ -141,10 +140,10 @@ body,
 .cinema-eyebrow {
   font-family: var(--font-ui);
   font-size: var(--text-micro);
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--cinema-accent);
+  color: var(--color-brand-primary);
 }
 
 /* Container & Surfaces */
@@ -156,44 +155,47 @@ body,
 }
 
 .cinema-panel {
-  background-color: var(--cinema-surface);
-  border: 1px solid var(--cinema-border);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
+  box-shadow: 0 1px 3px rgba(36, 32, 29, 0.03);
 }
 
 .cinema-panel-raised {
-  background-color: var(--cinema-surface-raised);
-  border: 1px solid var(--cinema-border);
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
+  box-shadow: 0 4px 16px rgba(36, 32, 29, 0.06);
 }
 
 .cinema-panel-inset {
-  background-color: var(--cinema-surface-inset);
-  border: 1px solid var(--cinema-border);
+  background-color: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
 }
 
 .cinema-poster-frame {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--cinema-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-poster);
-  background-color: var(--cinema-surface-inset);
+  background-color: var(--color-surface-secondary);
+  box-shadow: 0 4px 12px rgba(36, 32, 29, 0.06);
 }
 
-/* Controls & Buttons — Strictly solid fills, fine borders, zero gradients */
+/* Controls & Buttons — Strictly solid fills, fine borders, ZERO gradients */
 .cinema-primary-action,
 .cinema-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 44px;
-  padding: 0.6875rem 1.25rem;
-  border: 1px solid var(--cinema-action);
+  min-height: 42px;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--color-brand-primary);
   border-radius: var(--radius-control);
-  color: var(--cinema-action-text);
-  background-color: var(--cinema-action);
+  color: #fffdf9;
+  background-color: var(--color-brand-primary);
   font-family: var(--font-ui);
   font-size: 0.875rem;
   font-weight: 600;
@@ -203,15 +205,17 @@ body,
   transition:
     background-color var(--duration-fast) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+  box-shadow: 0 2px 6px rgba(124, 38, 56, 0.16);
 }
 
 .cinema-primary-action:hover:not(:disabled),
 .cinema-btn-primary:hover:not(:disabled) {
-  border-color: var(--cinema-accent-hover);
-  background-color: var(--cinema-accent-hover);
-  color: #171512;
+  border-color: var(--color-brand-deep);
+  background-color: var(--color-brand-deep);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(94, 29, 43, 0.22);
 }
 
 .cinema-primary-action:active:not(:disabled),
@@ -222,7 +226,8 @@ body,
 .cinema-primary-action:disabled,
 .cinema-btn-primary:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.45;
+  box-shadow: none;
 }
 
 .cinema-btn-secondary {
@@ -230,15 +235,15 @@ body,
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 44px;
-  padding: 0.6875rem 1.125rem;
-  border: 1px solid var(--cinema-border);
+  min-height: 42px;
+  padding: 0.625rem 1.125rem;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
-  color: var(--cinema-text-primary);
-  background-color: var(--cinema-surface);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
   font-family: var(--font-ui);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   transition:
@@ -248,35 +253,39 @@ body,
 }
 
 .cinema-btn-secondary:hover:not(:disabled) {
-  border-color: var(--cinema-accent);
-  background-color: var(--cinema-surface-raised);
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand-primary);
 }
 
 .cinema-btn-secondary:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.45;
 }
 
 /* Form Inputs */
 .cinema-input {
   width: 100%;
-  min-height: 44px;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid var(--cinema-border);
+  min-height: 42px;
+  padding: 0.5625rem 0.875rem;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
-  background-color: var(--cinema-surface-inset);
-  color: var(--cinema-text-primary);
+  background-color: #ffffff;
+  color: var(--color-text-primary);
   font-family: var(--font-ui);
   font-size: 0.875rem;
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .cinema-input::placeholder {
-  color: var(--cinema-text-muted);
+  color: var(--color-text-muted);
 }
 
 .cinema-input:focus {
-  border-color: var(--cinema-accent);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(124, 38, 56, 0.1);
   outline: none;
 }
 
@@ -285,18 +294,18 @@ body,
   margin-bottom: 0.375rem;
   font-family: var(--font-ui);
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--cinema-text-secondary);
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
-/* Non-color seat differentiation pattern for sold/unavailable seats */
+/* Hatched pattern for sold/unavailable seats (Accessible non-color differentiation) */
 .seat-sold-pattern {
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,
     transparent 3px,
-    rgba(242, 238, 230, 0.08) 3px,
-    rgba(242, 238, 230, 0.08) 5px
+    rgba(115, 106, 96, 0.18) 3px,
+    rgba(115, 106, 96, 0.18) 5px
   );
 }
 
