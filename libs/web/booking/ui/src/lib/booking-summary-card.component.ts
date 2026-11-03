@@ -29,9 +29,7 @@ import { fmt } from '@cinehub/web/shared/util';
 
       <div class="space-y-2 text-xs text-[var(--color-text-secondary)]">
         <div>
-          <div
-            class="font-display text-base font-bold leading-tight text-[var(--color-text-primary)]"
-          >
+          <div class="cinema-card-title leading-tight text-[var(--color-text-primary)]">
             {{ movieTitle() }}
           </div>
           <div class="mt-0.5 text-[var(--color-text-secondary)]">{{ cinemaName() }}</div>
@@ -55,10 +53,12 @@ import { fmt } from '@cinehub/web/shared/util';
       </div>
 
       <div
-        class="flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm font-bold text-[var(--color-text-primary)]"
+        class="flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm font-semibold text-[var(--color-text-primary)]"
       >
         <span>Tổng tạm tính</span>
-        <span class="font-display text-lg font-bold text-[var(--color-brand-primary)]">
+        <span
+          class="cinema-price font-semibold tabular-nums text-lg text-[var(--color-brand-primary)]"
+        >
           {{ formatCurrency(totalAmount()) }}
         </span>
       </div>

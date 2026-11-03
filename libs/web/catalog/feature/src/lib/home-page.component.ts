@@ -42,9 +42,7 @@ import { promotions } from '@cinehub/web/shared/util';
                 </span>
               </div>
 
-              <h1
-                class="font-display text-[var(--text-h1)] font-bold leading-[1.1] tracking-tight text-[var(--color-text-primary)]"
-              >
+              <h1 class="cinema-heading-hero text-[var(--color-text-primary)]">
                 {{ hero.title }}
               </h1>
 
@@ -123,9 +121,7 @@ import { promotions } from '@cinehub/web/shared/util';
         <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <span class="cinema-eyebrow">Chương trình tuyển chọn</span>
-            <h2
-              class="font-display mt-1 text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]"
-            >
+            <h2 class="cinema-heading-section mt-1 text-[var(--color-text-primary)]">
               Danh mục phim chiếu rạp
             </h2>
           </div>
@@ -241,7 +237,7 @@ import { promotions } from '@cinehub/web/shared/util';
 
       <!-- Movie Grid -->
       <div class="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        @for (movie of store.filteredMovies().slice(0, 20); track movie.id) {
+        @for (movie of store.filteredMovies(); track movie.id) {
           <ch-movie-card [movie]="movie" />
         } @empty {
           <div
@@ -260,7 +256,7 @@ import { promotions } from '@cinehub/web/shared/util';
           <div class="mb-6 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
             <div>
               <span class="cinema-eyebrow">Dịch vụ & Đặc quyền</span>
-              <h2 class="font-display mt-1 text-xl font-bold text-[var(--color-text-primary)]">
+              <h2 class="cinema-heading-section mt-1 text-[var(--color-text-primary)]">
                 Trải nghiệm rạp & Ưu đãi thành viên
               </h2>
             </div>
@@ -278,7 +274,7 @@ import { promotions } from '@cinehub/web/shared/util';
                 class="cinema-panel p-5 transition-all hover:shadow-md hover:border-[var(--color-brand-primary)] flex flex-col justify-between"
               >
                 <div>
-                  <div class="font-display text-base font-bold text-[var(--color-text-primary)]">
+                  <div class="cinema-card-title text-[var(--color-text-primary)]">
                     {{ promo.title }}
                   </div>
                   <p class="mt-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">

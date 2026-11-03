@@ -17,7 +17,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
     <div class="cinema-container max-w-5xl py-8 sm:py-12">
       <div class="mb-6 space-y-1">
         <span class="cinema-eyebrow">Bước 2 / 3 · Thanh toán & Đơn vé</span>
-        <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
+        <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
           Xác nhận đơn vé điện tử
         </h1>
         <p class="text-xs text-[var(--color-text-secondary)]">
@@ -32,7 +32,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
           <div class="cinema-panel p-6 space-y-4 shadow-xs">
             <div>
               <span class="cinema-eyebrow">Phương thức thanh toán</span>
-              <h2 class="font-display text-base font-bold text-[var(--color-text-primary)]">
+              <h2 class="cinema-card-title text-[var(--color-text-primary)]">
                 Chọn cổng thanh toán trực tuyến
               </h2>
             </div>
@@ -64,7 +64,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
           <div class="cinema-panel p-6 space-y-3 shadow-xs">
             <div>
               <span class="cinema-eyebrow">Ưu đãi thành viên</span>
-              <h2 class="font-display text-base font-bold text-[var(--color-text-primary)]">
+              <h2 class="cinema-card-title text-[var(--color-text-primary)]">
                 Mã giảm giá / Thẻ quà tặng
               </h2>
             </div>

@@ -16,10 +16,10 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
       >
         <div class="space-y-1">
           <span class="cinema-eyebrow">Tài khoản thành viên</span>
-          <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
+          <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
             Vé điện tử của tôi
           </h1>
-          <p class="text-xs text-[var(--color-text-secondary)]">
+          <p class="cinema-metadata text-xs">
             Quản lý lịch sử đặt vé, trạng thái thanh toán và mã QR vào phòng chiếu.
           </p>
         </div>
@@ -77,9 +77,7 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
               </div>
 
               <div>
-                <h2
-                  class="font-display text-base font-bold leading-tight text-[var(--color-text-primary)]"
-                >
+                <h2 class="cinema-card-title leading-tight text-[var(--color-text-primary)]">
                   {{ ticket.movieTitle }}
                 </h2>
                 <div class="mt-1 text-xs text-[var(--color-text-secondary)]">
@@ -110,7 +108,9 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
                 <div class="text-[10px] text-[var(--color-text-secondary)]">
                   Đã thanh toán ({{ ticket.paymentMethod }})
                 </div>
-                <div class="font-display text-sm font-bold text-[var(--color-brand-primary)]">
+                <div
+                  class="cinema-price font-semibold tabular-nums text-sm text-[var(--color-brand-primary)]"
+                >
                   {{ formatCurrency(ticket.totalPaid) }}
                 </div>
               </div>

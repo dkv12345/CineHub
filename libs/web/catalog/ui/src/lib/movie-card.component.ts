@@ -59,11 +59,11 @@ import type { Movie } from '@cinehub/web/shared/util';
         <div>
           <a
             [routerLink]="['/movie', movie().id]"
-            class="font-display line-clamp-1 text-base font-bold text-[var(--color-text-primary)] no-underline transition-colors group-hover:text-[var(--color-brand-primary)]"
+            class="cinema-card-title line-clamp-1 text-[var(--color-text-primary)] no-underline transition-colors group-hover:text-[var(--color-brand-primary)]"
           >
             {{ movie().title }}
           </a>
-          <p class="mt-1 line-clamp-1 text-xs text-[var(--color-text-secondary)]">
+          <p class="cinema-metadata mt-1 line-clamp-1 text-xs">
             {{ movie().genre }} · {{ movie().duration }}
           </p>
         </div>
@@ -72,7 +72,7 @@ import type { Movie } from '@cinehub/web/shared/util';
         <div class="mt-4 grid grid-cols-2 gap-2">
           <a
             [routerLink]="['/movie', movie().id]"
-            class="cinema-btn-primary !min-h-[36px] !px-2.5 !py-1 !text-xs text-center font-bold"
+            class="cinema-btn-primary !min-h-[36px] !px-2.5 !py-1 !text-xs text-center font-semibold"
           >
             Đặt vé
           </a>

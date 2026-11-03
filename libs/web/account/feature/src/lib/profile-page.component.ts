@@ -13,10 +13,10 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
     <div class="cinema-container max-w-4xl py-8 sm:py-12">
       <div class="mb-6 space-y-1">
         <span class="cinema-eyebrow">Hồ sơ cá nhân</span>
-        <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
+        <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
           Tài khoản thành viên CineHub
         </h1>
-        <p class="text-xs text-[var(--color-text-secondary)]">
+        <p class="cinema-metadata text-xs">
           Quản lý thông tin định danh, điểm tích lũy và sở thích xem phim.
         </p>
       </div>
@@ -27,12 +27,12 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
           <div class="flex items-center gap-4">
             <!-- Monogram Avatar -->
             <div
-              class="flex h-14 w-14 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] font-display text-xl font-bold text-[#fffdf9] shadow-xs"
+              class="flex h-14 w-14 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-xl font-semibold text-[#fffdf9] shadow-xs"
             >
               {{ (authStore.user()?.fullName ?? 'K')[0] }}
             </div>
             <div>
-              <div class="font-display text-base font-bold text-[var(--color-text-primary)]">
+              <div class="cinema-card-title text-[var(--color-text-primary)]">
                 {{ authStore.user()?.fullName ?? 'Khách hàng VIP' }}
               </div>
               <div class="text-xs text-[var(--color-text-secondary)]">
@@ -69,9 +69,7 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
         <div class="cinema-panel p-6 md:col-span-7 space-y-4 shadow-xs">
           <div>
             <span class="cinema-eyebrow">Cập nhật hồ sơ</span>
-            <h2 class="font-display text-base font-bold text-[var(--color-text-primary)]">
-              Thông tin liên hệ
-            </h2>
+            <h2 class="cinema-card-title text-[var(--color-text-primary)]">Thông tin liên hệ</h2>
           </div>
 
           <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="space-y-4">

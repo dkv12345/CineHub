@@ -15,7 +15,7 @@ import type { GalaxySession } from '@cinehub/web/showtimes/util';
     <div class="cinema-container py-8 sm:py-12">
       <div class="mb-6 space-y-1">
         <span class="cinema-eyebrow">Lịch phát hành & Suất chiếu</span>
-        <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
+        <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
           Lịch chiếu rạp toàn quốc
         </h1>
         <p class="text-xs text-[var(--color-text-secondary)]">
@@ -101,7 +101,7 @@ import type { GalaxySession } from '@cinehub/web/showtimes/util';
               <ch-age-badge [age]="session.movie.age" />
               <a
                 [routerLink]="['/movie', session.movie.id]"
-                class="font-display text-base font-bold text-[var(--color-text-primary)] no-underline hover:text-[var(--color-brand-primary)]"
+                class="cinema-card-title text-[var(--color-text-primary)] no-underline hover:text-[var(--color-brand-primary)]"
               >
                 {{ session.movie.name }}
               </a>

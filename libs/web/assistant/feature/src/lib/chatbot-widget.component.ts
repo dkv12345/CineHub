@@ -22,7 +22,7 @@ import { AssistantStore } from '@cinehub/web/assistant/data-access';
           >
             <div class="flex items-center gap-2.5">
               <span
-                class="inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] font-display text-xs font-bold text-[#fffdf9]"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-xs font-semibold text-[#fffdf9]"
               >
                 CB
               </span>

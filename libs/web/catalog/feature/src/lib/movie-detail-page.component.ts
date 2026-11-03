@@ -69,9 +69,7 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
                 <span class="text-xs text-[var(--color-text-secondary)]">· {{ m.duration }}</span>
               </div>
 
-              <h1
-                class="font-display text-[var(--text-h1)] font-bold leading-tight text-[var(--color-text-primary)]"
-              >
+              <h1 class="cinema-heading-page leading-tight text-[var(--color-text-primary)]">
                 {{ m.title }}
               </h1>
 
@@ -127,9 +125,7 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
               <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                 <div>
                   <span class="cinema-eyebrow">Đặt vé xem phim</span>
-                  <h2
-                    class="font-display mt-0.5 text-xl font-bold text-[var(--color-text-primary)]"
-                  >
+                  <h2 class="cinema-heading-section mt-0.5 text-[var(--color-text-primary)]">
                     Lịch chiếu & Suất xem tại rạp
                   </h2>
                 </div>
@@ -216,9 +212,7 @@ import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/
               <div class="cinema-panel p-6 space-y-4">
                 <div>
                   <span class="cinema-eyebrow">Cộng đồng khán giả</span>
-                  <h2
-                    class="font-display mt-0.5 text-base font-bold text-[var(--color-text-primary)]"
-                  >
+                  <h2 class="cinema-card-title mt-0.5 text-[var(--color-text-primary)]">
                     Nhận xét từ người xem CineHub
                   </h2>
                 </div>

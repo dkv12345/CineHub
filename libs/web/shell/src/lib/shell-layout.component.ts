@@ -67,13 +67,13 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               aria-label="CineHub Trang chủ"
             >
               <span
-                class="inline-flex h-9 w-9 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] font-display text-base font-bold text-[#fffdf9] shadow-xs transition-transform group-hover:scale-105"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-base font-semibold text-[#fffdf9] shadow-xs transition-transform group-hover:scale-105"
               >
                 CH
               </span>
               <span class="flex flex-col">
                 <span
-                  class="font-display text-2xl font-bold leading-none tracking-tight text-[var(--color-brand-primary)]"
+                  class="text-2xl font-semibold leading-none tracking-tight text-[var(--color-brand-primary)]"
                 >
                   CineHub
                 </span>
@@ -282,11 +282,11 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
           <div class="md:col-span-5 space-y-3">
             <div class="flex items-center gap-2.5">
               <span
-                class="inline-flex h-7 w-7 items-center justify-center rounded-[3px] bg-[var(--color-brand-primary)] font-display text-xs font-bold text-[#fffdf9]"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-[3px] bg-[var(--color-brand-primary)] text-xs font-semibold text-[#fffdf9]"
               >
                 CH
               </span>
-              <span class="font-display text-lg font-bold text-[var(--color-text-primary)]">
+              <span class="text-lg font-semibold text-[var(--color-text-primary)]">
                 CineHub Screening Rooms
               </span>
             </div>

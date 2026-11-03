@@ -30,7 +30,7 @@ import {
       <!-- Breadcrumb and Steps -->
       <div class="mb-6 space-y-1">
         <span class="cinema-eyebrow">Bước 1 / 3 · Phòng chiếu</span>
-        <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
+        <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
           Chọn ghế ngồi & Góc nhìn 3D POV
         </h1>
         <p class="text-xs text-[var(--color-text-secondary)]">

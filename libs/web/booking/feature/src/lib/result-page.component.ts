@@ -31,9 +31,7 @@ import { fmt } from '@cinehub/web/shared/util';
               </svg>
             </div>
             <span class="cinema-eyebrow">Giao dịch thành công</span>
-            <h1
-              class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]"
-            >
+            <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
               Vé điện tử CineHub
             </h1>
             <p class="text-xs text-[var(--color-text-secondary)]">
@@ -61,7 +59,7 @@ import { fmt } from '@cinehub/web/shared/util';
             <div class="space-y-2 text-[var(--color-text-secondary)]">
               <div class="flex justify-between">
                 <span class="text-[var(--color-text-secondary)]">Phim:</span>
-                <strong class="font-display text-sm text-[var(--color-text-primary)]">{{
+                <strong class="font-semibold text-sm text-[var(--color-text-primary)]">{{
                   t.movieTitle
                 }}</strong>
               </div>
@@ -90,7 +88,9 @@ import { fmt } from '@cinehub/web/shared/util';
               <span class="text-[var(--color-text-secondary)]"
                 >Tổng thanh toán ({{ t.paymentMethod }}):</span
               >
-              <span class="font-display text-base text-[var(--color-brand-primary)]">
+              <span
+                class="cinema-price font-semibold tabular-nums text-base text-[var(--color-brand-primary)]"
+              >
                 {{ formatCurrency(t.totalPaid) }}
               </span>
             </div>

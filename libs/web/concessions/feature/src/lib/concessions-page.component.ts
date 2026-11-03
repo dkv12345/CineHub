@@ -16,10 +16,10 @@ import { fmt } from '@cinehub/web/shared/util';
       >
         <div class="space-y-1">
           <span class="cinema-eyebrow">Dịch vụ ẩm thực phòng chiếu</span>
-          <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
+          <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
             Thực đơn Bắp & Quầy Bar CineHub
           </h1>
-          <p class="text-xs text-[var(--color-text-secondary)]">
+          <p class="cinema-metadata text-xs">
             Đặt trước combo bắp rang thơm lừng và nước giải khát để nhận tại quầy Bar ưu tiên.
           </p>
         </div>
@@ -34,7 +34,9 @@ import { fmt } from '@cinehub/web/shared/util';
                 <strong class="text-[var(--color-text-primary)]">{{ store.totalCount() }}</strong>
                 phần
               </div>
-              <div class="font-display font-bold text-[var(--color-brand-primary)]">
+              <div
+                class="cinema-price font-semibold tabular-nums text-[var(--color-brand-primary)]"
+              >
                 {{ formatPrice(store.totalAmount()) }}
               </div>
             </div>
@@ -77,10 +79,10 @@ import { fmt } from '@cinehub/web/shared/util';
                 </svg>
               </div>
 
-              <h2 class="font-display mt-3.5 text-base font-bold text-[var(--color-text-primary)]">
+              <h2 class="cinema-card-title mt-3.5 text-[var(--color-text-primary)]">
                 {{ item.name }}
               </h2>
-              <p class="mt-1.5 text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              <p class="cinema-metadata mt-1.5 text-xs leading-relaxed">
                 {{ item.desc }}
               </p>
             </div>
@@ -88,7 +90,9 @@ import { fmt } from '@cinehub/web/shared/util';
             <div
               class="mt-6 flex items-center justify-between border-t border-[var(--color-border-subtle)] pt-4"
             >
-              <span class="font-display text-sm font-bold text-[var(--color-brand-primary)]">
+              <span
+                class="cinema-price font-semibold tabular-nums text-sm text-[var(--color-brand-primary)]"
+              >
                 {{ formatPrice(item.price) }}
               </span>
 

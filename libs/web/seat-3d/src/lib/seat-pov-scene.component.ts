@@ -48,7 +48,7 @@ import type { SeatCell, SeatLayout } from './seat-layout';
         @if (!webglActive()) {
           <div class="text-center text-xs text-[#fffdf9] px-4 space-y-2">
             <div
-              class="mx-auto h-16 w-48 rounded-[3px] border border-[var(--color-brand-accent)] bg-[#24201d] flex items-center justify-center font-display text-xs font-bold text-[var(--color-brand-accent)]"
+              class="mx-auto h-16 w-48 rounded-[3px] border border-[var(--color-brand-accent)] bg-[#24201d] flex items-center justify-center text-xs font-semibold text-[var(--color-brand-accent)]"
             >
               MÀN HÌNH CHÍNH ({{ activeSeat()?.id ?? 'F8' }})
             </div>
