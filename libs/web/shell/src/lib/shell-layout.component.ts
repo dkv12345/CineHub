@@ -10,17 +10,16 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, ChatbotWidgetComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div
-      class="cinema-app min-h-screen flex flex-col"
-      [class.cinema-theme-light]="themeMode() === 'light'"
-    >
+    <div class="cinema-app min-h-screen flex flex-col bg-[var(--color-background)]">
       <!-- Top Utility Bar: Cinema Chain Context & Hospitality Note -->
-      <div class="border-b border-[var(--cinema-border-subtle)] bg-[var(--cinema-surface-inset)]">
+      <div
+        class="border-b border-[var(--color-border)] bg-[var(--color-surface-secondary)] text-[var(--color-text-secondary)]"
+      >
         <div
-          class="cinema-container flex flex-wrap items-center justify-between gap-2 py-2 text-xs text-[var(--cinema-text-secondary)]"
+          class="cinema-container flex flex-wrap items-center justify-between gap-2 py-2 text-xs"
         >
           <div class="flex items-center gap-3">
-            <span class="cinema-eyebrow">Hệ thống rạp</span>
+            <span class="cinema-eyebrow !text-[11px]">Hệ thống rạp đối tác</span>
             <div
               class="inline-flex items-center gap-1"
               role="group"
@@ -31,11 +30,11 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                   type="button"
                   (click)="selectedBrand.set(b)"
                   [attr.aria-pressed]="selectedBrand() === b"
-                  class="rounded-[2px] border px-2 py-0.5 text-[11px] font-medium transition-colors"
+                  class="rounded-[3px] border px-2 py-0.5 text-[11px] font-semibold transition-colors"
                   [class]="
                     selectedBrand() === b
-                      ? 'border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)]'
-                      : 'border-transparent text-[var(--cinema-text-muted)] hover:text-[var(--cinema-text-primary)]'
+                      ? 'border-[var(--color-brand-primary)] bg-[#ffffff] text-[var(--color-brand-primary)] shadow-xs'
+                      : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                   "
                 >
                   {{ b }}
@@ -45,39 +44,43 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
           </div>
 
           <div
-            class="hidden sm:flex items-center gap-4 text-[11px] text-[var(--cinema-text-muted)]"
+            class="hidden sm:flex items-center gap-4 text-[11px] text-[var(--color-text-secondary)]"
           >
-            <span>Đặt vé trực tuyến · Giữ ghế thời gian thực</span>
-            <span aria-hidden="true">|</span>
-            <span>Góc nhìn phòng chiếu 3D POV</span>
+            <span>Đặt vé điện tử chính hãng</span>
+            <span aria-hidden="true" class="text-[var(--color-border)]">|</span>
+            <span>Giữ chỗ thời gian thực</span>
+            <span aria-hidden="true" class="text-[var(--color-border)]">|</span>
+            <span>Mô phỏng góc nhìn 3D POV</span>
           </div>
         </div>
       </div>
 
-      <!-- Primary Editorial Header -->
+      <!-- Primary Editorial Header (Clean Warm Light Surface) -->
       <header
-        class="sticky top-0 z-40 border-b border-[var(--cinema-border)] bg-[var(--cinema-canvas)]/95"
+        class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/98 backdrop-blur-md"
       >
         <div class="cinema-container flex h-16 items-center justify-between gap-4">
           <div class="flex items-center gap-8">
             <a
               routerLink="/"
-              class="group flex items-center gap-3 text-[var(--cinema-text-primary)] no-underline"
+              class="group flex items-center gap-3 text-[var(--color-text-primary)] no-underline"
               aria-label="CineHub Trang chủ"
             >
               <span
-                class="inline-flex h-9 w-9 items-center justify-center rounded-[3px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] font-display text-base font-semibold tracking-wider text-[var(--cinema-text-primary)]"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] font-display text-base font-bold text-[#fffdf9] shadow-xs transition-transform group-hover:scale-105"
               >
                 CH
               </span>
               <span class="flex flex-col">
-                <span class="font-display text-xl font-semibold leading-none tracking-tight">
+                <span
+                  class="font-display text-2xl font-bold leading-none tracking-tight text-[var(--color-brand-primary)]"
+                >
                   CineHub
                 </span>
                 <span
-                  class="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--cinema-accent)]"
+                  class="mt-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--color-brand-accent)]"
                 >
-                  {{ selectedBrand() }} Screening Rooms
+                  {{ selectedBrand() }} Cinemas
                 </span>
               </span>
             </a>
@@ -86,104 +89,65 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
             <nav class="hidden md:flex items-center gap-1" aria-label="Điều hướng chính">
               <a
                 routerLink="/"
-                routerLinkActive="border-[var(--cinema-accent)] text-[var(--cinema-text-primary)] bg-[var(--cinema-surface)]"
+                routerLinkActive="!border-[var(--color-brand-primary)] !text-[var(--color-brand-primary)] !bg-[var(--color-brand-subtle)] font-semibold"
                 [routerLinkActiveOptions]="{ exact: true }"
-                class="rounded-[3px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--cinema-text-secondary)] no-underline transition-colors hover:text-[var(--cinema-text-primary)]"
+                class="rounded-[4px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]"
               >
                 {{ activeLang() === 'vi' ? 'Phim đang chiếu' : 'Now Showing' }}
               </a>
               <a
                 routerLink="/showtimes"
-                routerLinkActive="border-[var(--cinema-accent)] text-[var(--cinema-text-primary)] bg-[var(--cinema-surface)]"
-                class="rounded-[3px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--cinema-text-secondary)] no-underline transition-colors hover:text-[var(--cinema-text-primary)]"
+                routerLinkActive="!border-[var(--color-brand-primary)] !text-[var(--color-brand-primary)] !bg-[var(--color-brand-subtle)] font-semibold"
+                class="rounded-[4px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]"
               >
                 {{ activeLang() === 'vi' ? 'Lịch chiếu & Rạp' : 'Showtimes & Venues' }}
               </a>
               <a
                 routerLink="/concessions"
-                routerLinkActive="border-[var(--cinema-accent)] text-[var(--cinema-text-primary)] bg-[var(--cinema-surface)]"
-                class="rounded-[3px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--cinema-text-secondary)] no-underline transition-colors hover:text-[var(--cinema-text-primary)]"
+                routerLinkActive="!border-[var(--color-brand-primary)] !text-[var(--color-brand-primary)] !bg-[var(--color-brand-subtle)] font-semibold"
+                class="rounded-[4px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]"
               >
-                {{ activeLang() === 'vi' ? 'Bắp & Nước' : 'Hospitality & Bar' }}
+                {{ activeLang() === 'vi' ? 'Bắp & Quầy Bar' : 'Hospitality & Bar' }}
               </a>
               <a
                 routerLink="/my-tickets"
-                routerLinkActive="border-[var(--cinema-accent)] text-[var(--cinema-text-primary)] bg-[var(--cinema-surface)]"
-                class="rounded-[3px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--cinema-text-secondary)] no-underline transition-colors hover:text-[var(--cinema-text-primary)]"
+                routerLinkActive="!border-[var(--color-brand-primary)] !text-[var(--color-brand-primary)] !bg-[var(--color-brand-subtle)] font-semibold"
+                class="rounded-[4px] border border-transparent px-3.5 py-2 text-sm font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]"
               >
                 {{ activeLang() === 'vi' ? 'Vé của tôi' : 'My Tickets' }}
               </a>
             </nav>
           </div>
 
-          <!-- Right Actions: Language, Theme, Account, Mobile Menu -->
-          <div class="flex items-center gap-2">
+          <!-- Right Actions: Language, Account, Mobile Menu -->
+          <div class="flex items-center gap-2.5">
             <button
               type="button"
               (click)="toggleLanguage()"
-              class="inline-flex h-9 items-center justify-center rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface)] px-2.5 text-xs font-semibold uppercase tracking-wider text-[var(--cinema-text-secondary)] transition-colors hover:border-[var(--cinema-accent)] hover:text-[var(--cinema-text-primary)]"
+              class="inline-flex h-9 items-center justify-center rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)]"
               aria-label="Chuyển đổi ngôn ngữ"
             >
               {{ activeLang() }}
             </button>
 
-            <button
-              type="button"
-              (click)="toggleTheme()"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface)] text-[var(--cinema-text-secondary)] transition-colors hover:border-[var(--cinema-accent)] hover:text-[var(--cinema-text-primary)]"
-              aria-label="Chuyển chế độ sáng tối"
-            >
-              @if (themeMode() === 'dark') {
-                <svg
-                  class="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
-                  />
-                </svg>
-              } @else {
-                <svg
-                  class="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"
-                  />
-                </svg>
-              }
-            </button>
-
             @if (authStore.isAuthenticated()) {
               <a
                 routerLink="/profile"
-                class="inline-flex h-9 items-center gap-2 rounded-[3px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] px-3 text-xs font-semibold text-[var(--cinema-text-primary)] no-underline transition-colors hover:bg-[var(--cinema-accent)] hover:text-[#171512]"
+                class="inline-flex h-9 items-center gap-2 rounded-[4px] border border-[var(--color-brand-primary)] bg-[var(--color-brand-subtle)] px-3 text-xs font-semibold text-[var(--color-brand-primary)] no-underline transition-colors hover:bg-[var(--color-brand-primary)] hover:text-[#fffdf9]"
               >
                 <span>{{ authStore.displayName() }}</span>
               </a>
               <button
                 type="button"
                 (click)="logout()"
-                class="inline-flex h-9 items-center rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface)] px-2.5 text-xs font-medium text-[var(--cinema-text-secondary)] transition-colors hover:border-[var(--cinema-danger)] hover:text-[var(--cinema-danger)]"
+                class="inline-flex h-9 items-center rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 text-xs font-semibold text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
               >
                 {{ activeLang() === 'vi' ? 'Thoát' : 'Sign Out' }}
               </button>
             } @else {
               <a
                 routerLink="/auth"
-                class="cinema-btn-primary !min-h-[36px] !px-3.5 !py-1.5 !text-xs"
+                class="cinema-btn-primary !min-h-[36px] !px-3.5 !py-1.5 !text-xs font-bold"
               >
                 {{ activeLang() === 'vi' ? 'Đăng nhập' : 'Sign In' }}
               </a>
@@ -195,14 +159,14 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               (click)="mobileMenuOpen.set(!mobileMenuOpen())"
               [attr.aria-expanded]="mobileMenuOpen()"
               aria-label="Mở menu điều hướng"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface)] text-[var(--cinema-text-primary)] md:hidden"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] md:hidden"
             >
               <svg
                 class="h-4 w-4"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="1.5"
+                stroke-width="1.75"
                 aria-hidden="true"
               >
                 @if (mobileMenuOpen()) {
@@ -222,35 +186,35 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
         <!-- Mobile Collapsible Navigation -->
         @if (mobileMenuOpen()) {
           <nav
-            class="border-t border-[var(--cinema-border)] bg-[var(--cinema-surface)] px-4 py-3 md:hidden"
+            class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 md:hidden"
             aria-label="Menu di động"
           >
             <div class="flex flex-col gap-1">
               <a
                 routerLink="/"
                 (click)="mobileMenuOpen.set(false)"
-                class="rounded-[3px] px-3 py-2 text-sm font-medium text-[var(--cinema-text-primary)] no-underline hover:bg-[var(--cinema-surface-raised)]"
+                class="rounded-[4px] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] no-underline hover:bg-[var(--color-surface-secondary)]"
               >
                 {{ activeLang() === 'vi' ? 'Phim đang chiếu' : 'Now Showing' }}
               </a>
               <a
                 routerLink="/showtimes"
                 (click)="mobileMenuOpen.set(false)"
-                class="rounded-[3px] px-3 py-2 text-sm font-medium text-[var(--cinema-text-primary)] no-underline hover:bg-[var(--cinema-surface-raised)]"
+                class="rounded-[4px] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] no-underline hover:bg-[var(--color-surface-secondary)]"
               >
                 {{ activeLang() === 'vi' ? 'Lịch chiếu & Rạp' : 'Showtimes & Venues' }}
               </a>
               <a
                 routerLink="/concessions"
                 (click)="mobileMenuOpen.set(false)"
-                class="rounded-[3px] px-3 py-2 text-sm font-medium text-[var(--cinema-text-primary)] no-underline hover:bg-[var(--cinema-surface-raised)]"
+                class="rounded-[4px] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] no-underline hover:bg-[var(--color-surface-secondary)]"
               >
-                {{ activeLang() === 'vi' ? 'Bắp & Nước' : 'Hospitality & Bar' }}
+                {{ activeLang() === 'vi' ? 'Bắp & Quầy Bar' : 'Hospitality & Bar' }}
               </a>
               <a
                 routerLink="/my-tickets"
                 (click)="mobileMenuOpen.set(false)"
-                class="rounded-[3px] px-3 py-2 text-sm font-medium text-[var(--cinema-text-primary)] no-underline hover:bg-[var(--cinema-surface-raised)]"
+                class="rounded-[4px] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] no-underline hover:bg-[var(--color-surface-secondary)]"
               >
                 {{ activeLang() === 'vi' ? 'Vé của tôi' : 'My Tickets' }}
               </a>
@@ -268,20 +232,20 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
         >
           @for (toast of toastService.toasts(); track toast.id) {
             <div
-              class="flex items-center justify-between gap-3 rounded-[4px] border px-4 py-3 text-xs font-medium shadow-lg"
+              class="flex items-center justify-between gap-3 rounded-[4px] border px-4 py-3 text-xs font-semibold shadow-md"
               [class]="
                 toast.tone === 'error'
-                  ? 'border-[var(--cinema-danger)] bg-[var(--cinema-danger-bg)] text-[var(--cinema-text-primary)]'
+                  ? 'border-[var(--color-danger)] bg-[var(--color-danger-bg)] text-[var(--color-danger)]'
                   : toast.tone === 'success'
-                    ? 'border-[var(--cinema-success)] bg-[var(--cinema-success-bg)] text-[var(--cinema-text-primary)]'
-                    : 'border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)]'
+                    ? 'border-[var(--color-success)] bg-[var(--color-success-bg)] text-[var(--color-success)]'
+                    : 'border-[var(--color-brand-primary)] bg-[var(--color-surface)] text-[var(--color-brand-primary)]'
               "
             >
               <span>{{ toast.text }}</span>
               <button
                 type="button"
                 (click)="toastService.dismiss(toast.id)"
-                class="inline-flex h-6 w-6 items-center justify-center rounded-[2px] text-[var(--cinema-text-secondary)] hover:text-[var(--cinema-text-primary)]"
+                class="inline-flex h-6 w-6 items-center justify-center rounded-[2px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 aria-label="Đóng thông báo"
               >
                 <svg
@@ -289,7 +253,7 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="1.75"
+                  stroke-width="2"
                   aria-hidden="true"
                 >
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -305,40 +269,40 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
         <router-outlet />
       </main>
 
-      <!-- Deferred AI Assistant Widget -->
+      <!-- Deferred Concierge Chat Widget -->
       @defer (on idle) {
         <ch-chatbot-widget />
       }
 
-      <!-- Editorial Footer -->
+      <!-- Editorial Hospitality Footer (Warm Sand / Ivory) -->
       <footer
-        class="mt-16 border-t border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] py-12 text-xs text-[var(--cinema-text-secondary)]"
+        class="mt-20 border-t border-[var(--color-border)] bg-[var(--color-surface-secondary)] py-12 text-xs text-[var(--color-text-secondary)]"
       >
         <div class="cinema-container grid gap-8 md:grid-cols-12">
-          <div class="md:col-span-5 space-y-2.5">
+          <div class="md:col-span-5 space-y-3">
             <div class="flex items-center gap-2.5">
               <span
-                class="inline-flex h-7 w-7 items-center justify-center rounded-[2px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface)] font-display text-xs font-semibold text-[var(--cinema-text-primary)]"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-[3px] bg-[var(--color-brand-primary)] font-display text-xs font-bold text-[#fffdf9]"
               >
                 CH
               </span>
-              <span class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
+              <span class="font-display text-lg font-bold text-[var(--color-text-primary)]">
                 CineHub Screening Rooms
               </span>
             </div>
-            <p class="max-w-sm leading-relaxed text-[var(--cinema-text-muted)]">
-              Nền tảng đặt vé điện ảnh trực tuyến, tra cứu lịch chiếu toàn quốc và mô phỏng góc nhìn
-              phòng chiếu 3D POV theo thời gian thực.
+            <p class="max-w-sm leading-relaxed text-[var(--color-text-secondary)]">
+              Nền tảng đặt vé điện ảnh trực tuyến, cung cấp lịch chiếu toàn quốc, góc nhìn phòng
+              chiếu 3D POV và dịch vụ ẩm thực tại rạp được thiết kế theo chuẩn hiếu khách hiện đại.
             </p>
           </div>
 
           <div class="md:col-span-4 space-y-2">
-            <div class="cinema-eyebrow">Trải nghiệm & Đặt vé</div>
-            <ul class="mt-2 space-y-1.5 list-none p-0">
+            <div class="cinema-eyebrow">Trải nghiệm & Suất chiếu</div>
+            <ul class="mt-2 space-y-2 list-none p-0">
               <li>
                 <a
                   routerLink="/"
-                  class="text-[var(--cinema-text-secondary)] no-underline hover:text-[var(--cinema-text-primary)]"
+                  class="text-[var(--color-text-secondary)] no-underline hover:text-[var(--color-brand-primary)]"
                 >
                   Danh mục phim đang chiếu & sắp chiếu
                 </a>
@@ -346,7 +310,7 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               <li>
                 <a
                   routerLink="/showtimes"
-                  class="text-[var(--cinema-text-secondary)] no-underline hover:text-[var(--cinema-text-primary)]"
+                  class="text-[var(--color-text-secondary)] no-underline hover:text-[var(--color-brand-primary)]"
                 >
                   Lịch chiếu theo cụm rạp & định dạng IMAX / 3D
                 </a>
@@ -354,21 +318,21 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               <li>
                 <a
                   routerLink="/concessions"
-                  class="text-[var(--cinema-text-secondary)] no-underline hover:text-[var(--cinema-text-primary)]"
+                  class="text-[var(--color-text-secondary)] no-underline hover:text-[var(--color-brand-primary)]"
                 >
-                  Thực đơn Bắp & Nước tại quầy ưu tiên
+                  Thực đơn Bắp & Quầy Bar ưu tiên
                 </a>
               </li>
             </ul>
           </div>
 
           <div class="md:col-span-3 space-y-2">
-            <div class="cinema-eyebrow">Tài khoản thành viên</div>
-            <ul class="mt-2 space-y-1.5 list-none p-0">
+            <div class="cinema-eyebrow">Tài khoản & Hỗ trợ</div>
+            <ul class="mt-2 space-y-2 list-none p-0">
               <li>
                 <a
                   routerLink="/my-tickets"
-                  class="text-[var(--cinema-text-secondary)] no-underline hover:text-[var(--cinema-text-primary)]"
+                  class="text-[var(--color-text-secondary)] no-underline hover:text-[var(--color-brand-primary)]"
                 >
                   Tra cứu vé điện tử & mã QR
                 </a>
@@ -376,9 +340,9 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               <li>
                 <a
                   routerLink="/auth"
-                  class="text-[var(--cinema-text-secondary)] no-underline hover:text-[var(--cinema-text-primary)]"
+                  class="text-[var(--color-text-secondary)] no-underline hover:text-[var(--color-brand-primary)]"
                 >
-                  Đăng nhập / Đăng ký thành viên
+                  Đăng nhập / Đăng ký thành viên CineHub
                 </a>
               </li>
             </ul>
@@ -386,7 +350,7 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
         </div>
 
         <div
-          class="cinema-container mt-8 flex flex-col items-center justify-between gap-3 border-t border-[var(--cinema-border-subtle)] pt-6 text-[11px] text-[var(--cinema-text-muted)] sm:flex-row"
+          class="cinema-container mt-10 flex flex-col items-center justify-between gap-3 border-t border-[var(--color-border)] pt-6 text-[11px] text-[var(--color-text-muted)] sm:flex-row"
         >
           <span>© 2026 CineHub. Bảo lưu mọi quyền.</span>
           <span
@@ -405,7 +369,6 @@ export class ShellLayoutComponent {
 
   readonly brands = ['Galaxy', 'CGV', 'Lotte', 'BHD'] as const;
   readonly selectedBrand = signal<(typeof this.brands)[number]>('Galaxy');
-  readonly themeMode = signal<'dark' | 'light'>('dark');
   readonly activeLang = signal<'vi' | 'en'>('vi');
   readonly mobileMenuOpen = signal(false);
 
@@ -413,10 +376,6 @@ export class ShellLayoutComponent {
     const next = this.activeLang() === 'vi' ? 'en' : 'vi';
     this.activeLang.set(next);
     this.transloco.setActiveLang(next);
-  }
-
-  toggleTheme(): void {
-    this.themeMode.update((m) => (m === 'dark' ? 'light' : 'dark'));
   }
 
   logout(): void {
