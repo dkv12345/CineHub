@@ -279,6 +279,15 @@ body,
     box-shadow var(--duration-fast) var(--ease-standard);
 }
 
+.cinema-input-icon-leading {
+  padding-left: 2.625rem !important;
+}
+
+.cinema-input-icon-both {
+  padding-left: 2.625rem !important;
+  padding-right: 2.625rem !important;
+}
+
 .cinema-input::placeholder {
   color: var(--color-text-muted);
 }
