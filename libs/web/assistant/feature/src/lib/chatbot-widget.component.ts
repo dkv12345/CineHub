@@ -14,22 +14,24 @@ import { AssistantStore } from '@cinehub/web/assistant/data-access';
         <section
           cdkTrapFocus
           role="dialog"
-          aria-label="Trợ lý AI CineBot"
-          class="mb-3 flex h-[430px] w-80 flex-col overflow-hidden rounded-2xl border border-amber-500/40 bg-slate-950/95 shadow-2xl backdrop-blur-xl sm:w-96"
+          aria-label="Trợ lý đặt vé CineBot"
+          class="cinema-panel-raised mb-3 flex h-[440px] w-80 flex-col overflow-hidden shadow-2xl sm:w-96"
         >
           <header
-            class="flex items-center justify-between border-b border-slate-800 bg-gradient-to-r from-amber-500/20 to-rose-500/10 px-4 py-3"
+            class="flex items-center justify-between border-b border-[var(--cinema-border)] bg-[var(--cinema-surface)] px-4 py-3"
           >
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2.5">
               <span
-                class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-400 text-xs font-black text-slate-950"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-[2px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-inset)] font-display text-xs font-semibold text-[var(--cinema-accent)]"
               >
-                AI
+                CB
               </span>
               <div>
-                <div class="text-xs font-extrabold text-white">CineBot Gemini Assistant</div>
-                <div class="text-[10px] text-emerald-400">
-                  ● Đang trực tuyến (RAG + Vector Search)
+                <div class="text-xs font-semibold text-[var(--cinema-text-primary)]">
+                  CineBot Concierge
+                </div>
+                <div class="text-[11px] text-[var(--cinema-text-muted)]">
+                  Tư vấn lịch chiếu, rạp & chọn ghế
                 </div>
               </div>
             </div>
@@ -37,21 +39,33 @@ import { AssistantStore } from '@cinehub/web/assistant/data-access';
               type="button"
               (click)="store.toggleWidget()"
               aria-label="Đóng khung chat"
-              class="rounded-lg p-1 text-xs text-slate-400 hover:text-white"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-[2px] text-[var(--cinema-text-secondary)] hover:text-[var(--cinema-text-primary)]"
             >
-              ✕
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
             </button>
           </header>
 
-          <div class="flex-1 space-y-3 overflow-y-auto p-4 text-xs">
+          <div
+            class="flex-1 space-y-3 overflow-y-auto bg-[var(--cinema-canvas)] p-4 text-xs"
+            aria-live="polite"
+          >
             @for (msg of store.messages(); track msg.id) {
               <div class="flex" [class]="msg.sender === 'user' ? 'justify-end' : 'justify-start'">
                 <div
-                  class="max-w-[82%] rounded-2xl px-3.5 py-2.5 leading-relaxed"
+                  class="max-w-[84%] rounded-[3px] border px-3.5 py-2.5 leading-relaxed"
                   [class]="
                     msg.sender === 'user'
-                      ? 'bg-amber-500 text-slate-950 font-semibold'
-                      : 'border border-slate-800 bg-slate-900 text-slate-200'
+                      ? 'border-[var(--cinema-action)] bg-[var(--cinema-action)] text-[var(--cinema-action-text)] font-medium'
+                      : 'border-[var(--cinema-border)] bg-[var(--cinema-surface)] text-[var(--cinema-text-primary)]'
                   "
                 >
                   {{ msg.text }}
@@ -59,29 +73,29 @@ import { AssistantStore } from '@cinehub/web/assistant/data-access';
               </div>
             }
             @if (store.loading()) {
-              <div class="text-xs text-amber-300 animate-pulse">
-                CineBot đang tra cứu lịch chiếu...
+              <div class="text-xs text-[var(--cinema-accent)]">
+                Đang tra cứu dữ liệu lịch chiếu...
               </div>
             }
           </div>
 
           <form
             (ngSubmit)="send()"
-            class="flex items-center gap-2 border-t border-slate-800 bg-slate-900/90 p-3"
+            class="flex items-center gap-2 border-t border-[var(--cinema-border)] bg-[var(--cinema-surface)] p-3"
           >
             <input
               type="text"
               [ngModel]="draft()"
               (ngModelChange)="draft.set($event)"
               name="chatDraft"
-              placeholder="Hỏi phim hay, lịch chiếu, giá vé..."
+              placeholder="Hỏi phim đang chiếu, suất chiếu, giá vé..."
               aria-label="Tin nhắn cho CineBot"
-              class="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+              class="cinema-input !min-h-[38px] !py-1.5 !text-xs"
             />
             <button
               type="submit"
               [disabled]="store.loading()"
-              class="rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-extrabold text-slate-950 transition hover:bg-amber-400 disabled:opacity-50"
+              class="cinema-btn-primary !min-h-[38px] !px-3.5 !py-1.5 !text-xs"
             >
               Gửi
             </button>
@@ -92,10 +106,24 @@ import { AssistantStore } from '@cinehub/web/assistant/data-access';
       <button
         type="button"
         (click)="store.toggleWidget()"
-        aria-label="Mở trợ lý AI CineBot"
-        class="flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 px-4 py-3 text-xs font-black text-slate-950 shadow-xl shadow-amber-500/25 transition hover:scale-105"
+        aria-label="Mở trợ lý đặt vé CineBot"
+        class="inline-flex items-center gap-2 rounded-[3px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] px-4 py-2.5 text-xs font-semibold text-[var(--cinema-text-primary)] shadow-lg transition-colors hover:bg-[var(--cinema-accent)] hover:text-[#171512]"
       >
-        <span>✦ CineBot AI</span>
+        <svg
+          class="h-4 w-4 text-[var(--cinema-accent)]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
+          />
+        </svg>
+        <span>CineBot Concierge</span>
       </button>
     </div>
   `,
