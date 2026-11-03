@@ -27,32 +27,34 @@ import type { SeatCell, SeatLayout } from './seat-layout';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div
-      class="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-slate-950 shadow-2xl"
-    >
-      <div class="flex items-center justify-between border-b border-slate-800 px-4 py-2.5 text-xs">
-        <div class="font-bold text-amber-300">
-          Góc nhìn 3D POV từ ghế:
-          <span class="text-white">{{ activeSeat()?.id ?? 'Trung tâm rạp (F8)' }}</span>
+    <div class="cinema-panel overflow-hidden">
+      <div
+        class="flex items-center justify-between border-b border-[var(--cinema-border)] bg-[var(--cinema-surface-raised)] px-4 py-2.5 text-xs"
+      >
+        <div class="font-medium text-[var(--cinema-text-primary)]">
+          <span class="cinema-eyebrow !text-[10px]">3D POV · </span>
+          <span>Ghế {{ activeSeat()?.id ?? 'Trung tâm (F8)' }}</span>
         </div>
-        <span class="text-slate-400">
-          Three.js WebGL · {{ webglActive() ? 'Active' : 'Simulated 3D' }}
+        <span class="text-[11px] text-[var(--cinema-text-muted)]">
+          {{ webglActive() ? 'Mô phỏng WebGL 3D' : 'Góc nhìn chuẩn' }}
         </span>
       </div>
 
       <div
         #canvasHost
         data-testid="seat-pov-canvas-host"
-        class="relative h-56 w-full bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center"
+        class="relative h-56 w-full bg-[var(--cinema-surface-inset)] flex items-center justify-center overflow-hidden"
       >
         @if (!webglActive()) {
-          <div class="text-center text-xs text-slate-300 px-4">
+          <div class="text-center text-xs text-[var(--cinema-text-secondary)] px-4 space-y-2">
             <div
-              class="mx-auto mb-2 h-16 w-48 rounded-lg border border-amber-400/50 bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-sky-500/20 flex items-center justify-center font-bold text-amber-200"
+              class="mx-auto h-16 w-48 rounded-[2px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-raised)] flex items-center justify-center font-display text-xs font-semibold text-[var(--cinema-accent)]"
             >
-              MÀN HÌNH IMAX 3D POV ({{ activeSeat()?.id ?? 'F8' }})
+              MÀN HÌNH CHÍNH ({{ activeSeat()?.id ?? 'F8' }})
             </div>
-            <span>Khoảng cách & góc nghiêng tối ưu tới tâm màn hình</span>
+            <p class="text-[11px] text-[var(--cinema-text-muted)]">
+              Góc nghiêng và tầm nhìn trực diện tối ưu tới tâm màn hình
+            </p>
           </div>
         }
       </div>
@@ -130,10 +132,10 @@ export class SeatPOVSceneComponent implements AfterViewInit {
       camera.lookAt(0, 1.8, -4);
       this.camera = camera;
 
-      // Cinema Screen Mesh
+      // Cinema Screen Mesh (Champagne accent tone)
       const screenGeo = new THREE.PlaneGeometry(9.5, 4.2, 16, 1);
       const screenMat = new THREE.MeshBasicMaterial({
-        color: 0xfbbf24,
+        color: 0xc2a16b,
         side: THREE.DoubleSide,
       });
       geometries.push(screenGeo);
@@ -142,10 +144,10 @@ export class SeatPOVSceneComponent implements AfterViewInit {
       screenMesh.position.set(0, 2.1, -4.2);
       scene.add(screenMesh);
 
-      // Auditorium Floor Grid
+      // Auditorium Floor Grid (Refined charcoal wireframe)
       const floorGeo = new THREE.PlaneGeometry(14, 16);
       const floorMat = new THREE.MeshBasicMaterial({
-        color: 0x0f172a,
+        color: 0x292621,
         wireframe: true,
       });
       geometries.push(floorGeo);
