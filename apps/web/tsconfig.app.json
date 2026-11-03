@@ -5,7 +5,12 @@
     "types": ["node"]
   },
   "files": ["src/main.ts", "src/main.server.ts", "src/server.ts"],
-  "include": ["src/app/**/*.ts", "src/environments/**/*.ts", "../../libs/web/**/*.ts"],
+  "include": [
+    "src/app/**/*.ts",
+    "src/environments/**/*.ts",
+    "../../libs/web/**/*.ts",
+    "../../libs/shared/contracts/src/**/*.js"
+  ],
   "exclude": [
     "src/**/*.spec.ts",
     "src/**/*.test.ts",

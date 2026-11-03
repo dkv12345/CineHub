@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@source '../../../libs/web';
+@source '../';
 
 :root {
   color-scheme: dark;

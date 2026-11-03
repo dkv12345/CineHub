@@ -1,4 +1,10 @@
-import type { AppEnvironment } from './environment';
+export interface AppEnvironment {
+  production: boolean;
+  apiBaseUrl: string;
+  googleClientId: string;
+  useMocks: boolean;
+  defaultLang: 'vi' | 'en';
+}
 
 export const environment: AppEnvironment = {
   production: false,
