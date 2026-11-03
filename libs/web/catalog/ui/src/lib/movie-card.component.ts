@@ -10,60 +10,76 @@ import type { Movie } from '@cinehub/web/shared/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article
-      class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/75 shadow-lg transition hover:-translate-y-1 hover:border-amber-500/40"
+      class="group cinema-panel flex flex-col overflow-hidden transition-all duration-200 hover:border-[var(--cinema-accent)]"
     >
+      <!-- Poster Frame 2:3 ratio -->
       <a
         [routerLink]="['/movie', movie().id]"
-        class="relative aspect-[2/3] w-full overflow-hidden bg-slate-950"
+        class="cinema-poster-frame aspect-[2/3] w-full block"
+        [attr.aria-label]="'Chi tiết phim ' + movie().title"
       >
         <img
           [ngSrc]="movie().poster"
           [alt]="movie().title"
           width="400"
           height="600"
-          class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
+
+        <!-- Subtle Top Metadata Tags -->
         <div
-          class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"
-        ></div>
-
-        <span
-          class="absolute top-3 left-3 rounded-md bg-amber-500 px-2 py-0.5 text-xs font-extrabold text-slate-950 shadow"
+          class="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none"
         >
-          {{ movie().age }}
-        </span>
+          <span
+            class="inline-flex items-center justify-center rounded-[2px] border border-[#39352f] bg-[#211f1c]/90 px-1.5 py-0.5 font-ui text-[11px] font-semibold tracking-wider text-[var(--cinema-text-primary)] uppercase backdrop-blur-sm"
+          >
+            {{ movie().age }}
+          </span>
 
-        <span
-          class="absolute top-3 right-3 rounded-md bg-slate-950/85 px-2 py-0.5 text-xs font-bold text-amber-300 backdrop-blur"
-        >
-          ★ {{ movie().rating }}
-        </span>
+          <span
+            class="inline-flex items-center gap-1 rounded-[2px] border border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)]/90 px-1.5 py-0.5 font-ui text-[11px] font-semibold text-[var(--cinema-text-primary)] backdrop-blur-sm"
+          >
+            <svg
+              class="h-3 w-3 text-[var(--cinema-accent)]"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+              />
+            </svg>
+            <span>{{ movie().rating }}</span>
+          </span>
+        </div>
       </a>
 
-      <div class="flex flex-1 flex-col justify-between p-4">
+      <!-- Content Area -->
+      <div class="flex flex-1 flex-col justify-between p-3.5">
         <div>
           <a
             [routerLink]="['/movie', movie().id]"
-            class="line-clamp-1 text-base font-bold text-white group-hover:text-amber-300"
+            class="font-display line-clamp-1 text-base font-semibold text-[var(--cinema-text-primary)] no-underline transition-colors group-hover:text-[var(--cinema-accent)]"
           >
             {{ movie().title }}
           </a>
-          <p class="mt-1 line-clamp-1 text-xs text-slate-400">
+          <p class="mt-1 line-clamp-1 text-xs text-[var(--cinema-text-muted)]">
             {{ movie().genre }} · {{ movie().duration }}
           </p>
         </div>
 
-        <div class="mt-4 flex items-center gap-2">
+        <!-- Solid Actions -->
+        <div class="mt-3.5 grid grid-cols-2 gap-2">
           <a
             [routerLink]="['/movie', movie().id]"
-            class="flex-1 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 py-2 text-center text-xs font-bold text-slate-950 transition hover:from-amber-300 hover:to-amber-400"
+            class="cinema-btn-primary !min-h-[34px] !px-2.5 !py-1 !text-xs text-center"
           >
             Đặt vé
           </a>
           <a
             [routerLink]="['/showtimes']"
             [queryParams]="{ movieId: movie().id }"
-            class="rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-amber-400 hover:text-white"
+            class="cinema-btn-secondary !min-h-[34px] !px-2 !py-1 !text-xs text-center"
           >
             Suất chiếu
           </a>
