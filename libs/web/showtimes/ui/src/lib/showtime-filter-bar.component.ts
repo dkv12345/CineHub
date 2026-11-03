@@ -7,7 +7,7 @@ import type { ShowtimeFilters } from '@cinehub/web/showtimes/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="cinema-panel grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4"
+      class="cinema-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4 shadow-2xs"
       role="search"
       aria-label="Bộ lọc lịch chiếu"
     >
