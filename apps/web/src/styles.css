@@ -2,19 +2,311 @@
 @source '../../../libs/web';
 @source '../';
 
+/*
+ * Cinematic Luxury Design System Tokens
+ * Synthesizing editorial restraint (Everyman), film-programming clarity (Alamo Drafthouse),
+ * and commercial session/booking usability (HOYTS) for CineHub.
+ */
 :root {
   color-scheme: dark;
+
+  /* Core surfaces */
+  --cinema-canvas: #11100f;
+  --cinema-surface: #191816;
+  --cinema-surface-raised: #211f1c;
+  --cinema-surface-inset: #0b0b0a;
+
+  /* Typography colors */
+  --cinema-text-primary: #f2eee6;
+  --cinema-text-secondary: #b9b1a5;
+  --cinema-text-muted: #9b9286;
+
+  /* Borders and accents */
+  --cinema-border: #39352f;
+  --cinema-border-subtle: #292621;
+  --cinema-accent: #c2a16b;
+  --cinema-accent-hover: #d0b47f;
+  --cinema-action: #f2eee6;
+  --cinema-action-text: #171512;
+
+  /* Semantic colors */
+  --cinema-danger: #d77870;
+  --cinema-danger-bg: #2a1615;
+  --cinema-success: #8fb49a;
+  --cinema-success-bg: #142219;
+  --cinema-warning: #d3ac65;
+  --cinema-warning-bg: #272012;
+
+  /* Typography */
+  --font-display: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-ui:
+    'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Type scale */
+  --text-display: clamp(2.5rem, 5vw, 4.25rem);
+  --text-h1: clamp(2rem, 3.5vw, 3rem);
+  --text-h2: clamp(1.5rem, 2.2vw, 2rem);
+  --text-h3: 1.25rem;
+  --text-body-lg: 1.125rem;
+  --text-body: 0.9375rem;
+  --text-meta: 0.8125rem;
+  --text-micro: 0.75rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Shape and motion */
+  --radius-control: 3px;
+  --radius-panel: 5px;
+  --radius-poster: 2px;
+  --duration-fast: 140ms;
+  --duration-normal: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --content-max: 1320px;
+  --page-gutter: clamp(1.25rem, 4vw, 4rem);
 }
 
-body {
+.cinema-theme-light {
+  color-scheme: light;
+  --cinema-canvas: #f4efe6;
+  --cinema-surface: #ebe4d8;
+  --cinema-surface-raised: #ffffff;
+  --cinema-surface-inset: #e2dacb;
+  --cinema-text-primary: #171512;
+  --cinema-text-secondary: #4a453e;
+  --cinema-text-muted: #6e675d;
+  --cinema-border: #cfc6b8;
+  --cinema-border-subtle: #ded6c8;
+  --cinema-accent: #8c6930;
+  --cinema-accent-hover: #735524;
+  --cinema-action: #171512;
+  --cinema-action-text: #f2eee6;
+  --cinema-danger: #b53c32;
+  --cinema-danger-bg: #faeae8;
+  --cinema-success: #2d6a43;
+  --cinema-success-bg: #e6f2ea;
+  --cinema-warning: #94681d;
+  --cinema-warning-bg: #f9f1e1;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body,
+.cinema-app {
   margin: 0;
-  font-family:
-    'Inter',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  background-color: #020617;
-  color: #f8fafc;
+  min-height: 100vh;
+  color: var(--cinema-text-primary);
+  background-color: var(--cinema-canvas);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.cinema-app :where(button, input, select, textarea) {
+  font: inherit;
+}
+
+.cinema-app :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--cinema-accent);
+  outline-offset: 2px;
+}
+
+/* Typography helpers */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+.cinema-eyebrow {
+  font-family: var(--font-ui);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cinema-accent);
+}
+
+/* Container & Surfaces */
+.cinema-container {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+}
+
+.cinema-panel {
+  background-color: var(--cinema-surface);
+  border: 1px solid var(--cinema-border);
+  border-radius: var(--radius-panel);
+}
+
+.cinema-panel-raised {
+  background-color: var(--cinema-surface-raised);
+  border: 1px solid var(--cinema-border);
+  border-radius: var(--radius-panel);
+}
+
+.cinema-panel-inset {
+  background-color: var(--cinema-surface-inset);
+  border: 1px solid var(--cinema-border);
+  border-radius: var(--radius-panel);
+}
+
+.cinema-poster-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--cinema-border);
+  border-radius: var(--radius-poster);
+  background-color: var(--cinema-surface-inset);
+}
+
+/* Controls & Buttons — Strictly solid fills, fine borders, zero gradients */
+.cinema-primary-action,
+.cinema-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.6875rem 1.25rem;
+  border: 1px solid var(--cinema-action);
+  border-radius: var(--radius-control);
+  color: var(--cinema-action-text);
+  background-color: var(--cinema-action);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.cinema-primary-action:hover:not(:disabled),
+.cinema-btn-primary:hover:not(:disabled) {
+  border-color: var(--cinema-accent-hover);
+  background-color: var(--cinema-accent-hover);
+  color: #171512;
+}
+
+.cinema-primary-action:active:not(:disabled),
+.cinema-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.cinema-primary-action:disabled,
+.cinema-btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.cinema-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.6875rem 1.125rem;
+  border: 1px solid var(--cinema-border);
+  border-radius: var(--radius-control);
+  color: var(--cinema-text-primary);
+  background-color: var(--cinema-surface);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.cinema-btn-secondary:hover:not(:disabled) {
+  border-color: var(--cinema-accent);
+  background-color: var(--cinema-surface-raised);
+}
+
+.cinema-btn-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+/* Form Inputs */
+.cinema-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--cinema-border);
+  border-radius: var(--radius-control);
+  background-color: var(--cinema-surface-inset);
+  color: var(--cinema-text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.cinema-input::placeholder {
+  color: var(--cinema-text-muted);
+}
+
+.cinema-input:focus {
+  border-color: var(--cinema-accent);
+  outline: none;
+}
+
+.cinema-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--cinema-text-secondary);
+}
+
+/* Non-color seat differentiation pattern for sold/unavailable seats */
+.seat-sold-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 3px,
+    rgba(242, 238, 230, 0.08) 3px,
+    rgba(242, 238, 230, 0.08) 5px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinema-app *,
+  .cinema-app *::before,
+  .cinema-app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
