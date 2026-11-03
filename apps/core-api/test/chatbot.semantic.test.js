@@ -41,7 +41,8 @@ vi.mock('../src/modules/chatbot/chatbot.vector.js', () => ({
   semanticSearch,
 }));
 
-vi.mock('../src/modules/chatbot/chatbot.session.js', () => ({
+vi.mock('../src/modules/chatbot/chatbot.session.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   loadSession,
   createSession,
   saveTurn,
@@ -51,6 +52,8 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetModules();
   vi.clearAllMocks();
+  looksSemantic.mockReset();
+  semanticSearch.mockReset();
   loadSession.mockResolvedValue(null);
   createSession.mockResolvedValue(null);
   saveTurn.mockResolvedValue(false);
@@ -390,5 +393,151 @@ describe('CineBot semantic recommendations', () => {
     expect(result.reply).toContain('Current Database Movie');
     expect(result.reply).not.toContain('stale-movie-id');
     expect(findMovies.mock.calls[0][0].where).toEqual({ deletedAt: null });
+  });
+
+  it('applies business filter consolidation excluding inappropriate age ratings and attaching showtimes', async () => {
+    vi.stubEnv('GEMINI_API_KEY', '');
+    findGenres.mockResolvedValue([]);
+    findMovies.mockResolvedValue([movie('child-friendly', 'Phim Hoạt Hình Vui Nhộn')]);
+    findShowtimes.mockResolvedValue([
+      {
+        id: 'st-1',
+        movieId: 'child-friendly',
+        cinemaId: 'cine-1',
+        startTime: new Date('2026-11-04T12:30:00Z'),
+        format: 'TWO_D',
+        formatRaw: '2D Phụ Đề',
+        cinema: { id: 'cine-1', name: 'Galaxy Nguyễn Du' },
+        movie: { id: 'child-friendly', title: 'Phim Hoạt Hình Vui Nhộn' },
+      },
+    ]);
+
+    const { answerMessage } = await import('../src/modules/chatbot/chatbot.service.js');
+    const result = await answerMessage('gợi ý phim cho trẻ em xem');
+
+    expect(result.category).toBe('Search Movies');
+    expect(findMovies).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          deletedAt: null,
+          ageRating: { notIn: expect.arrayContaining(['T18']) },
+        }),
+      }),
+    );
+    expect(result.movies[0].nextShowtimes).toBeDefined();
+    expect(result.movies[0].nextShowtimes[0].cinemaName).toBe('Galaxy Nguyễn Du');
+  });
+
+  it('answers cinema information requests and categorizes into Cinema Info', async () => {
+    vi.stubEnv('GEMINI_API_KEY', '');
+    const { prisma } = await import('@cinehub/db');
+    prisma.cinema.findMany = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'c-1', name: 'Galaxy Nguyễn Du', address: '116 Nguyễn Du, Q.1', phone: '19002224' },
+      ]);
+
+    const { answerMessage } = await import('../src/modules/chatbot/chatbot.service.js');
+    const result = await answerMessage('dia chi rap galaxy o dau');
+
+    expect(result.intent).toBe('CINEMA_INFO');
+    expect(result.category).toBe('Cinema Info');
+    expect(result.reply).toContain('Galaxy Nguyễn Du');
+    expect(result.cinemas).toHaveLength(1);
+  });
+
+  it('correctly handles multi-turn conversation: children movies -> title selection -> showtime inheritance & coming soon diagnostic', async () => {
+    vi.stubEnv('GEMINI_API_KEY', '');
+    const { initialConversationContext, mergeConversationContext } =
+      await import('../src/modules/chatbot/chatbot.session.js');
+
+    const childMovie = {
+      id: 'movie-child',
+      title: 'Scotty: Giải Cứu Hoàng Thượng',
+      titleNormalized: 'scotty giai cuu hoang thuong',
+      synopsis: 'Phim hoạt hình cho trẻ em',
+      durationMin: 90,
+      ageRating: 'P',
+      posterUrl: null,
+      status: 'NOW_SHOWING',
+      ratingAvg: 4.8,
+      sources: [],
+      genres: [{ genre: { name: 'Hoạt hình' } }, { genre: { name: 'Gia đình' } }],
+    };
+
+    const meMinMovie = {
+      id: 'movie-memin',
+      title: 'Mẹ Mìn',
+      titleNormalized: 'me min',
+      synopsis: 'Phim kinh dị giật gân',
+      durationMin: 110,
+      ageRating: 'T18',
+      posterUrl: null,
+      status: 'COMING_SOON',
+      ratingAvg: 4.5,
+      sources: [],
+      genres: [{ genre: { name: 'Kinh dị' } }, { genre: { name: 'Giật gân' } }],
+    };
+
+    let sessionState = {
+      sessionId: 'session-user-flow',
+      userId: null,
+      messages: [],
+      lastMovies: [],
+      context: initialConversationContext(),
+    };
+
+    loadSession.mockImplementation(async () => sessionState);
+    saveTurn.mockImplementation(async ({ result, memory, contextUpdates }) => {
+      sessionState = {
+        ...sessionState,
+        lastMovies: memory?.lastMovies || sessionState.lastMovies,
+        context: mergeConversationContext(sessionState.context, contextUpdates),
+      };
+      return true;
+    });
+
+    findMovies.mockImplementation(async ({ where }) => {
+      if (where?.ageRating?.notIn?.includes('T18') || where?.NOT) {
+        return [childMovie];
+      }
+      return [childMovie, meMinMovie];
+    });
+
+    const { answerMessage } = await import('../src/modules/chatbot/chatbot.service.js');
+
+    // TURN 1: User asks for children movies
+    const turn1 = await answerMessage('phim trẻ em', { sessionId: sessionState.sessionId });
+    expect(turn1.intent).toBe('RECOMMEND');
+    expect(turn1.category).toBe('Search Movies');
+    expect(turn1.movies.map((m) => m.id)).toContain('movie-child');
+    expect(turn1.movies.map((m) => m.id)).not.toContain('movie-memin');
+    expect(turn1.reply).toContain('Scotty: Giải Cứu Hoàng Thượng');
+    expect(turn1.reply).not.toContain('Mẹ Mìn');
+
+    // TURN 2: User enters movie title "mẹ mìn"
+    const turn2 = await answerMessage('mẹ mìn', { sessionId: sessionState.sessionId });
+    expect(turn2.intent).toBe('MOVIE_SELECTION');
+    expect(turn2.movie).toMatchObject({ id: 'movie-memin', title: 'Mẹ Mìn' });
+    expect(turn2.reply).toContain('Mẹ Mìn');
+    expect(turn2.reply).toContain('Sắp chiếu');
+    expect(sessionState.context.movie.movieId).toBe('movie-memin');
+
+    // TURN 3: User says short follow-up "lịch chiếu" without naming the movie
+    const turn3 = await answerMessage('lịch chiếu', { sessionId: sessionState.sessionId });
+    expect(turn3.intent).toBe('SHOWTIMES');
+    expect(turn3.category).toBe('Ask Showtimes');
+    expect(turn3.movie).toMatchObject({ id: 'movie-memin', title: 'Mẹ Mìn' });
+    expect(turn3.reply).toContain('Mẹ Mìn');
+    expect(turn3.reply).toContain('Sắp chiếu');
+    expect(turn3.reply).not.toContain(
+      'Chưa tìm thấy suất chiếu phù hợp. Bạn thử đổi ngày, phim hoặc rạp nhé.',
+    );
+
+    // TURN 4: User says "đổi phim khác"
+    const turn4 = await answerMessage('đổi phim khác', { sessionId: sessionState.sessionId });
+    expect(turn4.intent).toBe('RESET_CONTEXT');
+    expect(turn4.reply).toContain('đã xóa lựa chọn phim');
+    expect(sessionState.context.movie.movieId).toBeNull();
   });
 });

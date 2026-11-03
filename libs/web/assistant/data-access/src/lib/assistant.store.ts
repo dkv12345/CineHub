@@ -4,11 +4,45 @@ import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 import { movies as seedMovies, type AIRecommendation } from '@cinehub/web/shared/util';
 
+export interface MovieShowtimeItem {
+  readonly id: string;
+  readonly time: string;
+  readonly date: string;
+  readonly format?: string;
+  readonly cinemaName?: string;
+}
+
+export interface ChatMovieCard {
+  readonly id: string;
+  readonly title: string;
+  readonly synopsis?: string | null;
+  readonly durationMin?: number | string | null;
+  readonly ageRating?: string | null;
+  readonly posterUrl?: string | null;
+  readonly genres?: readonly string[];
+  readonly rating?: number;
+  readonly nextShowtimes?: readonly MovieShowtimeItem[];
+}
+
+export interface ChatShowtimeItem {
+  readonly id: string;
+  readonly time: string;
+  readonly date: string;
+  readonly format?: string;
+  readonly movie?: { readonly id: string; readonly title: string };
+  readonly cinema?: { readonly id: string; readonly name: string };
+}
+
 export interface ChatTurn {
   readonly id: number;
   readonly sender: 'user' | 'bot';
   readonly text: string;
   readonly createdAt: string;
+  readonly movies?: readonly ChatMovieCard[];
+  readonly showtimes?: readonly ChatShowtimeItem[];
+  readonly quickReplies?: readonly string[];
+  readonly intent?: string;
+  readonly category?: string;
 }
 
 export interface AssistantState {
@@ -26,8 +60,34 @@ const initialState: AssistantState = {
     {
       id: 1,
       sender: 'bot',
-      text: 'Xin chào! Mình là CineBot AI (Gemini RAG). Bạn muốn tìm phim hành động, kinh dị hay suất chiếu IMAX tối nay?',
+      text: 'Xin chào! Mình là CineBot - AI Concierge của CineHub. Bạn muốn tìm phim theo gu, tra cứu suất chiếu rạp hay đặt vé hôm nay?',
       createdAt: 'Vừa xong',
+      movies: seedMovies.slice(0, 2).map((m) => ({
+        id: String(m.id),
+        title: m.title,
+        synopsis: m.synopsis,
+        durationMin: parseInt(m.duration, 10) || 120,
+        ageRating: m.age,
+        posterUrl: m.poster,
+        genres: [m.genre],
+        rating: m.rating,
+        nextShowtimes: [
+          {
+            id: '1',
+            time: '19:30',
+            date: 'Hôm nay',
+            format: '2D Phụ đề',
+            cinemaName: 'Galaxy Nguyễn Du',
+          },
+          {
+            id: '2',
+            time: '21:45',
+            date: 'Hôm nay',
+            format: 'IMAX Laser',
+            cinemaName: 'Galaxy Nguyễn Du',
+          },
+        ],
+      })),
     },
   ],
   recommendations: seedMovies.slice(0, 4).map((m) => ({
@@ -69,7 +129,15 @@ export const AssistantStore = signalStore(
 
         try {
           const res = await firstValueFrom(
-            http.post<{ sessionId?: string; reply?: string }>('/api/v1/chatbot/message', {
+            http.post<{
+              sessionId?: string;
+              reply?: string;
+              intent?: string;
+              category?: string;
+              movies?: ChatMovieCard[];
+              showtimes?: ChatShowtimeItem[];
+              quickReplies?: string[];
+            }>('/api/v1/chatbot/message', {
               message: text,
               ...(store.sessionId() ? { sessionId: store.sessionId() } : {}),
             }),
@@ -78,9 +146,13 @@ export const AssistantStore = signalStore(
             id: nextMsgId++,
             sender: 'bot',
             text:
-              res?.reply ??
-              'CineBot gợi ý bạn xem thử Dune: Hành Tinh Cát hoặc Avengers tại phòng chiếu IMAX Laser!',
+              res?.reply ?? 'CineBot đã nhận câu hỏi của bạn và tìm kiếm từ hệ thống rạp CineHub.',
             createdAt: 'Vừa xong',
+            movies: res?.movies ?? [],
+            showtimes: res?.showtimes ?? [],
+            quickReplies: res?.quickReplies ?? [],
+            intent: res?.intent,
+            category: res?.category,
           };
           patchState(store, {
             sessionId: res?.sessionId ?? store.sessionId(),
@@ -88,11 +160,41 @@ export const AssistantStore = signalStore(
             loading: false,
           });
         } catch {
+          const fallbackMovies: ChatMovieCard[] = seedMovies.slice(0, 2).map((m) => ({
+            id: String(m.id),
+            title: m.title,
+            synopsis: m.synopsis,
+            durationMin: parseInt(m.duration, 10) || 120,
+            ageRating: m.age,
+            posterUrl: m.poster,
+            genres: [m.genre],
+            rating: m.rating,
+            nextShowtimes: [
+              {
+                id: '1',
+                time: '19:30',
+                date: 'Hôm nay',
+                format: '2D Phụ đề',
+                cinemaName: 'Galaxy Nguyễn Du',
+              },
+              {
+                id: '2',
+                time: '21:15',
+                date: 'Hôm nay',
+                format: 'IMAX Laser',
+                cinemaName: 'Galaxy Nguyễn Du',
+              },
+            ],
+          }));
+
           const fallbackTurn: ChatTurn = {
             id: nextMsgId++,
             sender: 'bot',
-            text: `CineBot: Với câu hỏi "${text}", mình gợi ý các suất chiếu 2D & IMAX khung 19:45 tối nay tại Galaxy Cinema!`,
+            text: `CineBot: Với câu hỏi "${text}", mình gợi ý các phim và suất chiếu nổi bật hôm nay. Bạn có thể bấm chọn suất chiếu hoặc đặt vé ngay bên dưới:`,
             createdAt: 'Vừa xong',
+            movies: fallbackMovies,
+            intent: 'RECOMMEND',
+            category: 'Search Movies',
           };
           patchState(store, {
             messages: [...store.messages(), fallbackTurn],

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../src/modules/chatbot/chatbot.session.js', () => ({
+vi.mock('../src/modules/chatbot/chatbot.session.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   loadSession: vi.fn().mockResolvedValue(null),
   createSession: vi.fn().mockResolvedValue(null),
   saveTurn: vi.fn().mockResolvedValue(false),

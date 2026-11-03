@@ -1,16 +1,51 @@
-# CineBot and movie recommendations
+# PHẦN 8. PHÂN HỆ AI CONCIERGE VÀ TÌM KIẾM NGỮ NGHĨA
 
-## Chatbot design
+## 8.1. Kiến trúc luồng hội thoại thông minh
+
+```
+[Người dùng nhập tin nhắn tiếng Việt]
+       |
+       v
+[1. Chatbot NLP Engine (chatbot.nlp.js)]
+   -> Phân loại ý định (Search Movies, Ask Showtimes, Cinema Info, Chit-chat)
+   -> Bóc tách thực thể (Tên phim, Thể loại, Khung giờ, Địa điểm rạp, Độ tuổi/Đối tượng)
+       |
+       v
+[2. Vector & Semantic Search (chatbot.vector.js)]
+   -> Gọi Google Gemini Embedding API chuyển câu hỏi thành vector biểu diễn
+   -> Thực hiện Vector Similarity Search trên MongoDB tìm các phim tương quan (Cosine Distance/Similarity)
+       |
+       v
+[3. Business Filter Consolidation]
+   -> Giao thoa kết quả tìm kiếm với lịch chiếu khả dụng trong MySQL
+   -> Loại trừ các phim không có suất chiếu hoặc không phù hợp độ tuổi (trẻ em, gia đình, 18+)
+   -> Gắn kèm thông tin cụm rạp và các suất chiếu khả dụng gần nhất (nextShowtimes)
+       |
+       v
+[4. Gemini Context Generation (chatbot.service.js)]
+   -> Tổng hợp dữ liệu phim, cụm rạp, giờ chiếu thành prompt ngữ cảnh (databaseFacts)
+   -> Google Gemini sinh câu trả lời tự nhiên, thân thiện kèm thẻ phim tương tác
+   -> Fallback an toàn về câu trả lời xác định (deterministic database reply) khi offline hoặc không có API key
+```
+
+## 8.2. Quy trình xử lý Vector Embedding cho danh mục phim
+
+- Background job `apps/core-api/src/jobs/embed-movies.js` chịu trách nhiệm quét toàn bộ danh mục phim chưa được nhúng vector hoặc có sự thay đổi nội dung (`npm run embed:movies -w @cinehub/core-api`).
+- Dữ liệu phim gồm: Tiêu đề, Tóm tắt nội dung, Thể loại, Quốc gia, Độ tuổi, Đạo diễn, Diễn viên được ghép thành văn bản ngữ cảnh chuẩn hóa và gửi tới mô hình Embedding của Google Gemini (`gemini-embedding-001`, 768 chiều).
+- Mảng vector sinh ra được lưu trữ trực tiếp vào trường `embedding` của Movie Document trong MongoDB collection `movie_embeddings` và được đánh chỉ mục vector (Vector Index) để phục vụ phép toán đo khoảng cách cosine (Cosine Distance/Dot product) với độ trễ thấp.
+- Người dùng có thể bấm trực tiếp vào phim hoặc suất chiếu chatbot gợi ý trên widget để xem chi tiết và đặt vé ngay lập tức (tích hợp chọn ghế 3D POV).
+
+## 8.3. Chatbot Design Details
 
 The chat flow is deliberately database-first:
 
 1. Normalize Vietnamese text (lowercase, remove combining marks, map `đ` to `d`).
-2. Classify the request as showtimes, currently showing, movie details, ticket prices, refund policy, or payment help.
-3. Match a movie with `Movie.titleNormalized` and a cinema by normalized `Cinema.name`.
-4. Query Prisma for the matching public movie/showtime/cinema/price rows and build a deterministic answer.
-5. When `GEMINI_API_KEY` is configured, send the user's question, intent, public result rows, and deterministic answer to Gemini. Gemini may answer general questions; for CineHub-specific facts it must use only the retrieved database context. The returned DB result cards remain authoritative. `GEMINI_MODEL` is optional and defaults to `gemini-3.8-flash`.
-
-Gemini is an optional presentation layer, not a source of schedule truth. A Gemini failure is logged and the deterministic database answer is used; the API marks the response source and returns a notice. Never include account, booking, payment, or other user data in model context.
+2. Classify intent into the 4 architectural categories: Search Movies, Ask Showtimes, Cinema Info, Chit-chat.
+3. Extract entities: Movie title, Genre, Time window (hours, parts of day, dates, weekend), Cinema/Location, Audience/Age rating.
+4. If semantic search is needed, generate query vector with Gemini Embedding and rank MongoDB vector documents by cosine similarity.
+5. Apply business filter consolidation with MySQL Prisma: age rating exclusion, active scheduled showtimes, cinema filter. Attach next active showtimes to returned movies.
+6. When `GEMINI_API_KEY` is configured, send the user's question, intent, databaseFacts (movies, showtimes, cinemas, prices), and deterministic answer to Gemini. Gemini acts as an intelligent AI Concierge generating warm, factual Vietnamese responses. When Gemini is unavailable, deterministic database answers are returned immediately.
+7. Interactive frontend widget renders movie cards with posters, age ratings, rating score, synopsis, quick showtime pills, and one-click booking buttons directly navigating to `/seats/:showtimeId` or `/movie/:id`.
 
 Movie discovery and recommendations always query the current, non-deleted MySQL movie catalog. Common descriptions such as “đánh nhau”, “võ thuật”, and “bắn nhau” map to the action genre only when that genre exists in MySQL; descriptive recommendation prompts without a genre match can use semantic ranking. “Now showing” includes movies marked `NOW_SHOWING` or with a future `SCHEDULED`/`OPEN` showtime, so stale movie status does not hide films that have active showings. MongoDB embeddings can rank database rows but cannot introduce movie records; catalog movies without vectors remain eligible and stale vector IDs are ignored. If semantic search is unavailable, recommendations fall back to the database catalog. Movie-list and movie-detail replies are deterministic so Gemini cannot invent movie titles.
 
