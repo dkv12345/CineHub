@@ -13,13 +13,13 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="cinema-container flex min-h-[75vh] max-w-md flex-col justify-center py-12">
-      <div class="cinema-panel-raised p-6 sm:p-8 space-y-6">
+      <div class="cinema-panel-raised p-6 sm:p-8 space-y-6 shadow-md">
         <div class="space-y-1">
           <span class="cinema-eyebrow">Bảo mật tài khoản</span>
-          <h1 class="font-display text-2xl font-semibold text-[var(--cinema-text-primary)]">
+          <h1 class="font-display text-2xl font-bold text-[var(--color-text-primary)]">
             Đặt lại mật khẩu
           </h1>
-          <p class="text-xs text-[var(--cinema-text-muted)]">
+          <p class="text-xs text-[var(--color-text-secondary)]">
             Nhập mã token từ email và thiết lập mật khẩu mới cho tài khoản của bạn.
           </p>
         </div>
@@ -27,7 +27,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
         @if (errorBanner()) {
           <div
             role="alert"
-            class="rounded-[3px] border border-[var(--cinema-danger)] bg-[var(--cinema-danger-bg)] px-4 py-3 text-xs text-[var(--cinema-text-primary)]"
+            class="rounded-[4px] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-xs font-semibold text-[var(--color-danger)]"
           >
             {{ errorBanner() }}
           </div>
@@ -62,14 +62,17 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
           <button
             type="submit"
             [disabled]="submitting()"
-            class="cinema-btn-primary w-full !min-h-[46px]"
+            class="cinema-btn-primary w-full !min-h-[46px] font-bold"
           >
             {{ submitting() ? 'Đang cập nhật...' : 'Cập nhật mật khẩu' }}
           </button>
         </form>
 
-        <div class="text-center text-xs text-[var(--cinema-text-muted)]">
-          <a routerLink="/auth" class="text-[var(--cinema-accent)] hover:underline">
+        <div class="text-center text-xs text-[var(--color-text-secondary)]">
+          <a
+            routerLink="/auth"
+            class="text-[var(--color-brand-primary)] hover:underline font-semibold"
+          >
             Quay lại trang đăng nhập
           </a>
         </div>

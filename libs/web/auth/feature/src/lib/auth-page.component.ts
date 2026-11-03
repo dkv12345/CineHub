@@ -29,16 +29,16 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
       class="cinema-container flex min-h-[80vh] max-w-md flex-col justify-center py-12"
       cdkTrapFocus
     >
-      <div class="cinema-panel-raised p-6 sm:p-8 space-y-6">
+      <div class="cinema-panel-raised p-6 sm:p-8 space-y-6 shadow-md">
         <!-- Brand Header -->
         <div class="text-center space-y-2">
           <span
-            class="inline-flex h-11 w-11 items-center justify-center rounded-[3px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-inset)] font-display text-lg font-semibold tracking-wider text-[var(--cinema-text-primary)]"
+            class="inline-flex h-12 w-12 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] font-display text-xl font-bold text-[#fffdf9] shadow-xs"
           >
             CH
           </span>
           <div>
-            <h1 class="font-display text-2xl font-semibold text-[var(--cinema-text-primary)]">
+            <h1 class="font-display text-2xl font-bold text-[var(--color-text-primary)]">
               @switch (mode()) {
                 @case ('login') {
                   Đăng nhập thành viên
@@ -51,7 +51,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                 }
               }
             </h1>
-            <p class="mt-1 text-xs text-[var(--cinema-text-muted)]">
+            <p class="mt-1 text-xs text-[var(--color-text-secondary)]">
               Trải nghiệm đặt vé trực tuyến & góc nhìn phòng chiếu 3D POV
             </p>
           </div>
@@ -59,7 +59,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
 
         <!-- Mode Switcher Tabs -->
         <div
-          class="grid grid-cols-2 rounded-[3px] border border-[var(--cinema-border)] bg-[var(--cinema-surface-inset)] p-1 text-xs font-semibold"
+          class="grid grid-cols-2 rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] p-1 text-xs font-bold"
           role="tablist"
           aria-label="Chuyển chế độ đăng nhập hoặc đăng ký"
         >
@@ -68,11 +68,11 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
             role="tab"
             [attr.aria-selected]="mode() === 'login'"
             (click)="setMode('login')"
-            class="rounded-[2px] py-2 transition-colors"
+            class="rounded-[3px] py-2 transition-colors"
             [class]="
               mode() === 'login'
-                ? 'bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)] shadow-sm'
-                : 'text-[var(--cinema-text-muted)] hover:text-[var(--cinema-text-primary)]'
+                ? 'bg-[var(--color-brand-primary)] text-[#fffdf9] shadow-xs'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
             "
           >
             Đăng nhập
@@ -82,11 +82,11 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
             role="tab"
             [attr.aria-selected]="mode() === 'register'"
             (click)="setMode('register')"
-            class="rounded-[2px] py-2 transition-colors"
+            class="rounded-[3px] py-2 transition-colors"
             [class]="
               mode() === 'register'
-                ? 'bg-[var(--cinema-surface-raised)] text-[var(--cinema-text-primary)] shadow-sm'
-                : 'text-[var(--cinema-text-muted)] hover:text-[var(--cinema-text-primary)]'
+                ? 'bg-[var(--color-brand-primary)] text-[#fffdf9] shadow-xs'
+                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
             "
           >
             Đăng ký
@@ -96,7 +96,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
         @if (errorBanner()) {
           <div
             role="alert"
-            class="rounded-[3px] border border-[var(--cinema-danger)] bg-[var(--cinema-danger-bg)] px-4 py-3 text-xs text-[var(--cinema-text-primary)]"
+            class="rounded-[4px] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-xs font-semibold text-[var(--color-danger)]"
           >
             {{ errorBanner() }}
           </div>
@@ -124,7 +124,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                   <button
                     type="button"
                     (click)="setMode('forgot')"
-                    class="text-xs text-[var(--cinema-accent)] hover:underline"
+                    class="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
                   >
                     Quên mật khẩu?
                   </button>
@@ -142,7 +142,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
               <button
                 type="submit"
                 [disabled]="submitting()"
-                class="cinema-btn-primary w-full !min-h-[46px]"
+                class="cinema-btn-primary w-full !min-h-[46px] font-bold"
               >
                 {{ submitting() ? 'Đang xác thực...' : 'Đăng nhập' }}
               </button>
@@ -202,7 +202,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
               <button
                 type="submit"
                 [disabled]="submitting()"
-                class="cinema-btn-primary w-full !min-h-[46px]"
+                class="cinema-btn-primary w-full !min-h-[46px] font-bold"
               >
                 {{ submitting() ? 'Đang tạo tài khoản...' : 'Đăng ký ngay' }}
               </button>
@@ -225,7 +225,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
               <button
                 type="submit"
                 [disabled]="submitting()"
-                class="cinema-btn-primary w-full !min-h-[46px]"
+                class="cinema-btn-primary w-full !min-h-[46px] font-bold"
               >
                 {{ submitting() ? 'Đang gửi...' : 'Gửi liên kết khôi phục' }}
               </button>
@@ -234,22 +234,29 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
         }
 
         <!-- Divider -->
-        <div class="flex items-center gap-3 text-xs text-[var(--cinema-text-muted)]">
-          <div class="h-px flex-1 bg-[var(--cinema-border)]"></div>
+        <div class="flex items-center gap-3 text-xs text-[var(--color-text-secondary)]">
+          <div class="h-px flex-1 bg-[var(--color-border)]"></div>
           <span>HOẶC</span>
-          <div class="h-px flex-1 bg-[var(--cinema-border)]"></div>
+          <div class="h-px flex-1 bg-[var(--color-border)]"></div>
         </div>
 
         <!-- Google Sign-In Container -->
         <div #googleBtnContainer class="flex justify-center" aria-label="Google Sign-In"></div>
 
-        <!-- Quick Demo Customer Login -->
-        <button type="button" (click)="signInDemoCustomer()" class="cinema-btn-secondary w-full">
+        <!-- Quick Demo VIP Login -->
+        <button
+          type="button"
+          (click)="signInDemoCustomer()"
+          class="cinema-btn-secondary w-full font-bold"
+        >
           Đăng nhập nhanh tài khoản Demo VIP
         </button>
 
-        <div class="text-center text-xs text-[var(--cinema-text-muted)]">
-          <a routerLink="/verify-email" class="text-[var(--cinema-accent)] hover:underline">
+        <div class="text-center text-xs text-[var(--color-text-secondary)]">
+          <a
+            routerLink="/verify-email"
+            class="text-[var(--color-brand-primary)] hover:underline font-semibold"
+          >
             Nhập mã OTP xác thực email
           </a>
         </div>

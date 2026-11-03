@@ -13,13 +13,13 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="cinema-container flex min-h-[75vh] max-w-md flex-col justify-center py-12">
-      <div class="cinema-panel-raised p-6 sm:p-8 space-y-6">
+      <div class="cinema-panel-raised p-6 sm:p-8 space-y-6 shadow-md">
         <div class="space-y-1">
           <span class="cinema-eyebrow">Xác thực tài khoản</span>
-          <h1 class="font-display text-2xl font-semibold text-[var(--cinema-text-primary)]">
+          <h1 class="font-display text-2xl font-bold text-[var(--color-text-primary)]">
             Xác thực Email (OTP)
           </h1>
-          <p class="text-xs text-[var(--cinema-text-muted)]">
+          <p class="text-xs text-[var(--color-text-secondary)]">
             Nhập mã xác thực 6 chữ số đã được gửi tới hộp thư của bạn.
           </p>
         </div>
@@ -27,7 +27,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
         @if (errorBanner()) {
           <div
             role="alert"
-            class="rounded-[3px] border border-[var(--cinema-danger)] bg-[var(--cinema-danger-bg)] px-4 py-3 text-xs text-[var(--cinema-text-primary)]"
+            class="rounded-[4px] border border-[var(--color-danger)] bg-[var(--color-danger-bg)] px-4 py-3 text-xs font-semibold text-[var(--color-danger)]"
           >
             {{ errorBanner() }}
           </div>
@@ -53,28 +53,28 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
               maxlength="6"
               formControlName="code"
               placeholder="123456"
-              class="cinema-input text-center font-mono text-base font-bold tracking-[0.25em] text-[var(--cinema-accent)]"
+              class="cinema-input text-center font-mono text-base font-bold tracking-[0.25em] text-[var(--color-brand-primary)]"
             />
           </div>
 
           <button
             type="submit"
             [disabled]="submitting()"
-            class="cinema-btn-primary w-full !min-h-[46px]"
+            class="cinema-btn-primary w-full !min-h-[46px] font-bold"
           >
             {{ submitting() ? 'Đang xác thực...' : 'Xác nhận mã OTP' }}
           </button>
         </form>
 
-        <div class="flex items-center justify-between text-xs text-[var(--cinema-text-muted)]">
+        <div class="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
           <button
             type="button"
             (click)="resendOtp()"
-            class="text-[var(--cinema-accent)] hover:underline"
+            class="text-[var(--color-brand-primary)] hover:underline font-semibold"
           >
             Gửi lại mã OTP
           </button>
-          <a routerLink="/auth" class="hover:text-[var(--cinema-text-primary)]">
+          <a routerLink="/auth" class="hover:text-[var(--color-text-primary)] font-semibold">
             Quay lại đăng nhập
           </a>
         </div>

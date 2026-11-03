@@ -13,35 +13,33 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
     <div class="cinema-container max-w-4xl py-8 sm:py-12">
       <div class="mb-6 space-y-1">
         <span class="cinema-eyebrow">Hồ sơ cá nhân</span>
-        <h1
-          class="font-display text-[var(--text-h2)] font-semibold text-[var(--cinema-text-primary)]"
-        >
+        <h1 class="font-display text-[var(--text-h2)] font-bold text-[var(--color-text-primary)]">
           Tài khoản thành viên CineHub
         </h1>
-        <p class="text-xs text-[var(--cinema-text-muted)]">
+        <p class="text-xs text-[var(--color-text-secondary)]">
           Quản lý thông tin định danh, điểm tích lũy và sở thích xem phim.
         </p>
       </div>
 
-      <div class="grid gap-6 md:grid-cols-12 md:gap-8">
+      <div class="grid gap-6 md:grid-cols-12 md:gap-8 items-start">
         <!-- Membership Card Panel -->
-        <div class="cinema-panel-raised p-6 md:col-span-5 space-y-6">
+        <div class="cinema-panel-raised p-6 md:col-span-5 space-y-6 shadow-xs">
           <div class="flex items-center gap-4">
-            <!-- Monogram Avatar (Clean Editorial, No AI Gradients) -->
+            <!-- Monogram Avatar -->
             <div
-              class="flex h-14 w-14 items-center justify-center rounded-[3px] border border-[var(--cinema-accent)] bg-[var(--cinema-surface-inset)] font-display text-xl font-semibold text-[var(--cinema-text-primary)]"
+              class="flex h-14 w-14 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] font-display text-xl font-bold text-[#fffdf9] shadow-xs"
             >
               {{ (authStore.user()?.fullName ?? 'K')[0] }}
             </div>
             <div>
-              <div class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
+              <div class="font-display text-base font-bold text-[var(--color-text-primary)]">
                 {{ authStore.user()?.fullName ?? 'Khách hàng VIP' }}
               </div>
-              <div class="text-xs text-[var(--cinema-text-muted)]">
+              <div class="text-xs text-[var(--color-text-secondary)]">
                 {{ authStore.user()?.email ?? 'khach@cinehub.vn' }}
               </div>
               <span
-                class="mt-1.5 inline-block rounded-[2px] border border-[var(--cinema-accent)]/60 bg-[var(--cinema-surface)] px-2 py-0.5 text-[11px] font-semibold text-[var(--cinema-accent)]"
+                class="mt-1.5 inline-block rounded-[3px] border border-[var(--color-brand-primary)] bg-[var(--color-brand-subtle)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--color-brand-primary)]"
               >
                 {{ authStore.user()?.tier ?? 'Gold VIP' }} ·
                 {{ authStore.user()?.points ?? 1850 }} điểm thưởng
@@ -50,17 +48,17 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
           </div>
 
           <div
-            class="space-y-2 border-t border-[var(--cinema-border-subtle)] pt-4 text-xs text-[var(--cinema-text-secondary)]"
+            class="space-y-2 border-t border-[var(--color-border)] pt-4 text-xs text-[var(--color-text-secondary)]"
           >
             <div class="flex justify-between">
-              <span class="text-[var(--cinema-text-muted)]">Khu vực ưu tiên:</span>
-              <strong class="text-[var(--cinema-text-primary)]">{{
+              <span class="text-[var(--color-text-secondary)]">Khu vực ưu tiên:</span>
+              <strong class="text-[var(--color-text-primary)]">{{
                 accountStore.preferredCity()
               }}</strong>
             </div>
             <div class="flex justify-between">
-              <span class="text-[var(--cinema-text-muted)]">Định dạng ưa chuộng:</span>
-              <strong class="text-[var(--cinema-text-primary)]">{{
+              <span class="text-[var(--color-text-secondary)]">Định dạng ưa chuộng:</span>
+              <strong class="text-[var(--color-text-primary)]">{{
                 accountStore.preferredFormat()
               }}</strong>
             </div>
@@ -68,10 +66,10 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
         </div>
 
         <!-- Update Info Panel -->
-        <div class="cinema-panel p-6 md:col-span-7 space-y-4">
+        <div class="cinema-panel p-6 md:col-span-7 space-y-4 shadow-xs">
           <div>
             <span class="cinema-eyebrow">Cập nhật hồ sơ</span>
-            <h2 class="font-display text-base font-semibold text-[var(--cinema-text-primary)]">
+            <h2 class="font-display text-base font-bold text-[var(--color-text-primary)]">
               Thông tin liên hệ
             </h2>
           </div>
@@ -88,8 +86,10 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
             </div>
 
             <div class="flex items-center gap-3 pt-2">
-              <button type="submit" class="cinema-btn-primary">Lưu thay đổi</button>
-              <a routerLink="/my-tickets" class="cinema-btn-secondary"> Lịch sử đặt vé </a>
+              <button type="submit" class="cinema-btn-primary font-bold">Lưu thay đổi</button>
+              <a routerLink="/my-tickets" class="cinema-btn-secondary font-semibold">
+                Lịch sử đặt vé
+              </a>
             </div>
           </form>
         </div>
