@@ -144,4 +144,47 @@ describe('CineBot Vietnamese NLP helpers', () => {
     expect(parseLocalDate('toi nay', now)?.toISOString()).toBe('2026-10-18T00:00:00.000Z');
     expect(parseLocalDate('ngay mai', now)?.toISOString()).toBe('2026-10-19T00:00:00.000Z');
   });
+
+  it('classifies intents into the 4 architectural categories and detects cinema info / chit-chat', async () => {
+    const { getIntentCategory, INTENT_CATEGORIES, detectChatIntent } =
+      await import('../src/modules/chatbot/chatbot.nlp.js');
+    expect(getIntentCategory('RECOMMEND')).toBe(INTENT_CATEGORIES.SEARCH_MOVIES);
+    expect(getIntentCategory('SEMANTIC')).toBe(INTENT_CATEGORIES.SEARCH_MOVIES);
+    expect(getIntentCategory('NOW_SHOWING')).toBe(INTENT_CATEGORIES.SEARCH_MOVIES);
+    expect(getIntentCategory('SHOWTIMES')).toBe(INTENT_CATEGORIES.ASK_SHOWTIMES);
+    expect(getIntentCategory('CINEMA_INFO')).toBe(INTENT_CATEGORIES.CINEMA_INFO);
+    expect(getIntentCategory('TICKET_PRICES')).toBe(INTENT_CATEGORIES.CINEMA_INFO);
+    expect(getIntentCategory('GREETING')).toBe(INTENT_CATEGORIES.CHIT_CHAT);
+    expect(getIntentCategory('CHIT_CHAT')).toBe(INTENT_CATEGORIES.CHIT_CHAT);
+
+    expect(detectChatIntent('dia chi rap galaxy nguyen du o dau')).toBe('CINEMA_INFO');
+    expect(detectChatIntent('cam on ban nhieu nhe')).toBe('CHIT_CHAT');
+  });
+
+  it('extracts audience, time window, and entities accurately', async () => {
+    const { extractEntities, parseAudience, parseTimeWindow } =
+      await import('../src/modules/chatbot/chatbot.nlp.js');
+    const childAudience = parseAudience('gợi ý phim cho trẻ em xem');
+    expect(childAudience.target).toBe('CHILDREN');
+    expect(childAudience.allowedAgeRatings).toContain('P');
+    expect(childAudience.excludedAgeRatings).toContain('T18');
+
+    const familyAudience = parseAudience('tìm phim cuối tuần cho cả gia đình');
+    expect(familyAudience.target).toBe('FAMILY');
+    expect(familyAudience.excludedAgeRatings).toContain('T18');
+
+    const now = new Date('2026-10-18T02:00:00.000Z'); // Sunday
+    const timeWin = parseTimeWindow('suat chieu 19h toi nay', now);
+    expect(timeWin.hasPeriod).toBe(true);
+    expect(timeWin.startHour).toBe(18);
+
+    const entities = extractEntities('lich chieu phim Doraemon toi nay tai Galaxy Nguyen Du', {
+      movies: [{ title: 'Doraemon', titleNormalized: 'doraemon' }],
+      cinemas: [{ name: 'Galaxy Nguyen Du' }],
+      genres: [],
+    });
+    expect(entities.movie?.title).toBe('Doraemon');
+    expect(entities.cinema?.name).toBe('Galaxy Nguyen Du');
+    expect(entities.timeWindow.hasPeriod).toBe(true);
+  });
 });
