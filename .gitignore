@@ -17,4 +17,5 @@ out-tsc/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+.agents/
 
