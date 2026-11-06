@@ -1,0 +1,69 @@
+/*
+ * Cinematic Luxury starter tokens.
+ * Adapt these values to the existing product identity and CSS architecture.
+ * Do not paste this file over an established theme without auditing it first.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Core surfaces */
+  --cinema-canvas: #11100f;
+  --cinema-surface: #191816;
+  --cinema-surface-raised: #211f1c;
+  --cinema-surface-inset: #0b0b0a;
+
+  /* Typography colors */
+  --cinema-text-primary: #f2eee6;
+  --cinema-text-secondary: #b9b1a5;
+  --cinema-text-muted: #91897e;
+
+  /* Borders and accents */
+  --cinema-border: #39352f;
+  --cinema-accent: #c2a16b;
+  --cinema-accent-hover: #d0b47f;
+  --cinema-action: #f2eee6;
+  --cinema-action-text: #171512;
+
+  /* Semantic colors */
+  --cinema-danger: #d77870;
+  --cinema-success: #8fb49a;
+  --cinema-warning: #d3ac65;
+
+  /* Typography: load licensed fonts through the project's existing font pipeline. */
+  --font-display: 'Newsreader', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-ui: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Type scale */
+  --text-display: clamp(3rem, 6vw, 5rem);
+  --text-h1: clamp(2.5rem, 4vw, 3.5rem);
+  --text-h2: clamp(1.75rem, 2.5vw, 2.25rem);
+  --text-h3: 1.375rem;
+  --text-body-lg: 1.125rem;
+  --text-body: 1rem;
+  --text-meta: 0.875rem;
+  --text-micro: 0.75rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Shape and motion */
+  --radius-control: 3px;
+  --radius-panel: 5px;
+  --radius-poster: 2px;
+  --duration-fast: 140ms;
+  --duration-normal: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --content-max: 1320px;
+  --page-gutter: clamp(1.25rem, 4vw, 4rem);
+}

@@ -6,7 +6,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <span
-      class="inline-flex items-center justify-center rounded px-2 py-0.5 text-xs font-bold tracking-wider uppercase"
+      class="inline-flex items-center justify-center rounded-[3px] border px-1.5 py-0.5 font-ui text-[11px] font-bold tracking-wider uppercase"
       [class]="badgeClasses()"
     >
       {{ age() }}
@@ -21,15 +21,16 @@ export class AgeBadgeComponent {
     switch (rating) {
       case 'T18':
       case 'C':
-        return 'bg-rose-600/90 text-white border border-rose-400/40';
+        return 'border-[#7C2638] bg-[#F3E9E7] text-[#7C2638]';
       case 'T16':
-        return 'bg-orange-500/90 text-white border border-orange-300/40';
+        return 'border-[#B28A50] bg-[#FDF8EE] text-[#845E1B]';
       case 'T13':
-        return 'bg-amber-500/90 text-slate-950 border border-amber-300/40';
+        return 'border-[#A07C45] bg-[#FAF4EA] text-[#785B28]';
       case 'K':
-        return 'bg-sky-500/90 text-white border border-sky-300/40';
+      case 'P':
+        return 'border-[#2B7442] bg-[#EDF7F0] text-[#2B7442]';
       default:
-        return 'bg-emerald-600/90 text-white border border-emerald-400/40';
+        return 'border-[var(--color-border)] bg-[var(--color-surface-secondary)] text-[var(--color-text-primary)]';
     }
   });
 }
