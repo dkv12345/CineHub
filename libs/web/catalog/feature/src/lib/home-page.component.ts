@@ -517,7 +517,43 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
 
-  readonly banners = promotions;
+  readonly banners = [
+    {
+      id: 'trai-buon-nguoi',
+      title: 'Ưu đãi Trại Buôn Người',
+      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792729025/IMG_1348.png',
+    },
+    {
+      id: 'shopeepay',
+      title: 'Ưu đãi ShopeePay',
+      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728689/IMG_1333.png',
+    },
+    {
+      id: 'momo',
+      title: 'Ưu đãi MoMo',
+      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755846/IMG_1365.png',
+    },
+    {
+      id: 'joydrops',
+      title: 'Ưu đãi JoyDrops',
+      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728622/IMG_1332.png',
+    },
+    {
+      id: 'shaune',
+      title: 'Ưu đãi shaun',
+      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792731423/IMG_1360.png',
+    },
+    {
+      id: 'godzila',
+      title: 'Ưu đãi Godzila',
+      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755871/IMG_1366.png',
+    },
+    {
+      id: 'dune',
+      title: 'Ưu đãi Dune',
+      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755977/IMG_1367.png',
+    },
+  ];
   readonly currentSlide = signal(0);
   private carouselTimer: ReturnType<typeof setInterval> | null = null;
   private isCarouselPaused = false;
