@@ -1,228 +1,651 @@
-import { NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
 import { MovieCardComponent } from '@cinehub/web/catalog/ui';
-import { promotions } from '@cinehub/web/shared/util';
+import { AuthStore } from '@cinehub/web/core';
+import { cinemas as seedCinemas, dayInfo, promotions, type Movie } from '@cinehub/web/shared/util';
 
 @Component({
   selector: 'ch-home-page',
   standalone: true,
-  imports: [RouterLink, NgOptimizedImage, MovieCardComponent],
+  imports: [RouterLink, MovieCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Hero Spotlight Banner -->
-    @if (store.featuredMovie(); as hero) {
-      <section class="relative overflow-hidden border-b border-slate-800/80 bg-slate-950">
-        <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:py-16">
-          <div class="grid items-center gap-8 lg:grid-cols-12">
-            <div class="lg:col-span-7 space-y-4">
-              <div class="inline-flex items-center gap-2">
-                <span
-                  class="rounded-full bg-amber-500/20 border border-amber-400/40 px-3 py-1 text-xs font-bold text-amber-300"
-                >
-                  ★ {{ hero.rating }} · Suất chiếu IMAX & 3D POV
-                </span>
-                <span class="rounded-md bg-rose-600/90 px-2 py-0.5 text-xs font-bold text-white">
-                  {{ hero.age }}
-                </span>
-              </div>
-
-              <h1 class="text-3xl font-black tracking-tight text-white sm:text-5xl">
-                {{ hero.title }}
-              </h1>
-
-              <p class="text-sm text-slate-300 line-clamp-3 max-w-2xl">
-                {{ hero.synopsis }}
-              </p>
-
-              <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                <span
-                  >Thể loại: <strong class="text-slate-200">{{ hero.genre }}</strong></span
-                >
-                <span>·</span>
-                <span
-                  >Thời lượng: <strong class="text-slate-200">{{ hero.duration }}</strong></span
-                >
-                <span>·</span>
-                <span
-                  >Khởi chiếu: <strong class="text-slate-200">{{ hero.release }}</strong></span
-                >
-              </div>
-
-              <div class="flex flex-wrap items-center gap-3 pt-2">
-                <a
-                  [routerLink]="['/movie', hero.id]"
-                  class="rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-3 text-sm font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 transition hover:from-amber-300 hover:to-amber-400"
-                >
-                  Đặt vé & Chọn ghế 3D
-                </a>
-                <a
-                  [routerLink]="['/showtimes']"
-                  [queryParams]="{ movieId: hero.id }"
-                  class="rounded-xl border border-slate-700 bg-slate-900/80 px-5 py-3 text-sm font-semibold text-white transition hover:border-amber-400"
-                >
-                  Xem lịch chiếu toàn quốc
-                </a>
+    <main class="min-h-screen bg-[#020617] text-white selection:bg-amber-400 selection:text-black">
+      <!-- 1. Hero Promotion Carousel Banner -->
+      @if (banners.length > 0) {
+        <section
+          class="relative mx-auto min-h-[350px] sm:min-h-[480px] md:min-h-[600px] max-w-[1600px] overflow-hidden bg-[#020617] text-white"
+          (mouseenter)="pauseCarousel()"
+          (mouseleave)="resumeCarousel()"
+          aria-roledescription="carousel"
+          aria-label="Banner chương trình ưu đãi"
+        >
+          @for (slide of banners; track slide.id; let idx = $index) {
+            <div
+              class="absolute inset-0 transition-opacity duration-700"
+              [class]="
+                currentSlide() === idx ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+              "
+            >
+              <div class="absolute inset-0 overflow-hidden bg-[#020617]">
+                <img
+                  [src]="slide.imageUrl"
+                  [alt]="slide.title"
+                  class="h-full w-full object-cover object-center"
+                />
               </div>
             </div>
+          }
 
-            <div class="lg:col-span-5 flex justify-center">
+          <!-- Slide Controls -->
+          <div
+            class="absolute bottom-6 right-5 z-20 flex items-center gap-3 md:bottom-8 md:right-9"
+          >
+            <button
+              type="button"
+              (click)="stepSlide(-1)"
+              aria-label="Slide trước"
+              class="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+
+            <div class="flex gap-2">
+              @for (slide of banners; track slide.id; let idx = $index) {
+                <button
+                  type="button"
+                  (click)="currentSlide.set(idx)"
+                  [attr.aria-label]="'Slide ' + (idx + 1)"
+                  class="h-2 rounded-full transition-all"
+                  [class]="
+                    currentSlide() === idx
+                      ? 'w-8 bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,1)]'
+                      : 'w-3 bg-white/70'
+                  "
+                ></button>
+              }
+            </div>
+
+            <button
+              type="button"
+              (click)="stepSlide(1)"
+              aria-label="Slide sau"
+              class="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+        </section>
+      }
+
+      <!-- 2. Thanh QuickBooking Mua vé nhanh nằm tách biệt dưới Hero -->
+      <div class="relative z-10 mx-auto mt-6 max-w-[1400px] px-5 md:mt-8 md:px-9">
+        <section
+          class="grid gap-3 rounded-2xl border-2 border-white/40 bg-slate-900 p-4 shadow-2xl shadow-black/90 ring-1 ring-white/20 backdrop-blur-2xl md:grid-cols-[1.15fr_1.15fr_.8fr_.8fr_auto] md:items-end md:p-5"
+          aria-label="Đặt vé nhanh"
+        >
+          <!-- Chọn phim -->
+          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
+            Chọn phim
+            <div class="relative mt-2">
+              <select
+                [value]="quickMovieId()"
+                (change)="onQuickMovieChange($event)"
+                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+              >
+                @for (m of nowShowingMovies(); track m.id) {
+                  <option [value]="m.id" class="bg-slate-900 font-black text-white">
+                    {{ m.title }}
+                  </option>
+                }
+              </select>
+              <span
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                >▼</span
+              >
+            </div>
+          </label>
+
+          <!-- Chọn rạp -->
+          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
+            Chọn rạp
+            <div class="relative mt-2">
+              <select
+                [value]="quickCinemaId()"
+                (change)="onQuickCinemaChange($event)"
+                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+              >
+                @for (c of cinemaList; track c.id) {
+                  <option [value]="c.id" class="bg-slate-900 font-black text-white">
+                    {{ c.name }}
+                  </option>
+                }
+              </select>
+              <span
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                >▼</span
+              >
+            </div>
+          </label>
+
+          <!-- Chọn ngày -->
+          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
+            Chọn ngày
+            <div class="relative mt-2">
+              <select
+                [value]="quickDayOffset()"
+                (change)="onQuickDayChange($event)"
+                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+              >
+                @for (d of dayOptions; track d.offset) {
+                  <option [value]="d.offset" class="bg-slate-900 font-black text-white">
+                    {{ d.short }} · {{ d.num }}
+                  </option>
+                }
+              </select>
+              <span
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                >▼</span
+              >
+            </div>
+          </label>
+
+          <!-- Chọn suất -->
+          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
+            Chọn suất
+            <div class="relative mt-2">
+              <select
+                disabled
+                class="block w-full appearance-none rounded-xl border-2 border-white/40 bg-slate-950/60 py-3 pl-3.5 pr-10 text-sm font-black text-white/50 outline-none"
+              >
+                <option class="bg-slate-900">Xem tại bước sau</option>
+              </select>
+              <span
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40"
+                >▼</span
+              >
+            </div>
+          </label>
+
+          <!-- Nút Đặt Vé Nhanh -->
+          <button
+            type="button"
+            (click)="submitQuickBooking()"
+            class="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125 md:w-auto"
+          >
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
+              <path
+                d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a3 3 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a3 3 0 0 1 0-4z"
+              />
+            </svg>
+            Mua vé nhanh
+          </button>
+        </section>
+      </div>
+
+      <!-- 3. Section Top Thịnh Hành (Giant 3D Numbering) -->
+      <section class="mx-auto max-w-[1400px] px-5 pt-10 md:px-9 md:pt-14">
+        <div class="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[.2em] text-amber-400">
+              Được khán giả lựa chọn
+            </p>
+            <h2 class="mt-2 text-2xl font-black text-white">Top thịnh hành</h2>
+          </div>
+          <a
+            routerLink="/showtimes"
+            class="inline-flex items-center gap-1 text-xs font-black text-amber-300 transition hover:text-amber-200"
+          >
+            Xem lịch chiếu →
+          </a>
+        </div>
+
+        <div
+          class="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto pb-4 pl-12 pr-6 md:-mx-9 md:pl-14 md:pr-9"
+        >
+          @for (m of trendingMovies(); track m.id; let idx = $index) {
+            <a
+              [routerLink]="['/movie', m.id]"
+              class="group relative w-[190px] shrink-0 snap-start rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 pt-3 shadow-xl transition hover:border-amber-400 sm:w-[220px]"
+            >
+              <!-- Số 3D nhô hẳn ra ngoài khung (-left-7) -->
+              <span
+                class="display absolute -left-7 bottom-10 z-20 font-black leading-none text-amber-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.95)] transition-all duration-300 group-hover:scale-110 group-hover:text-amber-400"
+                [class]="idx >= 9 ? 'text-[100px] tracking-tighter' : 'text-[108px]'"
+              >
+                {{ idx + 1 }}
+              </span>
+
+              <div class="ml-9 overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20">
+                <img
+                  [src]="m.poster"
+                  [alt]="'Poster ' + m.title"
+                  class="aspect-[2/3] w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+              </div>
+
+              <span
+                class="mt-3 block truncate pl-9 text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
+              >
+                {{ m.title }}
+              </span>
+              <span class="block pl-9 text-xs font-black text-amber-300">
+                ★ {{ m.rating }} · {{ m.country || 'Quốc tế' }}
+              </span>
+            </a>
+          }
+        </div>
+      </section>
+
+      <!-- 4. Section CineHub AI Dành riêng cho bạn -->
+      <section class="mt-12 border-y-2 border-white/20 bg-slate-900/90 backdrop-blur-md">
+        <div
+          class="mx-auto grid max-w-[1400px] gap-8 px-5 py-10 md:grid-cols-[.8fr_2fr] md:items-center md:px-9"
+        >
+          <div>
+            <p
+              class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-400"
+            >
+              ✨ CineHub AI
+            </p>
+            <h2 class="mt-2 text-2xl font-black text-white">Dành riêng cho bạn</h2>
+            <p class="mt-2 max-w-sm text-sm font-bold leading-6 text-white/80">
+              {{
+                authStore.isAuthenticated()
+                  ? 'Gợi ý chuẩn gu theo sở thích và lịch sử xem phim của ' +
+                    authStore.displayName() +
+                    '.'
+                  : 'Khám phá những bộ phim đang được yêu thích nhất hiện tại.'
+              }}
+            </p>
+            @if (!authStore.isAuthenticated()) {
               <a
-                [routerLink]="['/movie', hero.id]"
-                class="relative overflow-hidden rounded-2xl border border-amber-500/30 shadow-2xl shadow-amber-500/10"
+                routerLink="/auth"
+                class="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-400 transition hover:text-amber-300"
+              >
+                Đăng nhập để nhận gợi ý chuẩn gu →
+              </a>
+            }
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            @for (m of recommendedMovies(); track m.id) {
+              <a
+                [routerLink]="['/movie', m.id]"
+                class="group flex min-w-0 gap-3 rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-md transition hover:border-amber-400 hover:bg-slate-800"
               >
                 <img
-                  [ngSrc]="hero.backdrop || hero.poster"
-                  [alt]="hero.title"
-                  width="640"
-                  height="380"
-                  priority
-                  class="h-64 w-full object-cover sm:h-80"
+                  [src]="m.poster"
+                  [alt]="'Poster ' + m.title"
+                  class="h-28 w-[74px] shrink-0 rounded-lg object-cover shadow-md ring-1 ring-white/20"
                 />
+                <div class="min-w-0 py-1">
+                  <h3
+                    class="line-clamp-2 text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
+                  >
+                    {{ m.title }}
+                  </h3>
+                  <p class="mt-2 line-clamp-2 text-xs font-bold leading-5 text-amber-300">
+                    {{ m.genre.split(',')[0] }} · Đang được yêu thích
+                  </p>
+                  <p class="mt-2 text-[11px] font-black text-white">
+                    {{ m.age || 'Phim chiếu rạp' }}
+                  </p>
+                </div>
               </a>
-            </div>
+            }
           </div>
         </div>
       </section>
-    }
 
-    <!-- Filter & Search Controls -->
-    <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div class="flex items-center gap-2" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            [attr.aria-selected]="store.statusFilter() === 'now'"
-            (click)="store.setStatusFilter('now')"
-            class="rounded-xl px-4 py-2 text-sm font-bold transition"
-            [class]="
-              store.statusFilter() === 'now'
-                ? 'bg-amber-500 text-slate-950'
-                : 'border border-slate-800 bg-slate-900 text-slate-300 hover:text-white'
-            "
-          >
-            Phim đang chiếu
-          </button>
-          <button
-            type="button"
-            role="tab"
-            [attr.aria-selected]="store.statusFilter() === 'soon'"
-            (click)="store.setStatusFilter('soon')"
-            class="rounded-xl px-4 py-2 text-sm font-bold transition"
-            [class]="
-              store.statusFilter() === 'soon'
-                ? 'bg-amber-500 text-slate-950'
-                : 'border border-slate-800 bg-slate-900 text-slate-300 hover:text-white'
-            "
-          >
-            Phim sắp chiếu
-          </button>
-          <button
-            type="button"
-            role="tab"
-            [attr.aria-selected]="store.statusFilter() === 'all'"
-            (click)="store.setStatusFilter('all')"
-            class="rounded-xl px-4 py-2 text-sm font-bold transition"
-            [class]="
-              store.statusFilter() === 'all'
-                ? 'bg-amber-500 text-slate-950'
-                : 'border border-slate-800 bg-slate-900 text-slate-300 hover:text-white'
-            "
-          >
-            Tất cả
-          </button>
-        </div>
-
-        <div class="flex flex-1 max-w-md items-center gap-2">
-          <input
-            type="search"
-            [value]="store.searchQuery()"
-            (input)="onSearchInput($event)"
-            placeholder="Tìm theo tên phim, đạo diễn, diễn viên..."
-            aria-label="Tìm kiếm phim"
-            class="w-full rounded-xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
-          />
-        </div>
-      </div>
-
-      <!-- Genre Filter Chips -->
-      <div class="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          (click)="store.setGenreFilter('all')"
-          class="rounded-lg px-3 py-1 text-xs font-semibold transition"
-          [class]="
-            store.genreFilter() === 'all'
-              ? 'bg-amber-500/25 text-amber-300 border border-amber-400/40'
-              : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
-          "
+      <!-- 5. Section Thư Viện Của Bạn -->
+      <section
+        class="mx-auto grid max-w-[1400px] gap-5 px-5 py-14 md:px-9 lg:grid-cols-[220px_minmax(0,1fr)] lg:grid-rows-[auto_auto]"
+      >
+        <aside
+          class="h-fit rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-xl backdrop-blur-md lg:col-start-1 lg:row-start-2"
         >
-          Mọi thể loại
-        </button>
-        @for (genre of store.availableGenres(); track genre) {
+          <p class="px-3 pb-3 pt-2 text-[11px] font-black uppercase tracking-widest text-amber-300">
+            THƯ VIỆN CỦA BẠN
+          </p>
+          <div class="flex flex-col gap-2">
+            @for (item of shelfOptions; track item.key) {
+              <button
+                type="button"
+                (click)="shelf.set(item.key)"
+                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition"
+                [class]="
+                  shelf() === item.key
+                    ? 'border-2 border-amber-400 bg-amber-400/20 font-black text-amber-300 shadow-md'
+                    : 'border-2 border-white/40 bg-slate-800 font-black text-white shadow-md hover:bg-slate-700 hover:text-amber-300'
+                "
+              >
+                <span>{{ item.icon }}</span>
+                <span>{{ item.label }}</span>
+              </button>
+            }
+          </div>
+        </aside>
+
+        <div class="min-w-0 lg:contents">
+          <div class="mb-5 flex items-end justify-between gap-4 lg:col-start-2 lg:row-start-1">
+            <div>
+              <p class="text-xs font-black uppercase tracking-wider text-amber-400">
+                CineHub của bạn
+              </p>
+              <h2 class="mt-1 text-2xl font-black text-white">
+                {{
+                  shelf() === 'history'
+                    ? 'Xem tiếp'
+                    : shelf() === 'collection'
+                      ? 'Bộ sưu tập của tôi'
+                      : 'Đang thịnh hành'
+                }}
+              </h2>
+            </div>
+            <span class="text-xs font-black text-white">{{ shelfMovies().length }} phim</span>
+          </div>
+
+          <div
+            class="scrollbar-hide -mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3 lg:col-start-2 lg:row-start-2"
+          >
+            @for (m of shelfMovies(); track m.id) {
+              <article
+                class="group w-[150px] shrink-0 snap-start overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg backdrop-blur sm:w-[170px]"
+              >
+                <a
+                  [routerLink]="['/movie', m.id]"
+                  class="relative block aspect-[2/3] overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
+                >
+                  <img
+                    [src]="m.poster"
+                    [alt]="'Poster ' + m.title"
+                    class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                  <span
+                    class="absolute right-2 top-2 rounded-full border border-amber-300 bg-slate-950/95 px-2 py-1 text-[10px] font-black text-amber-300 backdrop-blur"
+                  >
+                    ★ {{ m.rating || 'Mới' }}
+                  </span>
+                </a>
+                <h3
+                  class="mt-3 truncate px-1 text-xs font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
+                >
+                  {{ m.title }}
+                </h3>
+                <div
+                  class="mt-2 flex items-center justify-between px-1 pb-1 text-[10px] font-bold text-amber-300"
+                >
+                  <span>{{ m.genre.split(',')[0] }}</span>
+                  <span class="text-white/60">{{ m.country || 'Việt Nam' }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Section PHIM (Đang chiếu / Sắp chiếu & Country Pills) -->
+      <section class="mx-auto max-w-[1400px] px-5 py-16 md:px-9">
+        <div class="mb-5 flex items-center gap-3">
+          <span aria-hidden="true" class="h-7 w-1 rounded-full bg-amber-400"></span>
+          <h2 class="text-xl font-black uppercase tracking-wide text-white">PHIM</h2>
+        </div>
+
+        <!-- Status Tabs: Đang chiếu / Sắp chiếu -->
+        <div role="tablist" class="mb-8 flex gap-8 border-b-2 border-white/20">
           <button
             type="button"
-            (click)="store.setGenreFilter(genre)"
-            class="rounded-lg px-3 py-1 text-xs font-semibold transition"
+            role="tab"
+            [attr.aria-selected]="activeTab() === 'now'"
+            (click)="activeTab.set('now')"
+            class="-mb-px border-b-[3px] pb-4 text-lg transition"
             [class]="
-              store.genreFilter() === genre
-                ? 'bg-amber-500/25 text-amber-300 border border-amber-400/40'
-                : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+              activeTab() === 'now'
+                ? 'border-amber-400 font-black text-amber-300'
+                : 'border-transparent font-black text-white hover:text-amber-300'
             "
           >
-            {{ genre }}
+            Đang chiếu
           </button>
-        }
-      </div>
-
-      <!-- Movie Grid -->
-      <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        @for (movie of store.filteredMovies().slice(0, 20); track movie.id) {
-          <ch-movie-card [movie]="movie" />
-        } @empty {
-          <div
-            class="col-span-full rounded-2xl border border-slate-800 bg-slate-900/50 p-12 text-center text-sm text-slate-400"
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="activeTab() === 'soon'"
+            (click)="activeTab.set('soon')"
+            class="-mb-px border-b-[3px] pb-4 text-lg transition"
+            [class]="
+              activeTab() === 'soon'
+                ? 'border-amber-400 font-black text-amber-300'
+                : 'border-transparent font-black text-white hover:text-amber-300'
+            "
           >
-            Không tìm thấy bộ phim phù hợp với bộ lọc hiện tại.
-          </div>
-        }
-      </div>
-    </section>
+            Sắp chiếu
+          </button>
+        </div>
 
-    <!-- Below-the-fold Promotions & Cinema Showcase deferred until viewport -->
-    @defer (on viewport) {
-      <section class="mx-auto max-w-7xl border-t border-slate-800/80 px-4 py-10 sm:px-6">
-        <h2 class="text-xl font-bold text-white">Ưu đãi & Khuyến mãi thành viên</h2>
-        <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          @for (promo of promos.slice(0, 4); track promo.id) {
-            <div class="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/70 p-3">
-              <div class="text-xs font-bold text-amber-300">{{ promo.title }}</div>
-              <p class="mt-1 text-xs text-slate-400">
-                Áp dụng tại toàn bộ cụm rạp Galaxy Cinema trên CineHub.
-              </p>
+        <!-- Studio & Country Filter Pills -->
+        <div
+          class="scrollbar-hide mb-7 flex gap-2 overflow-x-auto pb-2"
+          aria-label="Lọc theo quốc gia hoặc studio"
+        >
+          @for (f of filterOptions; track f.key) {
+            <button
+              type="button"
+              (click)="catalogFilter.set(f.key)"
+              class="shrink-0 rounded-full border-2 px-4 py-2 text-xs font-black transition"
+              [class]="
+                catalogFilter() === f.key
+                  ? 'border-amber-300 bg-amber-400 font-black text-slate-950 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
+                  : 'border-white/60 bg-slate-800 text-white shadow-md hover:border-amber-300 hover:bg-slate-700 hover:text-amber-300'
+              "
+            >
+              {{ f.label }}
+            </button>
+          }
+        </div>
+
+        <!-- Movie Cards Grid -->
+        <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          @for (m of displayMovies(); track m.id) {
+            <ch-movie-card [movie]="m" />
+          } @empty {
+            <div
+              class="col-span-full rounded-2xl border-2 border-slate-700 bg-slate-900 p-12 text-center text-sm font-bold text-white/60"
+            >
+              Không tìm thấy bộ phim phù hợp với bộ lọc hiện tại.
             </div>
           }
         </div>
       </section>
-    } @placeholder {
-      <div class="mx-auto max-w-7xl px-4 py-8 text-xs text-slate-500">
-        Đang tải ưu đãi thành viên...
-      </div>
-    }
+
+      <!-- 7. Member Promo Callout Banner -->
+      <section class="mx-auto max-w-[1400px] px-5 pb-14 md:px-9">
+        <div
+          class="flex flex-col gap-5 rounded-3xl border-2 border-amber-500/50 bg-gradient-to-r from-slate-900 via-slate-900/95 to-amber-950/50 p-6 shadow-2xl backdrop-blur-xl ring-1 ring-white/20 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+        >
+          <div>
+            <p class="text-xs font-black uppercase tracking-widest text-amber-400">
+              Ưu đãi thành viên
+            </p>
+            <h2 class="mt-2 text-2xl font-black text-white">Một vé hay, thêm một niềm vui</h2>
+            <p class="mt-2 text-sm font-extrabold text-white">
+              Nhập mã <b class="font-black text-amber-300">CINEHUB20</b> để nhận ưu đãi 20.000₫ cho
+              vé tiếp theo.
+            </p>
+          </div>
+          <a
+            routerLink="/showtimes"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-7 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+          >
+            Khám phá suất chiếu →
+          </a>
+        </div>
+      </section>
+    </main>
   `,
 })
-export class HomePageComponent implements OnInit {
+export class HomePageComponent implements OnInit, OnDestroy {
   readonly store = inject(CatalogStore);
-  readonly promos = promotions;
+  readonly authStore = inject(AuthStore);
+  private readonly router = inject(Router);
+
+  readonly banners = promotions;
+  readonly currentSlide = signal(0);
+  private carouselTimer: ReturnType<typeof setInterval> | null = null;
+  private isCarouselPaused = false;
+
+  // QuickBooking Bar State
+  readonly cinemaList = seedCinemas;
+  readonly dayOptions = Array.from({ length: 7 }, (_, i) => dayInfo(i));
+  readonly quickMovieId = signal<string>('');
+  readonly quickCinemaId = signal<string>(seedCinemas[0]?.id ?? '1');
+  readonly quickDayOffset = signal<number>(0);
+
+  // Tabs & Filters
+  readonly activeTab = signal<'now' | 'soon'>('now');
+  readonly catalogFilter = signal<string>('all');
+  readonly shelf = signal<'history' | 'collection' | 'trending'>('history');
+
+  readonly filterOptions = [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'ghibli', label: 'Studio Ghibli' },
+    { key: 'conan', label: 'Conan' },
+    { key: 'doraemon', label: 'Doraemon' },
+    { key: 'western', label: 'US / UK' },
+    { key: 'china', label: 'Trung Quốc' },
+    { key: 'korea', label: 'Hàn Quốc' },
+  ];
+
+  readonly shelfOptions = [
+    { key: 'history' as const, label: 'Lịch sử / Xem tiếp', icon: '🕒' },
+    { key: 'collection' as const, label: 'Bộ sưu tập', icon: '❤️' },
+    { key: 'trending' as const, label: 'Đang thịnh hành', icon: '✨' },
+  ];
+
+  readonly nowShowingMovies = computed(() => this.store.movies().filter((m) => m.status === 'now'));
+
+  readonly trendingMovies = computed(() =>
+    [...this.store.movies()]
+      .filter((m) => m.status === 'now')
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 10),
+  );
+
+  readonly recommendedMovies = computed(() => this.trendingMovies().slice(0, 3));
+
+  readonly shelfMovies = computed(() => {
+    const list = this.store.movies();
+    if (this.shelf() === 'trending') {
+      return this.trendingMovies().slice(0, 6);
+    }
+    return list.slice(0, 6);
+  });
+
+  readonly displayMovies = computed(() => {
+    const tab = this.activeTab();
+    const filter = this.catalogFilter();
+    return this.store.movies().filter((m) => {
+      if (m.status !== tab) return false;
+      if (filter === 'all') return true;
+      if (filter === 'ghibli') return m.studio === 'Studio Ghibli';
+      if (filter === 'conan') return m.studio === 'Detective Conan';
+      if (filter === 'doraemon') return m.studio === 'Doraemon';
+      if (filter === 'western') return ['Mỹ', 'Anh'].includes(m.country || '');
+      if (filter === 'china') return m.country === 'Trung Quốc';
+      if (filter === 'korea') return m.country === 'Hàn Quốc';
+      return true;
+    });
+  });
 
   ngOnInit(): void {
     void this.store.refreshFromApi();
+    this.startCarousel();
+    const firstNow = this.nowShowingMovies()[0];
+    if (firstNow) {
+      this.quickMovieId.set(String(firstNow.id));
+    }
   }
 
-  onSearchInput(event: Event): void {
-    const target = event.target as HTMLInputElement | null;
-    this.store.setSearchQuery(target?.value ?? '');
+  ngOnDestroy(): void {
+    this.stopCarousel();
+  }
+
+  startCarousel(): void {
+    this.stopCarousel();
+    this.carouselTimer = setInterval(() => {
+      if (!this.isCarouselPaused && this.banners.length > 0) {
+        this.currentSlide.update((i) => (i + 1) % this.banners.length);
+      }
+    }, 6000);
+  }
+
+  stopCarousel(): void {
+    if (this.carouselTimer) {
+      clearInterval(this.carouselTimer);
+      this.carouselTimer = null;
+    }
+  }
+
+  pauseCarousel(): void {
+    this.isCarouselPaused = true;
+  }
+
+  resumeCarousel(): void {
+    this.isCarouselPaused = false;
+  }
+
+  stepSlide(direction: number): void {
+    const len = this.banners.length;
+    if (len === 0) return;
+    this.currentSlide.update((i) => (i + direction + len) % len);
+  }
+
+  onQuickMovieChange(event: Event): void {
+    this.quickMovieId.set((event.target as HTMLSelectElement).value);
+  }
+
+  onQuickCinemaChange(event: Event): void {
+    this.quickCinemaId.set((event.target as HTMLSelectElement).value);
+  }
+
+  onQuickDayChange(event: Event): void {
+    this.quickDayOffset.set(Number((event.target as HTMLSelectElement).value));
+  }
+
+  submitQuickBooking(): void {
+    const mId = this.quickMovieId() || this.nowShowingMovies()[0]?.id || '1';
+    const cId = this.quickCinemaId();
+    const day = this.quickDayOffset();
+    void this.router.navigate(['/showtimes'], {
+      queryParams: { movieId: mId, cinema: cId, day },
+    });
   }
 }
