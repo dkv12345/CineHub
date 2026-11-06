@@ -68,9 +68,8 @@ export async function listSessions() {
       message: 'OK',
       url: '/api/sessions',
     },
-    data: {
-      total: result.length,
-      result,
-    },
+    data: result,
+    total: result.length,
+    result,
   };
 }

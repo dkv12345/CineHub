@@ -18,35 +18,58 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
   imports: [CommonModule, FormsModule, A11yModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="fixed right-5 bottom-5 z-50">
+    <div class="fixed right-3 bottom-3 sm:right-6 sm:bottom-6 z-50">
       @if (store.isOpen()) {
         <section
           cdkTrapFocus
           role="dialog"
           aria-label="Trợ lý đặt vé CineBot"
-          class="cinema-panel-raised mb-3 flex h-[560px] w-84 sm:w-[420px] flex-col overflow-hidden shadow-2xl rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)]"
+          class="flex h-[600px] max-h-[88vh] w-[calc(100vw-24px)] sm:w-[420px] max-w-[420px] flex-col overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-950 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9),0_0_35px_rgba(229,9,20,0.25)] ring-1 ring-white/10 backdrop-blur-2xl transition-all duration-300"
         >
           <!-- Header -->
           <header
-            class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
+            class="flex items-center justify-between border-b border-slate-800/90 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 px-4 py-3.5 shadow-xs"
           >
-            <div class="flex items-center gap-2.5">
-              <span
-                class="inline-flex h-8 w-8 items-center justify-center rounded-[6px] bg-[var(--color-brand-primary)] text-xs font-bold text-[#fffdf9] shadow-xs"
+            <div class="flex items-center gap-3">
+              <div
+                class="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 text-white shadow-md shadow-red-950/60"
               >
-                CB
-              </span>
-              <div>
-                <div
-                  class="text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-1.5"
+                <svg
+                  class="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
                 >
-                  <span>CineBot Concierge</span>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                  />
+                </svg>
+                <span class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
                   <span
-                    class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
                   ></span>
+                  <span
+                    class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 ring-2 ring-slate-900"
+                  ></span>
+                </span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-extrabold tracking-wide text-white"
+                    >CineBot Concierge</span
+                  >
+                  <span
+                    class="rounded bg-gradient-to-r from-red-600 to-amber-500 px-1.5 py-0.2 text-[9px] font-black uppercase tracking-wider text-white shadow-xs"
+                  >
+                    AI
+                  </span>
                 </div>
-                <div class="text-[11px] text-[var(--color-text-secondary)]">
-                  AI Concierge • Tra lịch chiếu & Đặt vé thông minh
+                <div class="text-[11px] font-medium text-slate-400">
+                  Tra lịch chiếu & Đặt vé thông minh
                 </div>
               </div>
             </div>
@@ -54,14 +77,14 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
               type="button"
               (click)="store.toggleWidget()"
               aria-label="Đóng khung chat"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-[4px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)] transition-colors"
+              class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700/60 bg-slate-800/60 text-slate-400 transition-colors hover:border-slate-600 hover:bg-slate-700/80 hover:text-white"
             >
               <svg
                 class="h-4 w-4"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="2.2"
                 aria-hidden="true"
               >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -72,7 +95,7 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
           <!-- Messages Body -->
           <div
             #scrollContainer
-            class="flex-1 space-y-3.5 overflow-y-auto bg-[var(--color-surface-secondary)] p-3.5 text-xs"
+            class="flex-1 space-y-4 overflow-y-auto bg-slate-950/90 p-4 text-xs scroll-smooth"
             aria-live="polite"
           >
             @for (msg of store.messages(); track msg.id) {
@@ -82,14 +105,14 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
               >
                 <!-- Bubble -->
                 <div
-                  class="max-w-[90%] rounded-[6px] border px-3.5 py-2.5 leading-relaxed shadow-2xs"
+                  class="max-w-[88%] rounded-2xl px-4 py-3 leading-relaxed shadow-md"
                   [class]="
                     msg.sender === 'user'
-                      ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[#fffdf9] font-medium'
-                      : 'border-[var(--color-border)] bg-[#ffffff] text-[var(--color-text-primary)]'
+                      ? 'rounded-tr-sm bg-gradient-to-r from-red-600 to-rose-600 text-white font-medium border border-red-500/30 shadow-red-950/40'
+                      : 'rounded-tl-sm border border-slate-800 bg-slate-900/95 text-slate-100 shadow-slate-950/50 ring-1 ring-white/5'
                   "
                 >
-                  <p class="whitespace-pre-line">{{ msg.text }}</p>
+                  <p class="whitespace-pre-line leading-relaxed text-white">{{ msg.text }}</p>
                 </div>
 
                 <!-- Interactive Movie Cards -->
@@ -97,23 +120,23 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
                   <div class="w-full space-y-2.5 pt-1">
                     @for (movie of msg.movies; track movie.id) {
                       <div
-                        class="rounded-[6px] border border-[var(--color-border)] bg-[#ffffff] p-2.5 shadow-xs transition-all hover:border-[var(--color-brand-primary)]"
+                        class="rounded-xl border border-slate-800/90 bg-slate-900/95 p-3 shadow-lg ring-1 ring-white/5 transition-all duration-200 hover:border-amber-400/50 hover:shadow-amber-500/10"
                       >
-                        <div class="flex gap-2.5">
+                        <div class="flex gap-3">
                           <!-- Poster Thumbnail -->
                           <div
-                            class="relative h-20 w-14 shrink-0 overflow-hidden rounded-[4px] bg-[var(--color-surface-secondary)]"
+                            class="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-800 shadow-md ring-1 ring-white/10"
                           >
                             @if (movie.posterUrl) {
                               <img
                                 [src]="movie.posterUrl"
                                 [alt]="movie.title"
-                                class="h-full w-full object-cover"
+                                class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                                 loading="lazy"
                               />
                             } @else {
                               <div
-                                class="flex h-full w-full items-center justify-center text-[10px] font-bold text-[var(--color-text-secondary)]"
+                                class="flex h-full w-full items-center justify-center bg-slate-800 text-[10px] font-bold text-slate-400"
                               >
                                 CineHub
                               </div>
@@ -121,26 +144,26 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
                           </div>
 
                           <!-- Details -->
-                          <div class="flex flex-1 flex-col justify-between">
+                          <div class="flex flex-1 flex-col justify-between min-w-0">
                             <div>
                               <div class="flex items-center gap-1.5">
                                 @if (movie.ageRating) {
                                   <span
-                                    class="inline-block rounded px-1 py-0.5 text-[9px] font-bold uppercase"
+                                    class="inline-block rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider"
                                     [class]="getAgeBadgeClass(movie.ageRating)"
                                   >
                                     {{ movie.ageRating }}
                                   </span>
                                 }
                                 <div
-                                  class="font-bold text-[var(--color-text-primary)] line-clamp-1"
+                                  class="font-extrabold text-white text-xs line-clamp-1 hover:text-amber-300 transition-colors"
                                 >
                                   {{ movie.title }}
                                 </div>
                               </div>
 
                               <div
-                                class="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--color-text-secondary)]"
+                                class="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400"
                               >
                                 @if (movie.durationMin) {
                                   <span>{{ movie.durationMin }} phút</span>
@@ -149,15 +172,17 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
                                   <span>• {{ movie.genres.join(', ') }}</span>
                                 }
                                 @if (movie.rating && movie.rating > 0) {
-                                  <span class="font-semibold text-amber-600"
-                                    >★ {{ movie.rating.toFixed(1) }}</span
+                                  <span
+                                    class="inline-flex items-center gap-0.5 font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/30"
                                   >
+                                    ★ {{ movie.rating.toFixed(1) }}
+                                  </span>
                                 }
                               </div>
 
                               @if (movie.synopsis) {
                                 <p
-                                  class="mt-1 text-[11px] text-[var(--color-text-secondary)] line-clamp-2"
+                                  class="mt-1 text-[11px] text-slate-300 line-clamp-2 leading-relaxed"
                                 >
                                   {{ movie.synopsis }}
                                 </p>
@@ -166,7 +191,7 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
 
                             <!-- Next Showtimes pills & One-click booking -->
                             <div
-                              class="mt-2 flex flex-wrap items-center gap-1.5 pt-1 border-t border-[var(--color-border-subtle)]"
+                              class="mt-2.5 flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/80"
                             >
                               @if (movie.nextShowtimes && movie.nextShowtimes.length > 0) {
                                 <div class="flex flex-wrap items-center gap-1">
@@ -181,7 +206,7 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
                                         (st.cinemaName || '') +
                                         ')'
                                       "
-                                      class="inline-flex items-center gap-1 rounded-[3px] border border-[var(--color-brand-primary)] bg-[var(--color-brand-subtle)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)] hover:text-[#fffdf9] transition-colors"
+                                      class="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-800/90 px-2 py-0.5 text-[10px] font-bold text-amber-300 transition-all hover:border-amber-400 hover:bg-amber-400 hover:text-black shadow-xs active:scale-95"
                                     >
                                       <span>{{ st.time }}</span>
                                       @if (st.format) {
@@ -196,14 +221,15 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
                               <button
                                 type="button"
                                 (click)="bookMovie(movie)"
-                                class="ml-auto inline-flex items-center gap-1 rounded-[3px] bg-[var(--color-brand-primary)] px-2.5 py-1 text-[10px] font-bold text-[#fffdf9] hover:opacity-90 shadow-2xs transition-opacity"
+                                class="ml-auto inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 px-2.5 py-1 text-[10px] font-bold text-white shadow-md shadow-red-950/40 transition-all active:scale-95"
                               >
                                 <svg
                                   class="h-3 w-3"
                                   viewBox="0 0 24 24"
                                   fill="none"
                                   stroke="currentColor"
-                                  stroke-width="2"
+                                  stroke-width="2.2"
+                                  aria-hidden="true"
                                 >
                                   <path
                                     stroke-linecap="round"
@@ -230,20 +256,20 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
                   <div class="w-full space-y-1.5 pt-1">
                     @for (st of msg.showtimes; track st.id) {
                       <div
-                        class="flex items-center justify-between rounded-[4px] border border-[var(--color-border)] bg-[#ffffff] px-2.5 py-1.5 text-[11px]"
+                        class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/90 p-2.5 text-[11px] shadow-sm hover:border-slate-700"
                       >
                         <div>
-                          <div class="font-bold text-[var(--color-text-primary)]">
+                          <div class="font-bold text-white">
                             {{ st.movie?.title }}
                           </div>
-                          <div class="text-[10px] text-[var(--color-text-secondary)]">
+                          <div class="text-[10px] text-slate-400">
                             {{ st.time }} • {{ st.date }} • {{ st.cinema?.name }}
                           </div>
                         </div>
                         <button
                           type="button"
                           (click)="goToSeats(st.id)"
-                          class="rounded-[3px] bg-[var(--color-brand-primary)] px-2 py-1 text-[10px] font-bold text-[#fffdf9]"
+                          class="rounded-lg bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs transition active:scale-95"
                         >
                           Chọn ghế
                         </button>
@@ -259,7 +285,7 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
                       <button
                         type="button"
                         (click)="sendQuickPrompt(qr)"
-                        class="rounded-[12px] border border-[var(--color-brand-primary)] bg-[var(--color-surface)] px-2.5 py-0.5 text-[10px] font-medium text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)] hover:text-[#fffdf9] transition-all shadow-2xs"
+                        class="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-300 hover:bg-amber-400 hover:text-black hover:border-amber-400 transition-all shadow-xs active:scale-95"
                       >
                         {{ qr }}
                       </button>
@@ -271,98 +297,141 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
 
             @if (store.loading()) {
               <div
-                class="flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-primary)]"
+                class="flex items-center gap-2.5 rounded-2xl rounded-tl-sm border border-slate-800 bg-slate-900/90 px-3.5 py-2.5 text-xs text-amber-300 shadow-sm w-fit"
               >
-                <span
-                  class="inline-block h-2 w-2 rounded-full bg-[var(--color-brand-primary)] animate-ping"
-                ></span>
-                <span>Đang kết nối database & tra cứu lịch chiếu CineHub...</span>
+                <div class="flex items-center gap-1">
+                  <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce"></span>
+                  <span
+                    class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0.15s]"
+                  ></span>
+                  <span
+                    class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:0.3s]"
+                  ></span>
+                </div>
+                <span class="text-slate-300">CineBot đang tra cứu lịch chiếu & giá vé...</span>
               </div>
             }
           </div>
 
           <!-- Suggested Quick Chips -->
           <div
-            class="flex items-center gap-1.5 overflow-x-auto border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[11px]"
+            class="flex items-center gap-1.5 overflow-x-auto border-t border-slate-800/80 bg-slate-950/95 px-3.5 py-2.5 text-[11px] scrollbar-hide"
           >
             <button
               type="button"
               (click)="sendQuickPrompt('Phim nào đang chiếu hôm nay?')"
-              class="shrink-0 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-2.5 py-1 text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)] transition-colors"
+              class="shrink-0 rounded-full border border-slate-800 bg-slate-900/90 px-3 py-1 text-slate-300 hover:border-amber-400/50 hover:bg-slate-800 hover:text-amber-300 transition-all shadow-xs active:scale-95"
             >
               🎬 Đang chiếu
             </button>
             <button
               type="button"
               (click)="sendQuickPrompt('Lịch chiếu tối nay tại rạp')"
-              class="shrink-0 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-2.5 py-1 text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)] transition-colors"
+              class="shrink-0 rounded-full border border-slate-800 bg-slate-900/90 px-3 py-1 text-slate-300 hover:border-amber-400/50 hover:bg-slate-800 hover:text-amber-300 transition-all shadow-xs active:scale-95"
             >
               🍿 Suất tối nay
             </button>
             <button
               type="button"
               (click)="sendQuickPrompt('Gợi ý phim lãng mạn hợp đi hẹn hò')"
-              class="shrink-0 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-2.5 py-1 text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)] transition-colors"
+              class="shrink-0 rounded-full border border-slate-800 bg-slate-900/90 px-3 py-1 text-slate-300 hover:border-amber-400/50 hover:bg-slate-800 hover:text-amber-300 transition-all shadow-xs active:scale-95"
             >
               ❤️ Phim hẹn hò
             </button>
             <button
               type="button"
               (click)="sendQuickPrompt('Bảng giá vé rạp Galaxy CineHub')"
-              class="shrink-0 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-2.5 py-1 text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:text-[var(--color-brand-primary)] transition-colors"
+              class="shrink-0 rounded-full border border-slate-800 bg-slate-900/90 px-3 py-1 text-slate-300 hover:border-amber-400/50 hover:bg-slate-800 hover:text-amber-300 transition-all shadow-xs active:scale-95"
             >
-              🎟️ Giá vé
+              🎟️ Bảng giá vé
             </button>
           </div>
 
           <!-- Input form -->
           <form
             (ngSubmit)="send()"
-            class="flex items-center gap-2 border-t border-[var(--color-border)] bg-[var(--color-surface)] p-3"
+            class="flex items-center gap-2 border-t border-slate-800/80 bg-slate-950 p-3"
           >
-            <input
-              type="text"
-              [ngModel]="draft()"
-              (ngModelChange)="draft.set($event)"
-              name="chatDraft"
-              placeholder="Hỏi phim đang chiếu, suất chiếu, giá vé..."
-              aria-label="Tin nhắn cho CineBot"
-              class="cinema-input !min-h-[38px] !py-1.5 !text-xs flex-1"
-            />
+            <div class="relative flex-1">
+              <input
+                type="text"
+                [ngModel]="draft()"
+                (ngModelChange)="draft.set($event)"
+                name="chatDraft"
+                placeholder="Hỏi phim đang chiếu, suất chiếu, giá vé..."
+                aria-label="Tin nhắn cho CineBot"
+                class="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+              />
+            </div>
             <button
               type="submit"
-              [disabled]="store.loading()"
-              class="cinema-btn-primary !min-h-[38px] !px-3.5 !py-1.5 !text-xs font-bold shrink-0"
+              [disabled]="store.loading() || !draft().trim()"
+              class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-red-950/40 hover:from-red-500 hover:to-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 shrink-0"
             >
-              Gửi
+              <span>Gửi</span>
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+                />
+              </svg>
             </button>
           </form>
         </section>
       }
 
-      <!-- Float Trigger Button -->
-      <button
-        type="button"
-        (click)="store.toggleWidget()"
-        aria-label="Mở trợ lý đặt vé CineBot"
-        class="inline-flex items-center gap-2.5 rounded-[6px] border border-[var(--color-border)] bg-[#ffffff] px-4 py-2.5 text-xs font-bold text-[var(--color-brand-primary)] shadow-lg transition-all hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)]"
-      >
-        <svg
-          class="h-4 w-4 text-[var(--color-brand-primary)]"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.75"
-          aria-hidden="true"
+      <!-- Float Trigger Button (Shown when chat is closed) -->
+      @if (!store.isOpen()) {
+        <button
+          type="button"
+          (click)="store.toggleWidget()"
+          aria-label="Mở trợ lý đặt vé CineBot"
+          class="group flex items-center gap-3 rounded-full border border-red-500/40 bg-slate-950/90 px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_35px_rgba(229,9,20,0.4)] backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-red-500 hover:shadow-[0_15px_40px_rgba(229,9,20,0.6)] active:scale-95 ring-1 ring-white/10"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
-          />
-        </svg>
-        <span>CineBot Concierge</span>
-      </button>
+          <span
+            class="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 text-white shadow-md shadow-red-900/50"
+          >
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+              />
+            </svg>
+            <span class="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+              ></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+          </span>
+          <div class="flex flex-col text-left">
+            <span class="flex items-center gap-1.5 text-xs font-extrabold text-white">
+              CineBot Concierge
+              <span
+                class="rounded bg-red-500/20 px-1 py-0.2 text-[9px] font-black tracking-wider text-red-400 border border-red-500/30"
+                >AI</span
+              >
+            </span>
+            <span class="text-[10px] text-slate-400 font-normal">Hỏi lịch chiếu & Đặt vé</span>
+          </div>
+        </button>
+      }
     </div>
   `,
 })
@@ -405,17 +474,17 @@ export class ChatbotWidgetComponent {
   getAgeBadgeClass(rating?: string | null): string {
     switch (rating) {
       case 'P':
-        return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+        return 'border border-emerald-500/40 bg-emerald-500/20 text-emerald-300';
       case 'K':
-        return 'bg-teal-100 text-teal-800 border border-teal-300';
+        return 'border border-teal-500/40 bg-teal-500/20 text-teal-300';
       case 'T13':
-        return 'bg-blue-100 text-blue-800 border border-blue-300';
+        return 'border border-blue-500/40 bg-blue-500/20 text-blue-300';
       case 'T16':
-        return 'bg-amber-100 text-amber-800 border border-amber-300';
+        return 'border border-amber-500/40 bg-amber-500/20 text-amber-300';
       case 'T18':
-        return 'bg-rose-100 text-rose-800 border border-rose-300';
+        return 'border border-rose-500/40 bg-rose-500/20 text-rose-300';
       default:
-        return 'bg-slate-100 text-slate-800 border border-slate-300';
+        return 'border border-slate-700 bg-slate-800 text-slate-300';
     }
   }
 

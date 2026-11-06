@@ -149,10 +149,23 @@ export const ShowtimesStore = signalStore(
         patchState(store, { loading: true });
         try {
           const res = await firstValueFrom(
-            http.get<{ data?: GalaxySession[] }>('/api/v1/sessions'),
+            http.get<{
+              data?: GalaxySession[] | { result?: GalaxySession[]; total?: number };
+              result?: GalaxySession[];
+            }>('/api/v1/sessions'),
           );
-          if (Array.isArray(res?.data) && res.data.length > 0) {
-            patchState(store, { sessions: res.data, loading: false });
+          const raw = res?.data;
+          let sessions: readonly GalaxySession[] | null = null;
+          if (Array.isArray(raw)) {
+            sessions = raw;
+          } else if (raw && Array.isArray((raw as { result?: GalaxySession[] }).result)) {
+            sessions = (raw as { result: GalaxySession[] }).result;
+          } else if (Array.isArray(res?.result)) {
+            sessions = res.result;
+          }
+
+          if (sessions && sessions.length > 0) {
+            patchState(store, { sessions, loading: false });
             return;
           }
         } catch {
