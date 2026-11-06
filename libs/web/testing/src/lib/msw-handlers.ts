@@ -26,8 +26,35 @@ export const cinehubMswHandlers = [
     const body = (await request.json()) as { message?: string; sessionId?: string };
     return HttpResponse.json({
       sessionId: body.sessionId ?? '00000000-0000-4000-8000-000000000001',
-      reply: `CineBot (mock): Đã nhận câu hỏi "${body.message ?? ''}". Gợi ý phim đang chiếu nổi bật tại Galaxy Cinema!`,
-      intent: 'MOVIE_RECOMMENDATION',
+      reply: `CineBot: Đã nhận câu hỏi "${body.message ?? ''}". Mình gợi ý các suất chiếu và phim nổi bật tại hệ thống rạp CineHub / Galaxy. Bạn có thể bấm trực tiếp vào phim hoặc suất chiếu bên dưới để đặt vé ngay!`,
+      intent: 'RECOMMEND',
+      category: 'Search Movies',
+      movies: movies.slice(0, 3).map((m) => ({
+        id: String(m.id),
+        title: m.title,
+        synopsis: m.synopsis,
+        durationMin: parseInt(m.duration, 10) || 120,
+        ageRating: m.age,
+        posterUrl: m.poster,
+        genres: [m.genre],
+        rating: m.rating,
+        nextShowtimes: [
+          {
+            id: '1',
+            time: '19:30',
+            date: 'Hôm nay',
+            format: '2D Phụ đề',
+            cinemaName: 'Galaxy Nguyễn Du',
+          },
+          {
+            id: '2',
+            time: '21:15',
+            date: 'Hôm nay',
+            format: 'IMAX Laser',
+            cinemaName: 'Galaxy Nguyễn Du',
+          },
+        ],
+      })),
     });
   }),
 

@@ -50,6 +50,28 @@ async function main() {
     throw new Error('MongoDB connection did not provide an embeddings collection.');
   }
   await collection.createIndex({ movieId: 1 }, { unique: true });
+  await collection.createIndex({ model: 1, dims: 1 });
+  try {
+    if (typeof collection.createSearchIndex === 'function') {
+      await collection.createSearchIndex({
+        name: 'movie_vector_index',
+        type: 'vectorSearch',
+        definition: {
+          fields: [
+            {
+              type: 'vector',
+              path: 'embedding',
+              numDimensions: EMBEDDING_DIMS,
+              similarity: 'cosine',
+            },
+          ],
+        },
+      });
+      console.log('[INFO] Đã tạo/đồng bộ Vector Search index trên MongoDB (cosine similarity).');
+    }
+  } catch {
+    // MongoDB community/local without Atlas Search uses in-memory cosine dot-product
+  }
 
   const movies = await prisma.movie.findMany({
     where: { deletedAt: null },

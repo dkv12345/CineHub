@@ -13,8 +13,41 @@ export function plainText(text) {
     .trim();
 }
 
+export const INTENT_CATEGORIES = {
+  SEARCH_MOVIES: 'Search Movies',
+  ASK_SHOWTIMES: 'Ask Showtimes',
+  CINEMA_INFO: 'Cinema Info',
+  CHIT_CHAT: 'Chit-chat',
+};
+
+export function getIntentCategory(intent) {
+  switch (intent) {
+    case 'RECOMMEND':
+    case 'SEMANTIC':
+    case 'NOW_SHOWING':
+      return INTENT_CATEGORIES.SEARCH_MOVIES;
+    case 'SHOWTIMES':
+      return INTENT_CATEGORIES.ASK_SHOWTIMES;
+    case 'CINEMA_INFO':
+    case 'MOVIE_DETAILS':
+    case 'TICKET_PRICES':
+    case 'REFUND_POLICY':
+    case 'PAYMENT_HELP':
+      return INTENT_CATEGORIES.CINEMA_INFO;
+    case 'GREETING':
+    case 'CHIT_CHAT':
+      return INTENT_CATEGORIES.CHIT_CHAT;
+    default:
+      return INTENT_CATEGORIES.SEARCH_MOVIES;
+  }
+}
+
 export function detectChatIntent(message) {
   const text = normalizeVietnamese(message);
+  const plain = plainText(message);
+  if (/\b(doi phim|chon phim khac|xem phim khac|tim phim khac|phim khac)\b/.test(plain)) {
+    return 'RESET_CONTEXT';
+  }
   if (/\b(hoan|huy|doi ve|tra ve)\b/.test(text)) return 'REFUND_POLICY';
   if (/\b(thanh toan|vnpay|zalopay)\b/.test(text)) return 'PAYMENT_HELP';
   if (/\b(gia ve|gia tien|bao nhieu)\b|\bgia\b(?! dinh)/.test(text)) return 'TICKET_PRICES';
@@ -26,23 +59,84 @@ export function detectChatIntent(message) {
     return 'MOVIE_DETAILS';
   }
   if (
-    /\b(goi y|de xuat|nen xem|xem gi|chon gi|chon phim|nen chon|di xem gi|phim hay|phim hot|the loai nao|nhung the loai|cac the loai)\b/.test(
-      text,
-    )
-  ) {
-    return 'RECOMMEND';
-  }
-  if (
-    /\b(suat chieu|suat nao|co suat|lich chieu|gio chieu|may gio|luc nao|khi nao|rap nao|chieu toi nay|toi nay|chieu hom nay|hom nay|ngay mai)\b/.test(
+    /\b(suat chieu|suat nao|co suat|lich chieu|gio chieu|may gio|luc nao|khi nao|rap nao|chieu toi nay|chieu hom nay)\b/.test(
       text,
     )
   ) {
     return 'SHOWTIMES';
   }
+  if (
+    /\b(dia chi rap|rap o dau|cum rap|cac rap|danh sach rap|thong tin rap|chi nhanh rap|rap galaxy|rap cinehub)\b/.test(
+      plain,
+    )
+  ) {
+    return 'CINEMA_INFO';
+  }
+  if (
+    /\b(goi y|de xuat|nen xem|xem gi|chon gi|chon phim|nen chon|di xem gi|phim hay|phim hot|the loai nao|nhung the loai|cac the loai|phim tre em|phim cho be|phim thieu nhi|phim hoat hinh|phim gia dinh|phim chieu rap)\b/.test(
+      text,
+    )
+  ) {
+    return 'RECOMMEND';
+  }
   if (/\b(phim nao|phim gi|dang chieu)\b/.test(text)) return 'NOW_SHOWING';
+  if (/\b(cam on|thanks|thank you|tuyet voi|rat tot|tam biet|bye|ban la ai)\b/.test(plain)) {
+    return 'CHIT_CHAT';
+  }
+  if (
+    /^(hom nay|toi nay|ngay mai|toi mai|sang mai|cuoi tuan|o galaxy|tai galaxy|rap galaxy)$/.test(
+      plain,
+    )
+  ) {
+    return 'CONTEXTUAL_FOLLOW_UP';
+  }
   // Chào hỏi chỉ khi không có ý định nào khác ("chào bạn, hôm nay có phim gì" vẫn ra SHOWTIMES)
-  if (/^(xin )?(chao|hello|helo|hi|hey|alo)\b/.test(plainText(message))) return 'GREETING';
+  if (/^(xin )?(chao|hello|helo|hi|hey|alo)\b/.test(plain)) return 'GREETING';
   return 'UNKNOWN';
+}
+
+/**
+ * Tìm phim trong danh mục hoặc phiên hội thoại khớp với cụm từ người dùng nhập
+ * (hỗ trợ nhập nguyên tên phim, bỏ chữ "phim", "xem phim" và không dấu).
+ */
+export function resolveMovieTitle(text, catalogMovies = [], sessionMovies = []) {
+  if (!text || typeof text !== 'string') return null;
+  const clean = plainText(text)
+    .replace(/^(phim|ve phim|ve|xem phim|xem|ve xem)\s+/, '')
+    .trim();
+  if (clean.length < 2) return null;
+
+  // 1. Ưu tiên các phim vừa được nhắc tới trong session
+  for (const ref of sessionMovies) {
+    if (!ref?.title) continue;
+    const refTitle = plainText(ref.title);
+    if (refTitle === clean || refTitle.includes(clean) || clean.includes(refTitle)) {
+      const fullMovie = catalogMovies.find((m) => m.id === ref.id || m.title === ref.title);
+      if (fullMovie) return fullMovie;
+      return { id: ref.id, title: ref.title, titleNormalized: refTitle };
+    }
+  }
+
+  // 2. Khớp tuyệt đối theo titleNormalized trong danh mục phim
+  const exact = catalogMovies.find((m) => {
+    const norm = plainText(m.titleNormalized || m.title);
+    return norm === clean;
+  });
+  if (exact) return exact;
+
+  // 3. Khớp tương đối (cụm từ nằm trong tiêu đề hoặc ngược lại)
+  const partial = catalogMovies
+    .filter((m) => {
+      const norm = plainText(m.titleNormalized || m.title);
+      return norm.includes(clean) || (clean.length >= 4 && clean.includes(norm));
+    })
+    .sort((a, b) => {
+      const aLen = (a.titleNormalized || a.title).length;
+      const bLen = (b.titleNormalized || b.title).length;
+      return Math.abs(aLen - clean.length) - Math.abs(bLen - clean.length);
+    });
+
+  return partial[0] ?? null;
 }
 
 const SEMANTIC_CUES =
@@ -284,4 +378,158 @@ export function moodGenres(message) {
     if (pattern.test(plain)) for (const name of genreNames) names.add(name);
   }
   return names;
+}
+
+export function parseAudience(message) {
+  const plain = plainText(message);
+  if (/\b(tre em|cho be|em be|thieu nhi|con nit|hoat hinh cho be|tre nho)\b/.test(plain)) {
+    return {
+      target: 'CHILDREN',
+      allowedAgeRatings: ['P', 'K'],
+      excludedAgeRatings: ['T16', 'T18'],
+      preferredGenres: ['Hoạt hình', 'Gia đình', 'Phiêu lưu'],
+      excludedGenres: ['Kinh dị', 'Giật gân'],
+    };
+  }
+  if (/\b(gia dinh|bo me|cha me|ca nha|gia dinh co tre)\b/.test(plain)) {
+    return {
+      target: 'FAMILY',
+      allowedAgeRatings: ['P', 'K', 'T13'],
+      excludedAgeRatings: ['T16', 'T18'],
+      preferredGenres: ['Gia đình', 'Hoạt hình', 'Hài'],
+      excludedGenres: ['Kinh dị', 'Giật gân'],
+    };
+  }
+  if (/\b(18\+|nguoi lon|t18)\b/.test(plain)) {
+    return {
+      target: 'ADULT',
+      allowedAgeRatings: ['T18'],
+      excludedAgeRatings: [],
+      preferredGenres: [],
+      excludedGenres: [],
+    };
+  }
+  if (/\b(t16)\b/.test(plain)) {
+    return {
+      target: 'T16',
+      allowedAgeRatings: ['P', 'K', 'T13', 'T16'],
+      excludedAgeRatings: ['T18'],
+      preferredGenres: [],
+      excludedGenres: [],
+    };
+  }
+  if (/\b(t13)\b/.test(plain)) {
+    return {
+      target: 'T13',
+      allowedAgeRatings: ['P', 'K', 'T13'],
+      excludedAgeRatings: ['T16', 'T18'],
+      preferredGenres: [],
+      excludedGenres: [],
+    };
+  }
+  return {
+    target: null,
+    allowedAgeRatings: null,
+    excludedAgeRatings: null,
+    preferredGenres: [],
+    excludedGenres: [],
+  };
+}
+
+export function parseTimeWindow(message, now = new Date()) {
+  const text = normalizeVietnamese(message);
+  const plain = plainText(message);
+  const today = vnToday(now);
+
+  let targetDate = parseLocalDate(text, now);
+
+  if (!targetDate && /\b(cuoi tuan|thu 7|thu bay|chu nhat)\b/.test(plain)) {
+    const dayOfWeek = today.getUTCDay();
+    const daysUntilWeekend = dayOfWeek === 6 ? 0 : dayOfWeek === 0 ? 0 : 6 - dayOfWeek;
+    targetDate = new Date(today.getTime() + daysUntilWeekend * DAY_MS);
+  }
+
+  const evening = isEvening(message);
+  let partOfDay = null;
+  let startHour = null;
+  let endHour = null;
+
+  if (/\b(sang nay|buoi sang|sang mai)\b/.test(plain)) {
+    partOfDay = 'morning';
+    startHour = 8;
+    endHour = 12;
+  } else if (/\b(buoi trua|trua nay|trua mai)\b/.test(plain)) {
+    partOfDay = 'midday';
+    startHour = 12;
+    endHour = 14;
+  } else if (/\b(buoi chieu|chieu nay|chieu mai)\b/.test(plain)) {
+    partOfDay = 'afternoon';
+    startHour = 14;
+    endHour = 18;
+  } else if (evening || /\b(buoi toi|toi nay|toi mai)\b/.test(plain)) {
+    partOfDay = 'evening';
+    startHour = 17;
+    endHour = 24;
+  } else if (/\b(dem nay|khuya nay|muon|suat muon)\b/.test(plain)) {
+    partOfDay = 'night';
+    startHour = 21;
+    endHour = 24;
+  }
+
+  const hourMatch = plain.match(/\b(?:sau|truoc|tam|luc|khoang)?\s*(\d{1,2})(?:h|:)(\d{2})?\b/);
+  if (hourMatch) {
+    const h = Number(hourMatch[1]);
+    if (h >= 0 && h <= 23) {
+      if (plain.includes(`sau ${h}`) || plain.includes(`sau ${hourMatch[0]}`)) {
+        startHour = h;
+        endHour = 24;
+      } else if (plain.includes(`truoc ${h}`) || plain.includes(`truoc ${hourMatch[0]}`)) {
+        startHour = startHour ?? 8;
+        endHour = h;
+      } else {
+        startHour = Math.max(0, h - 1);
+        endHour = Math.min(24, h + 2);
+      }
+    }
+  }
+
+  const hasPeriod = Boolean(targetDate) || Boolean(partOfDay) || startHour !== null;
+  const day = targetDate ?? vnToday(now);
+  const at = (hour) => new Date(day.getTime() + (hour - VN_UTC_OFFSET_HOURS) * HOUR_MS);
+  const from = new Date(Math.max(at(startHour ?? (evening ? 17 : 0)).getTime(), now.getTime()));
+  const until = at(endHour ?? 24);
+
+  return {
+    targetDate,
+    hasPeriod,
+    evening,
+    partOfDay,
+    startHour,
+    endHour,
+    from,
+    until,
+    periodLabel: hasPeriod ? describePeriod({ date: targetDate, evening, now }) : 'sắp tới',
+  };
+}
+
+export function extractEntities(message, { movies = [], cinemas = [], genres = [] } = {}) {
+  const normalized = normalizeVietnamese(message);
+  const matchedMovie = findNamedEntity(normalized, movies, (m) => m.titleNormalized || m.title);
+  const matchedCinema = findNamedEntity(normalized, cinemas, (c) => c.name);
+  const matchedGenre = findGenre(message, genres);
+  const timeWindow = parseTimeWindow(message);
+  const audience = parseAudience(message);
+
+  const locationMatch = normalized.match(
+    /\b(quan [0-9]+|quan [a-z]+|tan binh|phu nhuan|binh thanh|go vap|thu duc|ha noi|ho chi minh|tp\.?hcm|da nang|can tho)\b/i,
+  );
+
+  return {
+    movie: matchedMovie,
+    cinema: matchedCinema,
+    cinemaLocation: locationMatch ? locationMatch[0] : null,
+    genre: matchedGenre,
+    timeWindow,
+    audience,
+  };
 }

@@ -7,3 +7,4 @@ import * as controller from './chatbot.controller.js';
 export const chatbotRouter = Router();
 
 chatbotRouter.post('/', optionalAuth, validate(chatMessageSchema), controller.reply);
+chatbotRouter.post('/message', optionalAuth, validate(chatMessageSchema), controller.reply);
