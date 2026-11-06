@@ -115,4 +115,10 @@ describe('filterShowtimes', () => {
       '2',
     ]);
   });
+
+  it('matches movie by id, slug, or title flexibly so no showtimes are lost', () => {
+    expect(filterShowtimes(sessions, { movieId: 'phim-b' }).map((s) => s.id)).toEqual(['2']);
+    expect(filterShowtimes(sessions, { movieId: 'Phim B' }).map((s) => s.id)).toEqual(['2']);
+    expect(filterShowtimes(sessions, { cinemaId: 'Rạp Hà Nội' }).map((s) => s.id)).toEqual(['2']);
+  });
 });

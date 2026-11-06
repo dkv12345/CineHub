@@ -217,7 +217,7 @@ export class MyTicketsPageComponent {
     return list.filter((t) => t.status === status);
   });
 
-  barcodePattern(code: string): number[] {
+  barcodePattern(_code: string): number[] {
     const arr = [2, 1, 3, 1, 2, 2, 1, 3, 1, 2, 1, 3, 2, 1, 2, 3, 1, 2, 1, 3, 2, 1];
     return arr;
   }

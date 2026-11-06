@@ -11,7 +11,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
 import { MovieCardComponent } from '@cinehub/web/catalog/ui';
 import { AuthStore } from '@cinehub/web/core';
-import { cinemas as seedCinemas, dayInfo, promotions, type Movie } from '@cinehub/web/shared/util';
+import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
 
 @Component({
   selector: 'ch-home-page',

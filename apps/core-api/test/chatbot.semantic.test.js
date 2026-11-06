@@ -488,7 +488,7 @@ describe('CineBot semantic recommendations', () => {
     };
 
     loadSession.mockImplementation(async () => sessionState);
-    saveTurn.mockImplementation(async ({ result, memory, contextUpdates }) => {
+    saveTurn.mockImplementation(async ({ _result, memory, contextUpdates }) => {
       sessionState = {
         ...sessionState,
         lastMovies: memory?.lastMovies || sessionState.lastMovies,
