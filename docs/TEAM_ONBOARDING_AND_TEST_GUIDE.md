@@ -10,7 +10,8 @@ Trước khi bắt đầu, đảm bảo máy của bạn đã cài đặt các c
 
 - **Node.js**: Phiên bản `>= 20.x` (khuyến nghị Node 20 LTS hoặc Node 22). Kiểm tra: `node -v`
 - **npm**: Phiên bản `>= 10.x`. Kiểm tra: `npm -v`
-- **Docker & Docker Compose**: Để chạy cụm MySQL, Redis, MongoDB. Kiểm tra: `docker compose version`
+- **Docker & Docker Compose**: Để chạy cụm MySQL, Redis, MongoDB.
+  > ⚠️ **LƯU Ý QUAN TRỌNG TRÊN macOS**: Phải **mở ứng dụng Docker Desktop** (`/Applications/Docker.app`) và đợi icon cá voi trên thanh Menu bar đứng yên (Docker engine đã ready) trước khi chạy lệnh. Nếu Docker Desktop chưa được mở, terminal sẽ báo lỗi `failed to connect to the docker API at unix:///...docker.sock: connect: no such file or directory`.
 - **Git**: Kiểm tra: `git -v`
 
 ---
@@ -53,6 +54,8 @@ CineHub sử dụng cụm đa cơ sở dữ liệu:
 - **MongoDB 7**: Lưu trữ vector embedding cho AI Chatbot, hội thoại và lịch sử cào dữ liệu raw.
 
 ### Bước 3.1. Khởi động cụm Docker Containers
+
+> Đảm bảo ứng dụng **Docker Desktop đã được mở** trên máy trước khi chạy lệnh này. Trên macOS, bạn có thể gõ `open -a Docker` để mở nhanh.
 
 ```bash
 npm run infra:up
@@ -275,3 +278,10 @@ npm run build:web
 
 3. **Lỗi cổng 3306 hoặc 6379 đã bị chiếm dụng (Port Conflict)**:
    - Nếu bạn có cài MySQL hoặc Redis local trước đó, hãy tạm dừng service local hoặc kiểm tra tiến trình đang chiếm cổng: `lsof -i :3306`.
+
+4. **Lỗi `failed to connect to the docker API... docker.sock` và `P1001: Can't reach database server at localhost:3306`**:
+   - **Nguyên nhân**: Ứng dụng **Docker Desktop trên máy Mac chưa được mở**.
+   - **Cách xử lý**:
+     - Mở ứng dụng Docker Desktop trong Launchpad / Applications (hoặc gõ `open -a Docker` trong Terminal).
+     - Đợi khoảng 10-15 giây cho icon cá voi trên Menu Bar đứng yên (Docker engine đã sẵn sàng).
+     - Sau đó chạy lại: `npm run infra:up` $\rightarrow$ `npm run db:migrate` $\rightarrow$ `npm run db:seed`.
