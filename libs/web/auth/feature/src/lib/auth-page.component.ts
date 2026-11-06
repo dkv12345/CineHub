@@ -24,83 +24,550 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, A11yModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div
-      class="relative flex min-h-[calc(100vh-73px)] w-full flex-col md:flex-row bg-[var(--color-surface)]"
-      cdkTrapFocus
-    >
-      <!-- Left Column: Information & Form Panel (Full screen split, max-w-md centered) -->
-      <div
-        class="flex flex-1 flex-col justify-center px-6 py-10 sm:px-12 md:w-1/2 lg:px-16 xl:px-24"
-      >
-        <div class="mx-auto w-full max-w-md space-y-6">
-          <!-- Brand Header (Inspired by Reference Wireframe) -->
-          <div class="space-y-3">
-            <div class="flex items-center gap-2.5">
-              <span
-                class="inline-flex h-10 w-10 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-base font-semibold text-white shadow-xs"
-              >
-                CH
-              </span>
-              <div>
-                <span
-                  class="block text-lg font-semibold tracking-tight text-[var(--color-text-primary)]"
-                  >CineHub</span
-                >
-                <span class="block text-xs font-normal text-[var(--color-text-secondary)]"
-                  >Hệ thống rạp chiếu chuẩn quốc tế</span
-                >
-              </div>
-            </div>
+  styles: [`
+    :host {
+      --auth-bg: #0E0C0B;
+      --auth-surface: #161411;
+      --auth-surface-raised: #1D1A17;
+      --auth-border: #2E2A25;
+      --auth-border-focus: #C2A16B;
+      --auth-text-primary: #F0EBE2;
+      --auth-text-secondary: #A09890;
+      --auth-text-muted: #7A7268;
+      --auth-accent: #C2A16B;
+      --auth-accent-hover: #D4B47E;
+      --auth-btn-bg: #C2A16B;
+      --auth-btn-text: #0E0C0B;
+      --auth-danger: #C97B75;
+      --auth-danger-bg: rgba(201,123,117,0.10);
+      --auth-success: #7DAB89;
+    }
 
-            <div class="space-y-1">
-              <h1 class="cinema-heading-section">
-                @switch (mode()) {
-                  @case ('login') {
-                    Chào mừng trở lại!
-                  }
-                  @case ('register') {
-                    Tạo tài khoản thành viên
-                  }
-                  @case ('forgot') {
-                    Khôi phục mật khẩu
-                  }
-                }
-              </h1>
-              <p class="cinema-metadata">
-                @switch (mode()) {
-                  @case ('login') {
-                    Rất vui được đồng hành cùng bạn trong từng thước phim tuyệt đỉnh.
-                  }
-                  @case ('register') {
-                    Gia nhập CineHub Club để nhận điểm thưởng và trải nghiệm góc nhìn 3D POV.
-                  }
-                  @case ('forgot') {
-                    Nhập email đã đăng ký để nhận liên kết khôi phục tài khoản an toàn.
-                  }
-                }
-              </p>
+    .auth-wrapper {
+      min-height: calc(100vh - 73px);
+      background: var(--auth-bg);
+      display: flex;
+      flex-direction: row;
+    }
+
+    /* ── Left panel ── */
+    .auth-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    @media (min-width: 640px) { .auth-panel { padding: 3.5rem 3rem; } }
+    @media (min-width: 1024px) { .auth-panel { padding: 4rem 5rem; } }
+    @media (min-width: 1280px) { .auth-panel { padding: 4rem 6rem; } }
+
+    .auth-inner {
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    /* Brand */
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .auth-brand-monogram {
+      width: 42px; height: 42px;
+      border-radius: 6px;
+      background: var(--auth-accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--auth-btn-text);
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+    .auth-brand-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--auth-text-primary);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+    .auth-brand-tagline {
+      font-size: 0.72rem;
+      color: var(--auth-text-muted);
+      margin-top: 2px;
+    }
+
+    /* Heading */
+    .auth-heading {
+      font-size: clamp(1.4rem, 3vw, 1.75rem);
+      font-weight: 600;
+      color: var(--auth-text-primary);
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .auth-subheading {
+      font-size: 0.82rem;
+      color: var(--auth-text-secondary);
+      line-height: 1.6;
+      margin: 0.4rem 0 0;
+    }
+
+    /* Tab switcher */
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--auth-surface-raised);
+      border: 1px solid var(--auth-border);
+      border-radius: 8px;
+      padding: 4px;
+      gap: 2px;
+    }
+    .auth-tab {
+      border-radius: 5px;
+      padding: 0.6rem 0;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--auth-text-secondary);
+      transition: background 150ms, color 150ms;
+      letter-spacing: 0.01em;
+    }
+    .auth-tab:hover:not(.auth-tab--active) {
+      color: var(--auth-text-primary);
+    }
+    .auth-tab--active {
+      background: var(--auth-accent);
+      color: var(--auth-btn-text);
+    }
+
+    /* Back link */
+    .auth-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--auth-accent);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 150ms;
+    }
+    .auth-back:hover { color: var(--auth-accent-hover); }
+
+    /* Error banner */
+    .auth-error {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--auth-danger-bg);
+      border: 1px solid rgba(201,123,117,0.3);
+      border-radius: 7px;
+      padding: 0.75rem 1rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--auth-danger);
+      line-height: 1.5;
+    }
+
+    /* Success banner */
+    .auth-success-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(125,171,137,0.10);
+      border: 1px solid rgba(125,171,137,0.3);
+      border-radius: 7px;
+      padding: 0.85rem 1rem;
+      font-size: 0.82rem;
+      color: var(--auth-success);
+      line-height: 1.5;
+    }
+
+    /* Form */
+    .auth-form { display: flex; flex-direction: column; gap: 1rem; }
+
+    .auth-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--auth-text-secondary);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .auth-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .auth-label-link {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--auth-accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: none;
+      transition: color 150ms;
+    }
+    .auth-label-link:hover { color: var(--auth-accent-hover); }
+
+    .auth-input-wrap { position: relative; }
+    .auth-input-icon {
+      position: absolute;
+      inset-y: 0; left: 0;
+      display: flex; align-items: center;
+      padding-left: 0.875rem;
+      pointer-events: none;
+      color: var(--auth-text-muted);
+    }
+    .auth-input-eye {
+      position: absolute;
+      inset-y: 0; right: 0;
+      display: flex; align-items: center;
+      padding-right: 0.875rem;
+      color: var(--auth-text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 150ms;
+    }
+    .auth-input-eye:hover { color: var(--auth-text-primary); }
+
+    .auth-input {
+      width: 100%;
+      height: 44px;
+      background: var(--auth-surface);
+      border: 1px solid var(--auth-border);
+      border-radius: 7px;
+      color: var(--auth-text-primary);
+      font-size: 0.875rem;
+      padding: 0 0.875rem;
+      transition: border-color 150ms, box-shadow 150ms;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .auth-input::placeholder { color: var(--auth-text-muted); }
+    .auth-input:focus {
+      border-color: var(--auth-border-focus);
+      box-shadow: 0 0 0 3px rgba(194,161,107,0.12);
+    }
+    .auth-input--leading { padding-left: 2.5rem; }
+    .auth-input--both { padding-left: 2.5rem; padding-right: 2.75rem; }
+
+    .auth-input-hint {
+      font-size: 0.72rem;
+      color: var(--auth-text-muted);
+      margin-top: 0.35rem;
+      line-height: 1.5;
+    }
+
+    /* Checkbox */
+    .auth-checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+    .auth-checkbox-row input[type="checkbox"] {
+      width: 15px; height: 15px;
+      border-radius: 3px;
+      accent-color: var(--auth-accent);
+      cursor: pointer;
+    }
+    .auth-checkbox-label {
+      font-size: 0.78rem;
+      color: var(--auth-text-secondary);
+    }
+
+    /* Primary button */
+    .auth-btn-primary {
+      width: 100%;
+      height: 44px;
+      background: var(--auth-accent);
+      color: var(--auth-btn-text);
+      border: none;
+      border-radius: 7px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background 150ms, transform 100ms, opacity 150ms;
+    }
+    .auth-btn-primary:hover:not(:disabled) {
+      background: var(--auth-accent-hover);
+    }
+    .auth-btn-primary:active:not(:disabled) { transform: scale(0.99); }
+    .auth-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* Secondary button (social) */
+    .auth-btn-secondary {
+      width: 100%;
+      height: 42px;
+      background: var(--auth-surface-raised);
+      color: var(--auth-text-primary);
+      border: 1px solid var(--auth-border);
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: border-color 150ms, background 150ms;
+    }
+    .auth-btn-secondary:hover {
+      border-color: var(--auth-border-focus);
+      background: rgba(194,161,107,0.06);
+    }
+
+    /* Divider */
+    .auth-divider {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0.25rem 0;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--auth-border);
+    }
+    .auth-divider-text {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--auth-text-muted);
+      white-space: nowrap;
+    }
+
+    /* Google btn container */
+    .auth-google-wrap {
+      display: flex;
+      justify-content: center;
+      min-height: 40px;
+    }
+
+    /* Bottom links */
+    .auth-footer {
+      border-top: 1px solid var(--auth-border);
+      padding-top: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+    }
+    .auth-footer-text {
+      font-size: 0.78rem;
+      color: var(--auth-text-secondary);
+    }
+    .auth-footer-link {
+      font-weight: 600;
+      color: var(--auth-accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-left: 4px;
+      text-decoration: none;
+      transition: color 150ms;
+    }
+    .auth-footer-link:hover { color: var(--auth-accent-hover); }
+    .auth-footer-otp-link {
+      font-size: 0.75rem;
+      color: var(--auth-text-muted);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 150ms;
+    }
+    .auth-footer-otp-link:hover { color: var(--auth-accent); }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 0.8s linear infinite; }
+
+    /* ── Right visual column ── */
+    .auth-visual {
+      display: none;
+      position: relative;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      background: #0A0806;
+    }
+    @media (min-width: 768px) {
+      .auth-visual {
+        display: flex;
+        width: 48%;
+        padding: 2.5rem;
+      }
+    }
+    @media (min-width: 1024px) { .auth-visual { padding: 3rem 3.5rem; } }
+
+    .auth-visual-img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0.5;
+      transition: transform 1.2s ease;
+    }
+    .auth-visual:hover .auth-visual-img { transform: scale(1.03); }
+
+    .auth-visual-vignette {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, #0A0806 0%, rgba(10,8,6,0.72) 50%, rgba(10,8,6,0.2) 100%);
+    }
+
+    .auth-visual-badge {
+      position: relative;
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.35);
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      width: fit-content;
+    }
+    .auth-visual-badge-mono {
+      width: 22px; height: 22px;
+      background: var(--auth-accent);
+      border-radius: 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--auth-btn-text);
+    }
+    .auth-visual-badge-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .auth-visual-card {
+      position: relative;
+      z-index: 10;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.5);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .auth-visual-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.3;
+      margin: 0 0 0.5rem;
+    }
+    .auth-visual-desc {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.65;
+      margin: 0 0 1rem;
+    }
+    .auth-visual-perks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem 1rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 1rem;
+    }
+    .auth-visual-perk {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.8);
+    }
+    .auth-visual-perk-check {
+      color: var(--auth-accent);
+      font-weight: 700;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .auth-visual-copy {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.3);
+      margin-top: 1rem;
+    }
+  `],
+  template: `
+    <div class="auth-wrapper" cdkTrapFocus>
+
+      <!-- ── Left Panel ── -->
+      <div class="auth-panel">
+        <div class="auth-inner">
+
+          <!-- Brand -->
+          <div class="auth-brand">
+            <span class="auth-brand-monogram">CH</span>
+            <div>
+              <div class="auth-brand-name">CineHub</div>
+              <div class="auth-brand-tagline">Hệ thống rạp chiếu chuẩn quốc tế</div>
             </div>
           </div>
 
-          <!-- Segmented Switcher Tabs (Inspired by Gradiator / Reference Image) -->
+          <!-- Heading -->
+          <div>
+            <h1 class="auth-heading">
+              @switch (mode()) {
+                @case ('login') { Chào mừng trở lại }
+                @case ('register') { Tạo tài khoản thành viên }
+                @case ('forgot') { Khôi phục mật khẩu }
+              }
+            </h1>
+            <p class="auth-subheading">
+              @switch (mode()) {
+                @case ('login') { Rất vui được đồng hành cùng bạn trong từng thước phim. }
+                @case ('register') { Gia nhập CineHub Club để nhận điểm thưởng và đặc quyền VIP. }
+                @case ('forgot') { Nhập email đã đăng ký để nhận liên kết khôi phục an toàn. }
+              }
+            </p>
+          </div>
+
+          <!-- Mode Tabs (not for forgot mode) -->
           @if (mode() !== 'forgot') {
-            <div
-              class="grid grid-cols-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-secondary)] p-1 text-xs font-semibold"
-              role="tablist"
-              aria-label="Chuyển chế độ đăng nhập hoặc đăng ký"
-            >
+            <div class="auth-tabs" role="tablist" aria-label="Chuyển đăng nhập / đăng ký">
               <button
                 type="button"
                 role="tab"
                 [attr.aria-selected]="mode() === 'login'"
                 (click)="setMode('login')"
-                class="rounded-md py-2.5 text-center transition-all"
-                [class]="
-                  mode() === 'login'
-                    ? 'bg-[var(--color-brand-primary)] text-white shadow-xs font-semibold'
-                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-medium'
-                "
+                class="auth-tab"
+                [class.auth-tab--active]="mode() === 'login'"
               >
                 Đăng nhập
               </button>
@@ -109,649 +576,350 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                 role="tab"
                 [attr.aria-selected]="mode() === 'register'"
                 (click)="setMode('register')"
-                class="rounded-md py-2.5 text-center transition-all"
-                [class]="
-                  mode() === 'register'
-                    ? 'bg-[var(--color-brand-primary)] text-white shadow-xs font-semibold'
-                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-medium'
-                "
+                class="auth-tab"
+                [class.auth-tab--active]="mode() === 'register'"
               >
-                Đăng ký tài khoản
+                Đăng ký
               </button>
             </div>
           } @else {
-            <div>
-              <button
-                type="button"
-                (click)="setMode('login')"
-                class="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
-              >
-                <svg
-                  class="h-3.5 w-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
-                <span>Quay lại trang đăng nhập</span>
-              </button>
-            </div>
+            <button type="button" class="auth-back" (click)="setMode('login')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+              Quay lại trang đăng nhập
+            </button>
           }
 
-          <!-- Error Alert Banner -->
+          <!-- Error Banner -->
           @if (errorBanner()) {
-            <div
-              role="alert"
-              class="flex items-start gap-2.5 rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-3.5 text-xs font-semibold text-[var(--color-danger)]"
-            >
-              <svg
-                class="h-4 w-4 shrink-0 mt-0.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
+            <div class="auth-error" role="alert">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
               <span>{{ errorBanner() }}</span>
             </div>
           }
 
-          <!-- Form Fields -->
-          @switch (mode()) {
-            @case ('login') {
-              <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="space-y-4">
-                <!-- Email Field -->
-                <div>
-                  <label
-                    for="login-email"
-                    class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                    >Email</label
+          <!-- ── LOGIN FORM ── -->
+          @if (mode() === 'login') {
+            <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="auth-form">
+
+              <div>
+                <label for="login-email" class="auth-label">Email</label>
+                <div class="auth-input-wrap">
+                  <span class="auth-input-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="20" height="16" x="2" y="4" rx="2"/>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="login-email" type="email" formControlName="email"
+                    autocomplete="email" placeholder="ban@cinehub.vn"
+                    class="auth-input auth-input--leading"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div class="auth-label-row">
+                  <label for="login-password" class="auth-label" style="margin:0">Mật khẩu</label>
+                  <button type="button" class="auth-label-link" (click)="setMode('forgot')">
+                    Quên mật khẩu?
+                  </button>
+                </div>
+                <div class="auth-input-wrap">
+                  <span class="auth-input-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="login-password"
+                    [type]="showPassword() ? 'text' : 'password'"
+                    formControlName="password"
+                    autocomplete="current-password"
+                    placeholder="••••••••"
+                    class="auth-input auth-input--both"
+                  />
+                  <button
+                    type="button"
+                    class="auth-input-eye"
+                    (click)="toggleShowPassword()"
+                    [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
                   >
-                  <div class="relative">
-                    <div
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect width="20" height="16" x="2" y="4" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    @if (showPassword()) {
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                        <line x1="2" x2="22" y1="2" y2="22"/>
                       </svg>
-                    </div>
-                    <input
-                      id="login-email"
-                      type="email"
-                      formControlName="email"
-                      autocomplete="email"
-                      placeholder="ban@cinehub.vn"
-                      class="cinema-input cinema-input-icon-leading !h-11 w-full text-sm"
-                    />
-                  </div>
-                </div>
-
-                <!-- Password Field with Show/Hide Eye Toggle -->
-                <div>
-                  <div class="mb-1.5 flex items-center justify-between">
-                    <label
-                      for="login-password"
-                      class="cinema-label block text-xs font-medium text-[var(--color-text-primary)]"
-                      >Mật khẩu</label
-                    >
-                    <button
-                      type="button"
-                      (click)="setMode('forgot')"
-                      class="text-xs font-semibold text-[var(--color-brand-primary)] hover:underline"
-                    >
-                      Quên mật khẩu?
-                    </button>
-                  </div>
-                  <div class="relative">
-                    <div
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    } @else {
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                        <circle cx="12" cy="12" r="3"/>
                       </svg>
-                    </div>
-                    <input
-                      id="login-password"
-                      [type]="showPassword() ? 'text' : 'password'"
-                      formControlName="password"
-                      autocomplete="current-password"
-                      placeholder="••••••••"
-                      class="cinema-input cinema-input-icon-both !h-11 w-full text-sm"
-                    />
-                    <button
-                      type="button"
-                      (click)="toggleShowPassword()"
-                      class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                      [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
-                    >
-                      @if (showPassword()) {
-                        <svg
-                          class="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                          <path
-                            d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
-                          />
-                          <path
-                            d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
-                          />
-                          <line x1="2" x2="22" y1="2" y2="22" />
-                        </svg>
-                      } @else {
-                        <svg
-                          class="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      }
-                    </button>
-                  </div>
+                    }
+                  </button>
                 </div>
+              </div>
 
-                <!-- Remember Me Checkbox -->
-                <div class="flex items-center text-xs">
-                  <label
-                    class="flex items-center gap-2 cursor-pointer select-none text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              <label class="auth-checkbox-row">
+                <input
+                  type="checkbox"
+                  [checked]="rememberMe()"
+                  (change)="rememberMe.set(!rememberMe())"
+                />
+                <span class="auth-checkbox-label">Ghi nhớ đăng nhập trên thiết bị này</span>
+              </label>
+
+              <button type="submit" class="auth-btn-primary" [disabled]="submitting()">
+                @if (submitting()) {
+                  <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/>
+                  </svg>
+                  Đang xác thực...
+                } @else {
+                  Đăng nhập
+                }
+              </button>
+            </form>
+          }
+
+          <!-- ── REGISTER FORM ── -->
+          @if (mode() === 'register') {
+            <form [formGroup]="registerForm" (ngSubmit)="submitRegister()" class="auth-form">
+
+              <div>
+                <label for="reg-fullname" class="auth-label">Họ và tên</label>
+                <div class="auth-input-wrap">
+                  <span class="auth-input-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="reg-fullname" type="text" formControlName="fullName"
+                    autocomplete="name" placeholder="Nguyễn Văn A"
+                    class="auth-input auth-input--leading"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="reg-email" class="auth-label">Email</label>
+                <div class="auth-input-wrap">
+                  <span class="auth-input-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="20" height="16" x="2" y="4" rx="2"/>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="reg-email" type="email" formControlName="email"
+                    autocomplete="email" placeholder="ban@cinehub.vn"
+                    class="auth-input auth-input--leading"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="reg-phone" class="auth-label">Số điện thoại <span style="font-weight:400;text-transform:none;color:var(--auth-text-muted)">(tùy chọn)</span></label>
+                <div class="auth-input-wrap">
+                  <span class="auth-input-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.21 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="reg-phone" type="tel" formControlName="phone"
+                    autocomplete="tel" placeholder="0901 234 567"
+                    class="auth-input auth-input--leading"
+                    style="font-variant-numeric:tabular-nums"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="reg-password" class="auth-label">Mật khẩu <span style="font-weight:400;text-transform:none;color:var(--auth-text-muted)">(tối thiểu 8 ký tự)</span></label>
+                <div class="auth-input-wrap">
+                  <span class="auth-input-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="reg-password"
+                    [type]="showRegisterPassword() ? 'text' : 'password'"
+                    formControlName="password"
+                    autocomplete="new-password"
+                    placeholder="••••••••"
+                    class="auth-input auth-input--both"
+                  />
+                  <button
+                    type="button"
+                    class="auth-input-eye"
+                    (click)="toggleShowRegisterPassword()"
+                    [attr.aria-label]="showRegisterPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
                   >
-                    <input
-                      type="checkbox"
-                      [checked]="rememberMe()"
-                      (change)="rememberMe.set(!rememberMe())"
-                      class="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-brand-primary)] focus:ring-[var(--color-brand-primary)]"
-                    />
-                    <span>Ghi nhớ đăng nhập trên thiết bị này</span>
-                  </label>
-                </div>
-
-                <!-- Submit Button -->
-                <button
-                  type="submit"
-                  [disabled]="submitting()"
-                  class="cinema-btn-primary w-full !h-11 font-semibold text-sm shadow-sm transition-all"
-                >
-                  @if (submitting()) {
-                    <span class="inline-flex items-center gap-2">
-                      <svg
-                        class="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
-                        <path d="M12 2a10 10 0 0 1 10 10" />
+                    @if (showRegisterPassword()) {
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                        <line x1="2" x2="22" y1="2" y2="22"/>
                       </svg>
-                      <span>Đang xác thực...</span>
+                    } @else {
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    }
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="auth-btn-primary" [disabled]="submitting()">
+                @if (submitting()) {
+                  <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/>
+                  </svg>
+                  Đang tạo tài khoản...
+                } @else {
+                  Đăng ký thành viên
+                }
+              </button>
+            </form>
+          }
+
+          <!-- ── FORGOT PASSWORD FORM ── -->
+          @if (mode() === 'forgot') {
+            @if (forgotSent()) {
+              <div class="auth-success-banner">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px;color:var(--auth-success)">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>
+                </svg>
+                <div>
+                  <div style="font-weight:600;font-size:0.82rem;color:var(--auth-success)">Email đã được gửi!</div>
+                  <div style="font-size:0.75rem;margin-top:3px;color:rgba(125,171,137,0.85)">
+                    Kiểm tra hộp thư của bạn để tìm liên kết đặt lại mật khẩu (kể cả mục Spam).
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <form [formGroup]="forgotForm" (ngSubmit)="submitForgot()" class="auth-form">
+                <div>
+                  <label for="forgot-email" class="auth-label">Email tài khoản</label>
+                  <div class="auth-input-wrap">
+                    <span class="auth-input-icon">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect width="20" height="16" x="2" y="4" rx="2"/>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                      </svg>
                     </span>
-                  } @else {
-                    <span>Đăng nhập</span>
-                  }
-                </button>
-              </form>
-            }
-
-            @case ('register') {
-              <form [formGroup]="registerForm" (ngSubmit)="submitRegister()" class="space-y-3.5">
-                <!-- Full Name Field -->
-                <div>
-                  <label
-                    for="reg-fullname"
-                    class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                    >Họ và tên</label
-                  >
-                  <div class="relative">
-                    <div
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <circle cx="12" cy="8" r="5" />
-                        <path d="M20 21a8 8 0 0 0-16 0" />
-                      </svg>
-                    </div>
                     <input
-                      id="reg-fullname"
-                      type="text"
-                      formControlName="fullName"
-                      autocomplete="name"
-                      placeholder="Nguyễn Văn A"
-                      class="cinema-input cinema-input-icon-leading !h-11 w-full text-sm"
-                    />
-                  </div>
-                </div>
-
-                <!-- Email Field -->
-                <div>
-                  <label
-                    for="reg-email"
-                    class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                    >Email</label
-                  >
-                  <div class="relative">
-                    <div
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect width="20" height="16" x="2" y="4" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                      </svg>
-                    </div>
-                    <input
-                      id="reg-email"
-                      type="email"
-                      formControlName="email"
-                      autocomplete="email"
+                      id="forgot-email" type="email" formControlName="email"
                       placeholder="ban@cinehub.vn"
-                      class="cinema-input cinema-input-icon-leading !h-11 w-full text-sm"
+                      class="auth-input auth-input--leading"
                     />
                   </div>
+                  <p class="auth-input-hint">Hệ thống sẽ gửi liên kết an toàn tới hộp thư để thiết lập lại mật khẩu.</p>
                 </div>
 
-                <!-- Phone Field -->
-                <div>
-                  <label
-                    for="reg-phone"
-                    class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                    >Số điện thoại (tùy chọn)</label
-                  >
-                  <div class="relative">
-                    <div
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-                        />
-                      </svg>
-                    </div>
-                    <input
-                      id="reg-phone"
-                      type="tel"
-                      formControlName="phone"
-                      autocomplete="tel"
-                      placeholder="0901234567"
-                      class="cinema-input cinema-input-icon-leading !h-11 w-full text-sm tabular-nums"
-                    />
-                  </div>
-                </div>
-
-                <!-- Password Field with Show/Hide Eye Toggle -->
-                <div>
-                  <label
-                    for="reg-password"
-                    class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                    >Mật khẩu (tối thiểu 8 ký tự)</label
-                  >
-                  <div class="relative">
-                    <div
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    </div>
-                    <input
-                      id="reg-password"
-                      [type]="showRegisterPassword() ? 'text' : 'password'"
-                      formControlName="password"
-                      autocomplete="new-password"
-                      placeholder="••••••••"
-                      class="cinema-input cinema-input-icon-both !h-11 w-full text-sm"
-                    />
-                    <button
-                      type="button"
-                      (click)="toggleShowRegisterPassword()"
-                      class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                      [attr.aria-label]="showRegisterPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
-                    >
-                      @if (showRegisterPassword()) {
-                        <svg
-                          class="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                          <path
-                            d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
-                          />
-                          <path
-                            d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
-                          />
-                          <line x1="2" x2="22" y1="2" y2="22" />
-                        </svg>
-                      } @else {
-                        <svg
-                          class="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      }
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Submit Button -->
-                <button
-                  type="submit"
-                  [disabled]="submitting()"
-                  class="cinema-btn-primary w-full !h-11 font-semibold text-sm shadow-sm transition-all"
-                >
+                <button type="submit" class="auth-btn-primary" [disabled]="submitting()">
                   @if (submitting()) {
-                    <span class="inline-flex items-center gap-2">
-                      <svg
-                        class="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
-                        <path d="M12 2a10 10 0 0 1 10 10" />
-                      </svg>
-                      <span>Đang tạo tài khoản...</span>
-                    </span>
+                    <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/>
+                    </svg>
+                    Đang gửi liên kết...
                   } @else {
-                    <span>Đăng ký thành viên</span>
-                  }
-                </button>
-              </form>
-            }
-
-            @case ('forgot') {
-              <form [formGroup]="forgotForm" (ngSubmit)="submitForgot()" class="space-y-4">
-                <div>
-                  <label
-                    for="forgot-email"
-                    class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                    >Email tài khoản</label
-                  >
-                  <div class="relative">
-                    <div
-                      class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect width="20" height="16" x="2" y="4" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                      </svg>
-                    </div>
-                    <input
-                      id="forgot-email"
-                      type="email"
-                      formControlName="email"
-                      placeholder="ban@cinehub.vn"
-                      class="cinema-input cinema-input-icon-leading !h-11 w-full text-sm"
-                    />
-                  </div>
-                  <p class="cinema-metadata mt-1.5 text-xs">
-                    Hệ thống sẽ gửi liên kết an toàn tới hộp thư của bạn để thiết lập lại mật khẩu.
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  [disabled]="submitting()"
-                  class="cinema-btn-primary w-full !h-11 font-semibold text-sm shadow-sm transition-all"
-                >
-                  @if (submitting()) {
-                    <span class="inline-flex items-center gap-2">
-                      <svg
-                        class="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
-                        <path d="M12 2a10 10 0 0 1 10 10" />
-                      </svg>
-                      <span>Đang gửi liên kết...</span>
-                    </span>
-                  } @else {
-                    <span>Gửi liên kết khôi phục</span>
+                    Gửi liên kết khôi phục
                   }
                 </button>
               </form>
             }
           }
 
-          <!-- Divider (Image Reference Style) -->
-          <div class="relative my-4 flex items-center justify-center">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-[var(--color-border)]"></div>
-            </div>
-            <div
-              class="relative bg-[var(--color-surface)] px-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]"
-            >
-              Hoặc tiếp tục với
-            </div>
+          <!-- Divider -->
+          <div class="auth-divider">
+            <span class="auth-divider-text">Hoặc tiếp tục với</span>
           </div>
 
-          <!-- Alternate Social & Quick Demo Sign-In -->
-          <div class="space-y-2.5">
-            <div
-              #googleBtnContainer
-              class="flex justify-center min-h-[40px]"
-              aria-label="Google Sign-In"
-            ></div>
+          <!-- Social Buttons -->
+          <div style="display:flex;flex-direction:column;gap:0.6rem">
+            <div #googleBtnContainer class="auth-google-wrap" aria-label="Google Sign-In"></div>
 
             <button
               type="button"
               (click)="signInDemoCustomer()"
-              class="cinema-btn-secondary flex w-full !h-11 items-center justify-center gap-2 text-xs font-semibold transition-all hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)]"
+              class="auth-btn-secondary"
             >
-              <svg
-                class="h-4 w-4 text-[var(--color-brand-accent)]"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.5-6.2 4.5 2.3-7.1-6.1-4.5h7.6z" />
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="color:var(--auth-accent)">
+                <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.5-6.2 4.5 2.3-7.1-6.1-4.5h7.6z"/>
               </svg>
-              <span>Đăng nhập nhanh tài khoản Demo VIP</span>
+              Đăng nhập nhanh — Tài khoản Demo VIP
             </button>
           </div>
 
-          <!-- Bottom Switcher Links -->
-          <div
-            class="border-t border-[var(--color-border)] pt-4 text-center text-xs text-[var(--color-text-secondary)] space-y-1.5"
-          >
+          <!-- Footer Links -->
+          <div class="auth-footer">
             @if (mode() === 'login') {
-              <p>
-                Chưa có tài khoản CineHub?
-                <button
-                  type="button"
-                  (click)="setMode('register')"
-                  class="font-semibold text-[var(--color-brand-primary)] hover:underline ml-1"
-                >
-                  Đăng ký ngay
-                </button>
+              <p class="auth-footer-text">
+                Chưa có tài khoản?
+                <button type="button" class="auth-footer-link" (click)="setMode('register')">Đăng ký ngay</button>
               </p>
             } @else if (mode() === 'register') {
-              <p>
-                Đã có tài khoản thành viên?
-                <button
-                  type="button"
-                  (click)="setMode('login')"
-                  class="font-semibold text-[var(--color-brand-primary)] hover:underline ml-1"
-                >
-                  Đăng nhập ngay
-                </button>
+              <p class="auth-footer-text">
+                Đã có tài khoản?
+                <button type="button" class="auth-footer-link" (click)="setMode('login')">Đăng nhập ngay</button>
               </p>
             }
-
             <p>
-              <a
-                routerLink="/verify-email"
-                class="text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1 font-medium"
-              >
-                <span>Bạn cần xác thực email bằng mã OTP? Nhấp vào đây</span>
-                <span>→</span>
+              <a routerLink="/verify-email" class="auth-footer-otp-link">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                Xác thực email bằng mã OTP
               </a>
             </p>
           </div>
+
         </div>
       </div>
 
-      <!-- Right Column: Full-Screen Cinema Visual Key-Art (Takes the entire right half of the screen) -->
-      <div
-        class="relative hidden md:flex md:w-1/2 flex-col justify-between overflow-hidden bg-[#160f11] p-10 lg:p-14 text-white"
-      >
-        <!-- Background Cinema Artwork / Key Art -->
+      <!-- ── Right Visual Column ── -->
+      <div class="auth-visual">
         <img
           src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1600&q=85"
-          alt="CineHub Cinema Experience"
-          class="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 hover:scale-105"
+          alt="CineHub — Trải nghiệm điện ảnh"
+          class="auth-visual-img"
         />
-        <!-- Deep Ambient Vignette Gradient -->
-        <div
-          class="absolute inset-0 bg-gradient-to-t from-[#120a0c] via-[#120a0c]/65 to-[#120a0c]/25"
-          aria-hidden="true"
-        ></div>
+        <div class="auth-visual-vignette" aria-hidden="true"></div>
 
-        <!-- Top Monogram Badge on Visual Artwork -->
-        <div class="relative z-10">
-          <div
-            class="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-black/30 px-3.5 py-1.5 backdrop-blur-md"
-          >
-            <span
-              class="inline-flex h-6 w-6 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-xs font-semibold text-white shadow-xs"
-            >
-              CH
-            </span>
-            <span class="text-xs font-semibold tracking-wider uppercase text-white/95">
-              CineHub Cinema Club
-            </span>
-          </div>
+        <!-- Top Badge -->
+        <div class="auth-visual-badge">
+          <span class="auth-visual-badge-mono">CH</span>
+          <span class="auth-visual-badge-label">CineHub Cinema Club</span>
         </div>
 
-        <!-- Bottom Ambient Glass Card (Reference Wireframe Visual) -->
-        <div
-          class="relative z-10 space-y-4 rounded-xl border border-white/15 bg-black/45 p-6 backdrop-blur-md"
-        >
-          <div class="space-y-1.5">
-            <h2 class="text-xl font-semibold leading-tight text-white">
-              Trải Nghiệm Điện Ảnh Thượng Hạng
-            </h2>
-            <p class="text-xs leading-relaxed text-stone-300">
-              Khám phá thế giới điện ảnh với công nghệ mô phỏng góc nhìn 3D POV từ chính vị trí ghế
-              bạn chọn, âm thanh Dolby Atmos và vô vàn đặc quyền VIP.
-            </p>
+        <!-- Bottom Card -->
+        <div class="auth-visual-card">
+          <h2 class="auth-visual-title">Trải Nghiệm Điện Ảnh Thượng Hạng</h2>
+          <p class="auth-visual-desc">
+            Khám phá thế giới điện ảnh với công nghệ mô phỏng góc nhìn 3D POV từ chính vị trí ghế bạn chọn, âm thanh Dolby Atmos và vô vàn đặc quyền VIP.
+          </p>
+          <div class="auth-visual-perks">
+            <div class="auth-visual-perk"><span class="auth-visual-perk-check">✓</span><span>Góc nhìn 3D POV trực quan</span></div>
+            <div class="auth-visual-perk"><span class="auth-visual-perk-check">✓</span><span>Tích lũy điểm đổi vé & combo</span></div>
+            <div class="auth-visual-perk"><span class="auth-visual-perk-check">✓</span><span>Ưu đãi suất chiếu sớm</span></div>
+            <div class="auth-visual-perk"><span class="auth-visual-perk-check">✓</span><span>Thanh toán bảo mật SSL</span></div>
           </div>
-
-          <div
-            class="grid grid-cols-2 gap-3 border-t border-white/15 pt-3.5 text-xs text-stone-200"
-          >
-            <div class="flex items-center gap-2">
-              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
-              <span>Góc nhìn 3D POV trực quan</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
-              <span>Tích lũy điểm đổi vé & combo</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
-              <span>Ưu đãi suất chiếu sớm đặc biệt</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
-              <span>Thanh toán bảo mật chuẩn SSL</span>
-            </div>
-          </div>
-
-          <div class="text-[11px] text-stone-400">
-            © 2026 CineHub Cinema Network. Tất cả quyền được bảo lưu.
-          </div>
+          <p class="auth-visual-copy">© 2026 CineHub Cinema Network. Tất cả quyền được bảo lưu.</p>
         </div>
       </div>
+
     </div>
   `,
 })
@@ -768,6 +936,7 @@ export class AuthPageComponent implements AfterViewInit {
   readonly mode = signal<'login' | 'register' | 'forgot'>('login');
   readonly submitting = signal(false);
   readonly errorBanner = signal<string | null>(null);
+  readonly forgotSent = signal(false);
 
   readonly showPassword = signal(false);
   readonly showRegisterPassword = signal(false);
@@ -810,6 +979,7 @@ export class AuthPageComponent implements AfterViewInit {
   setMode(next: 'login' | 'register' | 'forgot'): void {
     this.mode.set(next);
     this.errorBanner.set(null);
+    this.forgotSent.set(false);
   }
 
   toggleShowPassword(): void {
@@ -887,8 +1057,8 @@ export class AuthPageComponent implements AfterViewInit {
     const { email } = this.forgotForm.getRawValue();
     try {
       await this.authApi.forgotPassword(email);
+      this.forgotSent.set(true);
       this.toast.show('Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi.', 'success');
-      this.setMode('login');
     } catch (error: unknown) {
       this.errorBanner.set(formatAuthErrorMessage(error));
     } finally {
