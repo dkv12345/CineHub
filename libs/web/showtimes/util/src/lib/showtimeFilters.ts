@@ -139,15 +139,30 @@ export function filterShowtimes(
     : byDate;
 
   const byCinema = isActive(filters.cinemaId)
-    ? byCity.filter(
-        (session) =>
-          normalize(session.cinema.id) === normalize(filters.cinemaId) ||
-          normalize(session.cinema.code) === normalize(filters.cinemaId),
-      )
+    ? byCity.filter((session) => {
+        const target = normalize(filters.cinemaId);
+        return (
+          normalize(session.cinema.id) === target ||
+          normalize(session.cinema.code) === target ||
+          normalize(session.cinema.name) === target ||
+          normalize(session.cinema.name).includes(target)
+        );
+      })
     : byCity;
 
   const byMovie = isActive(filters.movieId)
-    ? byCinema.filter((session) => String(session.movie.id) === String(filters.movieId))
+    ? byCinema.filter((session) => {
+        const target = String(filters.movieId);
+        const normTarget = normalize(target);
+        return (
+          String(session.movie.id) === target ||
+          session.movie.slug === target ||
+          normalize(session.movie.id) === normTarget ||
+          normalize(session.movie.slug) === normTarget ||
+          normalize(session.movie.name) === normTarget ||
+          normalize(session.movie.name).includes(normTarget)
+        );
+      })
     : byCinema;
 
   const byFormat = isActive(filters.format)

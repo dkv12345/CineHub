@@ -17,8 +17,8 @@ import {
 
 function buildSeedSessions(): GalaxySession[] {
   const result: GalaxySession[] = [];
-  const sampleMovies = seedMovies.slice(0, 12);
-  const sampleCinemas = seedCinemas.slice(0, 10);
+  const sampleMovies = seedMovies;
+  const sampleCinemas = seedCinemas;
 
   for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
     const d = new Date();
@@ -27,7 +27,7 @@ function buildSeedSessions(): GalaxySession[] {
 
     sampleMovies.forEach((m, mIdx) => {
       sampleCinemas.forEach((c, cIdx) => {
-        if ((mIdx + cIdx + dayOffset) % 2 !== 0) return;
+        if ((mIdx + cIdx + dayOffset) % 3 !== 0) return;
         const slots = getShows(m.id, cIdx, dayOffset);
         slots.forEach((slot, sIdx) => {
           result.push({
@@ -119,6 +119,15 @@ export const ShowtimesStore = signalStore(
         map.set(s.cinema.cityId || name, name);
       }
       return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+    }),
+    movies: computed(() => {
+      const map = new Map<string, { id: string; name: string }>();
+      for (const s of store.sessions()) {
+        if (s.movie?.id && !map.has(s.movie.id)) {
+          map.set(s.movie.id, { id: s.movie.id, name: s.movie.name });
+        }
+      }
+      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
     }),
     filteredSessions: computed(() => filterShowtimes([...store.sessions()], store.filters())),
   })),
