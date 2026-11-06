@@ -3,8 +3,10 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
   inject,
+  OnDestroy,
   OnInit,
   signal,
   viewChild,
@@ -20,54 +22,149 @@ import {
 import { AuthStore, GoogleAuthService, ToastService } from '@cinehub/web/core';
 import { zodFormGroupValidator } from '@cinehub/web/shared/util';
 
+export interface MovieSlide {
+  id: string;
+  title: string;
+  genre: string;
+  tagline: string;
+  backdropUrl: string;
+  accentGlow: string;
+  ringGlow: string;
+}
+
+export const MOVIE_SLIDES: MovieSlide[] = [
+  {
+    id: 'avengers',
+    title: 'Avengers: Cuộc Chiến Vô Cực',
+    genre: 'Hành Động • Siêu Anh Hùng',
+    tagline: 'Cổng không gian vô cực của Thanos rực sáng sắc đỏ & vàng kim hoàng gia',
+    backdropUrl:
+      'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1920&q=85',
+    accentGlow: 'from-[#e50914]/25 via-amber-500/15 to-purple-600/20',
+    ringGlow: 'from-red-500/60 via-amber-500/35 to-purple-500/40',
+  },
+  {
+    id: 'dune',
+    title: 'Dune: Hành Tinh Cát',
+    genre: 'Khoa Học Viễn Tưởng • Sử Thi',
+    tagline: 'Biển cát Arrakis vàng óng dưới ánh hoàng hôn tráng lệ',
+    backdropUrl:
+      'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1920&q=85',
+    accentGlow: 'from-amber-500/30 via-orange-600/20 to-yellow-600/15',
+    ringGlow: 'from-amber-500/70 via-orange-500/40 to-yellow-400/50',
+  },
+  {
+    id: 'spiderman',
+    title: 'Người Nhện: Du Hành Vũ Trụ',
+    genre: 'Hoạt Hình Nghệ Thuật • Đột Phá Kỹ Xảo',
+    tagline: 'Lễ hội thị giác neon cyberpunk rực rỡ sắc màu thành phố tương lai',
+    backdropUrl:
+      'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1920&q=85',
+    accentGlow: 'from-fuchsia-600/25 via-cyan-500/20 to-blue-600/20',
+    ringGlow: 'from-fuchsia-500/60 via-cyan-400/35 to-blue-500/40',
+  },
+  {
+    id: 'interstellar',
+    title: 'Hố Đen Tử Thần (Interstellar)',
+    genre: 'Vũ Trụ Vô Tận • Christopher Nolan',
+    tagline: 'Kỳ quan vũ trụ cùng vòng đĩa bồi tụ tinh vân huyền ảo',
+    backdropUrl:
+      'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1920&q=85',
+    accentGlow: 'from-indigo-600/25 via-purple-500/20 to-pink-500/15',
+    ringGlow: 'from-indigo-500/60 via-purple-400/35 to-pink-400/40',
+  },
+  {
+    id: 'cinehub-imax',
+    title: 'Đại Sảnh Chiếu Phim CineHub IMAX',
+    genre: 'Trải Nghiệm Thượng Hạng • Dolby Atmos',
+    tagline: 'Khán phòng điện ảnh tráng lệ với màn hình bạc cực đại và ánh đèn sân khấu lung linh',
+    backdropUrl:
+      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1920&q=85',
+    accentGlow: 'from-red-600/25 via-amber-400/20 to-red-950/30',
+    ringGlow: 'from-red-500/60 via-amber-400/40 to-yellow-500/40',
+  },
+];
+
 @Component({
   selector: 'ch-auth-page',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, A11yModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Main Canvas: Không gian điện ảnh sang trọng -->
+    <!-- Main Canvas: Không gian điện ảnh sống động thay đổi theo thời gian -->
     <div
-      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center p-4 sm:p-6 lg:p-8 select-none overflow-x-hidden bg-[#020511]"
+      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 select-none overflow-x-hidden bg-[#030712]"
       cdkTrapFocus
     >
-      <!-- Ánh sáng sân khấu chiếu rạp mờ ảo -->
+      <!-- ── DYNAMIC FULL-SCREEN MOVIE BACKDROP SLIDESHOW ── -->
       <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        @for (slide of movieSlides; track slide.id; let idx = $index) {
+          <div
+            class="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+            [class.opacity-100]="activeSlideIndex() === idx"
+            [class.opacity-0]="activeSlideIndex() !== idx"
+          >
+            <img
+              [src]="slide.backdropUrl"
+              [alt]="slide.title"
+              class="h-full w-full object-cover object-center filter brightness-95 contrast-110 saturate-125 transition-transform duration-[12000ms] ease-out"
+              [class.scale-105]="activeSlideIndex() === idx"
+              [class.scale-100]="activeSlideIndex() !== idx"
+            />
+          </div>
+        }
+
+        <!-- Cinematic Gradient Overlays (Tăng độ sáng rực rỡ, không bị tối mịt) -->
+        <!-- Đèn trần sân khấu rạp chiếu -->
+        <div class="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/75"></div>
+        <!-- Vầng sáng hào quang trung tâm chiếu rọi phía sau thẻ card -->
         <div
-          class="absolute -top-36 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-gradient-to-b from-[#e50914]/20 via-red-950/10 to-transparent blur-[140px]"
+          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[850px] rounded-full bg-amber-500/15 blur-[140px]"
         ></div>
+        <!-- Vệt sáng màu động đồng bộ theo từng phim -->
         <div
-          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full bg-amber-500/10 blur-[120px]"
+          class="absolute inset-0 transition-all duration-1000 bg-gradient-to-tr"
+          [class]="currentMovie().accentGlow"
         ></div>
+        <!-- Lưới chấm công nghệ điện ảnh hiện đại -->
         <div
-          class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:28px_28px] opacity-35"
+          class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:30px_30px] opacity-40"
         ></div>
       </div>
 
       <!-- ══════════════════════════════════════════════════════════
-           THẺ ĐIỆN ẢNH CINEHUB (Hài hòa, cân đối, 100% Tiếng Việt)
+           THẺ ĐIỆN ẢNH CINEHUB (Mẫu 1 - Thanos card + Đồng bộ phim)
       ══════════════════════════════════════════════════════════ -->
       <div
-        class="relative z-10 w-full max-w-[460px] p-[1.5px] rounded-[24px] bg-gradient-to-b from-red-500/50 via-amber-500/25 to-purple-500/30 shadow-[0_0_50px_rgba(229,9,20,0.3),0_25px_70px_rgba(0,0,0,0.85)] transition-all duration-300"
+        class="relative z-10 w-full max-w-[460px] p-[1.5px] rounded-[24px] bg-gradient-to-b shadow-[0_0_60px_rgba(229,9,20,0.35),0_25px_80px_rgba(0,0,0,0.85)] transition-all duration-700"
+        [class]="currentMovie().ringGlow"
       >
         <div
-          class="relative w-full overflow-hidden rounded-[23px] bg-[#070b18]/95 backdrop-blur-2xl"
+          class="relative w-full overflow-hidden rounded-[23px] bg-[#070b18]/90 backdrop-blur-2xl"
         >
-          <!-- Nền poster Thanos / cổng không gian điện ảnh -->
+          <!-- Nền poster / cổng không gian điện ảnh bên trong thẻ (chuyển động đồng bộ) -->
           <div class="pointer-events-none absolute inset-0 overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1200&q=85"
-              alt="Hình nền rạp chiếu phim CineHub"
-              class="h-full w-full object-cover object-center opacity-60 scale-105 filter brightness-105 contrast-115"
-            />
+            @for (slide of movieSlides; track slide.id; let idx = $index) {
+              <div
+                class="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+                [class.opacity-60]="activeSlideIndex() === idx"
+                [class.opacity-0]="activeSlideIndex() !== idx"
+              >
+                <img
+                  [src]="slide.backdropUrl"
+                  [alt]="slide.title"
+                  class="h-full w-full object-cover object-center filter brightness-105 contrast-115"
+                />
+              </div>
+            }
             <div
-              class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] rounded-full bg-amber-400/20 blur-[50px]"
+              class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] rounded-full bg-amber-400/25 blur-[50px]"
             ></div>
             <div
-              class="absolute inset-0 bg-gradient-to-t from-[#060a17] via-[#070c1b]/85 to-[#060a17]/45"
+              class="absolute inset-0 bg-gradient-to-t from-[#060a17] via-[#070c1b]/80 to-[#060a17]/40"
             ></div>
             <div
-              class="absolute inset-0 bg-gradient-to-b from-[#060a17]/50 via-transparent to-[#060a17]"
+              class="absolute inset-0 bg-gradient-to-b from-[#060a17]/40 via-transparent to-[#060a17]"
             ></div>
           </div>
 
@@ -675,10 +772,85 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
           </div>
         </div>
       </div>
+
+      <!-- ── THANH ĐIỀU KHIỂN & GIỚI THIỆU PHIM ĐANG CHIẾU ── -->
+      <div
+        class="fixed bottom-3.5 sm:bottom-5 z-20 flex items-center gap-2.5 sm:gap-3 rounded-full border border-white/20 bg-black/75 px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.8)] backdrop-blur-xl transition-all duration-300 hover:border-amber-400/60 hover:bg-black/85"
+        role="region"
+        aria-label="Hình nền phim chiếu rạp"
+      >
+        <!-- Nút lùi phim -->
+        <button
+          type="button"
+          (click)="prevSlide()"
+          title="Phim trước đó"
+          class="flex h-6 w-6 items-center justify-center rounded-full text-white/60 hover:text-white hover:bg-white/10 transition active:scale-90"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+
+        <!-- Tên phim đang hiển thị -->
+        <div class="flex items-center gap-2 max-w-[200px] sm:max-w-none truncate">
+          <span class="inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 animate-pulse"></span>
+          <span class="font-medium text-[11px] sm:text-xs truncate">
+            <span class="text-amber-300 font-bold drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]">
+              {{ currentMovie().title }}
+            </span>
+            <span class="hidden md:inline text-white/60 ml-1.5">
+              • {{ currentMovie().genre }}
+            </span>
+          </span>
+        </div>
+
+        <!-- Các chấm chuyển slide tương tác -->
+        <div class="flex items-center gap-1.5 pl-0.5">
+          @for (slide of movieSlides; track slide.id; let idx = $index) {
+            <button
+              type="button"
+              (click)="goToSlide(idx)"
+              [attr.aria-label]="'Đổi sang hình nền ' + slide.title"
+              class="h-1.5 sm:h-2 rounded-full transition-all duration-300"
+              [class]="
+                activeSlideIndex() === idx
+                  ? 'w-5 sm:w-6 bg-gradient-to-r from-red-500 to-amber-400 shadow-[0_0_8px_rgba(229,9,20,0.8)]'
+                  : 'w-1.5 sm:w-2 bg-white/30 hover:bg-white/60'
+              "
+            ></button>
+          }
+        </div>
+
+        <!-- Nút tiến phim -->
+        <button
+          type="button"
+          (click)="nextSlide()"
+          title="Phim tiếp theo"
+          class="flex h-6 w-6 items-center justify-center rounded-full text-white/60 hover:text-white hover:bg-white/10 transition active:scale-90"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
     </div>
   `,
 })
-export class AuthPageComponent implements OnInit, AfterViewInit {
+export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly authApi = inject(AuthApiService);
   private readonly authStore = inject(AuthStore);
@@ -688,6 +860,11 @@ export class AuthPageComponent implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
 
   readonly googleBtnContainer = viewChild<ElementRef<HTMLElement>>('googleBtnContainer');
+
+  readonly movieSlides = MOVIE_SLIDES;
+  readonly activeSlideIndex = signal(0);
+  readonly currentMovie = computed(() => this.movieSlides[this.activeSlideIndex()]);
+  private slideIntervalId: ReturnType<typeof setInterval> | null = null;
 
   readonly mode = signal<'login' | 'register' | 'forgot'>('login');
   readonly submitting = signal(false);
@@ -714,6 +891,8 @@ export class AuthPageComponent implements OnInit, AfterViewInit {
   );
 
   ngOnInit(): void {
+    this.startSlideShow();
+
     this.route.queryParams.subscribe((params) => {
       const targetMode = params['mode'];
       if (targetMode === 'register' || targetMode === 'signup') {
@@ -732,6 +911,43 @@ export class AuthPageComponent implements OnInit, AfterViewInit {
         this.mode.set('login');
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.stopSlideShow();
+  }
+
+  startSlideShow(): void {
+    this.stopSlideShow();
+    this.slideIntervalId = setInterval(() => {
+      this.nextSlide(false);
+    }, 6000);
+  }
+
+  stopSlideShow(): void {
+    if (this.slideIntervalId) {
+      clearInterval(this.slideIntervalId);
+      this.slideIntervalId = null;
+    }
+  }
+
+  goToSlide(index: number): void {
+    this.activeSlideIndex.set(index);
+    this.startSlideShow();
+  }
+
+  nextSlide(restartTimer = true): void {
+    this.activeSlideIndex.update((i) => (i + 1) % this.movieSlides.length);
+    if (restartTimer) {
+      this.startSlideShow();
+    }
+  }
+
+  prevSlide(): void {
+    this.activeSlideIndex.update(
+      (i) => (i - 1 + this.movieSlides.length) % this.movieSlides.length,
+    );
+    this.startSlideShow();
   }
 
   ngAfterViewInit(): void {
