@@ -26,92 +26,81 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
   imports: [ReactiveFormsModule, RouterLink, A11yModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Main Full-page Background: Deep Cosmic Cinema Canvas -->
+    <!-- Main Canvas: Không gian điện ảnh sang trọng -->
     <div
-      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center p-4 sm:p-6 lg:p-10 select-none overflow-x-hidden bg-[#020511]"
+      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center p-4 sm:p-6 lg:p-8 select-none overflow-x-hidden bg-[#020511]"
       cdkTrapFocus
     >
-      <!-- ── Cinematic Spotlight Beams & Atmospheric Halo ── -->
+      <!-- Ánh sáng sân khấu chiếu rạp mờ ảo -->
       <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <!-- Overhead Red Stage Light -->
         <div
-          class="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-gradient-to-b from-[#e50914]/25 via-red-950/10 to-transparent blur-[140px]"
+          class="absolute -top-36 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-gradient-to-b from-[#e50914]/20 via-red-950/10 to-transparent blur-[140px]"
         ></div>
-        <!-- Center Gold Cinema Halo -->
         <div
-          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full bg-amber-500/10 blur-[130px]"
+          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] rounded-full bg-amber-500/10 blur-[120px]"
         ></div>
-        <!-- Subtle Bottom Purple Nebula -->
         <div
-          class="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[700px] h-[450px] rounded-full bg-purple-900/15 blur-[120px]"
-        ></div>
-        <!-- Grid pattern overlay for high-tech theater vibe -->
-        <div
-          class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40"
+          class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:28px_28px] opacity-35"
         ></div>
       </div>
 
       <!-- ══════════════════════════════════════════════════════════
-           CINEMA LUXURY GLOWING CARD (Mẫu 1 — Thanos Premiere Edition)
+           THẺ ĐIỆN ẢNH CINEHUB (Hài hòa, cân đối, 100% Tiếng Việt)
       ══════════════════════════════════════════════════════════ -->
       <div
-        class="relative z-10 w-full max-w-[490px] p-[1.5px] rounded-[30px] bg-gradient-to-b from-red-500/60 via-amber-500/30 to-purple-500/40 shadow-[0_0_60px_rgba(229,9,20,0.35),0_30px_90px_rgba(0,0,0,0.9)] transition-all duration-300 hover:shadow-[0_0_80px_rgba(229,9,20,0.45),0_35px_100px_rgba(0,0,0,0.95)]"
+        class="relative z-10 w-full max-w-[460px] p-[1.5px] rounded-[24px] bg-gradient-to-b from-red-500/50 via-amber-500/25 to-purple-500/30 shadow-[0_0_50px_rgba(229,9,20,0.3),0_25px_70px_rgba(0,0,0,0.85)] transition-all duration-300"
       >
-        <!-- Inner Card Body -->
         <div
-          class="relative w-full overflow-hidden rounded-[29px] bg-[#070b18]/95 backdrop-blur-3xl"
+          class="relative w-full overflow-hidden rounded-[23px] bg-[#070b18]/95 backdrop-blur-2xl"
         >
-          <!-- ── Vibrant Movie Artwork Layer (Thanos Infinity Portal) ── -->
+          <!-- Nền poster Thanos / cổng không gian điện ảnh -->
           <div class="pointer-events-none absolute inset-0 overflow-hidden">
             <img
               src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1200&q=85"
-              alt="CineHub Cinema Artwork"
-              class="h-full w-full object-cover object-center opacity-65 scale-105 filter brightness-110 contrast-115 transition duration-700 hover:scale-110"
+              alt="Hình nền rạp chiếu phim CineHub"
+              class="h-full w-full object-cover object-center opacity-60 scale-105 filter brightness-105 contrast-115"
             />
-            <!-- Golden cosmic portal glow behind character & heading -->
             <div
-              class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-amber-400/25 blur-[60px]"
+              class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] rounded-full bg-amber-400/20 blur-[50px]"
             ></div>
-            <!-- Vignette gradient masks for 100% crisp text readability -->
             <div
-              class="absolute inset-0 bg-gradient-to-t from-[#060a17] via-[#070c1b]/85 to-[#060a17]/40"
+              class="absolute inset-0 bg-gradient-to-t from-[#060a17] via-[#070c1b]/85 to-[#060a17]/45"
             ></div>
             <div
               class="absolute inset-0 bg-gradient-to-b from-[#060a17]/50 via-transparent to-[#060a17]"
             ></div>
           </div>
 
-          <!-- ── Card Content ── -->
-          <div class="relative z-10 flex flex-col px-7 py-8 sm:px-9 sm:py-9">
-            <!-- ── Top Brand Monogram ── -->
+          <!-- Nội dung chính trong thẻ -->
+          <div class="relative z-10 flex flex-col px-6 py-7 sm:px-8 sm:py-8">
+            <!-- Thương hiệu CineHub -->
             <div class="text-center space-y-1">
               <span
-                class="inline-block font-serif font-black text-xs uppercase tracking-[0.35em] text-amber-300 drop-shadow-[0_2px_12px_rgba(245,158,11,0.8)]"
+                class="inline-block font-serif font-bold text-[11px] uppercase tracking-[0.28em] text-amber-300 drop-shadow-[0_2px_8px_rgba(245,158,11,0.7)]"
               >
-                CINEHUB CINEMA
+                HỆ THỐNG RẠP CINEHUB
               </span>
-              <!-- Title with cinematic drop shadow -->
               <h1
-                class="text-3xl font-black tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]"
+                class="text-2xl font-bold tracking-tight text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]"
               >
                 @switch (mode()) {
                   @case ('login') {
-                    Welcome Back!
+                    Chào mừng bạn trở lại!
                   }
                   @case ('register') {
-                    Join CineHub Club!
+                    Tạo tài khoản thành viên
                   }
                   @case ('forgot') {
-                    Reset Password
+                    Khôi phục mật khẩu
                   }
                 }
               </h1>
             </div>
 
-            <!-- ── Segmented Control: LOGIN / REGISTER (Exact Image 1 Style) ── -->
+            <!-- Thanh chuyển đổi tab: ĐĂNG NHẬP / ĐĂNG KÝ -->
             @if (mode() !== 'forgot') {
               <div
-                class="mt-5 grid grid-cols-2 p-1 rounded-xl bg-black/60 border border-white/20 backdrop-blur-xl shadow-inner"
+                class="mt-4 grid grid-cols-2 p-1 rounded-xl bg-black/60 border border-white/15 backdrop-blur-xl shadow-inner"
                 role="tablist"
                 aria-label="Chuyển chế độ Đăng nhập hoặc Đăng ký"
               >
@@ -120,11 +109,11 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                   role="tab"
                   [attr.aria-selected]="mode() === 'login'"
                   (click)="setMode('login')"
-                  class="rounded-lg py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-200"
+                  class="rounded-lg py-2 text-xs font-bold tracking-wide transition-all duration-200"
                   [class]="
                     mode() === 'login'
-                      ? 'bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] text-white shadow-[0_0_20px_rgba(229,9,20,0.6)]'
-                      : 'text-white/60 hover:text-white'
+                      ? 'bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] text-white shadow-[0_0_15px_rgba(229,9,20,0.55)]'
+                      : 'text-white/65 hover:text-white'
                   "
                 >
                   Đăng nhập
@@ -134,22 +123,22 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                   role="tab"
                   [attr.aria-selected]="mode() === 'register'"
                   (click)="setMode('register')"
-                  class="rounded-lg py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-200"
+                  class="rounded-lg py-2 text-xs font-bold tracking-wide transition-all duration-200"
                   [class]="
                     mode() === 'register'
-                      ? 'bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] text-white shadow-[0_0_20px_rgba(229,9,20,0.6)]'
-                      : 'text-white/60 hover:text-white'
+                      ? 'bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] text-white shadow-[0_0_15px_rgba(229,9,20,0.55)]'
+                      : 'text-white/65 hover:text-white'
                   "
                 >
                   Đăng ký
                 </button>
               </div>
             } @else {
-              <div class="mt-4 text-center">
+              <div class="mt-3 text-center">
                 <button
                   type="button"
                   (click)="setMode('login')"
-                  class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-amber-200 transition"
+                  class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200 transition"
                 >
                   <svg
                     width="14"
@@ -166,11 +155,11 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
               </div>
             }
 
-            <!-- ── Error Alert Banner ── -->
+            <!-- Thông báo lỗi (nếu có) -->
             @if (errorBanner()) {
               <div
                 role="alert"
-                class="mt-4 flex items-start gap-2.5 rounded-xl border border-red-500/50 bg-red-950/80 p-3 text-xs font-semibold text-red-200 backdrop-blur-md"
+                class="mt-3.5 flex items-start gap-2.5 rounded-xl border border-red-500/50 bg-red-950/80 p-2.5 text-xs font-medium text-red-200 backdrop-blur-md"
               >
                 <svg
                   class="h-4 w-4 shrink-0 text-red-400 mt-0.5"
@@ -188,20 +177,20 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
             }
 
             <!-- ══════════════════════════════════════════════════════════
-                 1. FORM: ĐĂNG NHẬP (LOGIN)
+                 1. FORM: ĐĂNG NHẬP
             ══════════════════════════════════════════════════════════ -->
             @if (mode() === 'login') {
-              <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="mt-5 space-y-3.5">
-                <!-- Username / Email with Framed Icon Slot (Image 1 Style) -->
+              <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="mt-4 space-y-3">
+                <!-- Tên đăng nhập / Email -->
                 <div
                   class="flex items-center overflow-hidden rounded-xl border border-white/20 bg-black/55 backdrop-blur-xl transition-all duration-200 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/25 shadow-inner"
                 >
                   <div
-                    class="flex h-11 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
+                    class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
                   >
                     <svg
-                      width="17"
-                      height="17"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -216,21 +205,21 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     type="email"
                     formControlName="email"
                     autocomplete="email"
-                    placeholder="Username / Email"
-                    class="h-11 flex-1 bg-transparent px-3.5 text-sm font-medium text-white placeholder-white/40 outline-none"
+                    placeholder="Email hoặc tên đăng nhập"
+                    class="h-11 flex-1 bg-transparent px-3 text-xs sm:text-sm font-normal text-white placeholder-white/40 outline-none"
                   />
                 </div>
 
-                <!-- Password with Framed Lock Icon Slot & Right Eye Toggle (Image 1 Style) -->
+                <!-- Mật khẩu -->
                 <div
                   class="flex items-center overflow-hidden rounded-xl border border-white/20 bg-black/55 backdrop-blur-xl transition-all duration-200 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/25 shadow-inner"
                 >
                   <div
-                    class="flex h-11 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
+                    class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
                   >
                     <svg
-                      width="17"
-                      height="17"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -245,19 +234,19 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     [type]="showPassword() ? 'text' : 'password'"
                     formControlName="password"
                     autocomplete="current-password"
-                    placeholder="Password"
-                    class="h-11 flex-1 bg-transparent px-3.5 text-sm font-medium text-white placeholder-white/40 outline-none"
+                    placeholder="Mật khẩu"
+                    class="h-11 flex-1 bg-transparent px-3 text-xs sm:text-sm font-normal text-white placeholder-white/40 outline-none"
                   />
                   <button
                     type="button"
                     (click)="toggleShowPassword()"
-                    class="px-3.5 text-white/50 hover:text-white transition"
+                    class="px-3 text-white/50 hover:text-white transition"
                     [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
                   >
                     @if (showPassword()) {
                       <svg
-                        width="16"
-                        height="16"
+                        width="15"
+                        height="15"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -274,8 +263,8 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                       </svg>
                     } @else {
                       <svg
-                        width="16"
-                        height="16"
+                        width="15"
+                        height="15"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -288,8 +277,8 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                   </button>
                 </div>
 
-                <!-- I've forgotten my password Link (Exact Image 1 Position) -->
-                <div class="flex items-center justify-between pt-0.5 text-xs">
+                <!-- Tùy chọn: Ghi nhớ & Quên mật khẩu -->
+                <div class="flex items-center justify-between text-xs pt-0.5">
                   <label
                     class="flex items-center gap-2 cursor-pointer select-none text-slate-300 hover:text-white"
                   >
@@ -299,23 +288,23 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                       (change)="rememberMe.set(!rememberMe())"
                       class="h-3.5 w-3.5 rounded border-white/20 bg-black/40 accent-[#e50914]"
                     />
-                    <span>Remember me</span>
+                    <span>Ghi nhớ đăng nhập</span>
                   </label>
                   <button
                     type="button"
                     (click)="setMode('forgot')"
-                    class="font-medium text-amber-300/90 hover:text-amber-200 hover:underline transition"
+                    class="font-medium text-amber-300/95 hover:text-amber-200 hover:underline transition"
                   >
-                    I've forgotten my password
+                    Quên mật khẩu?
                   </button>
                 </div>
 
-                <!-- Glowing Pill Submit Button (Image 1 Style) -->
-                <div class="pt-2 text-center">
+                <!-- Nút Đăng nhập dạng viên thuốc -->
+                <div class="pt-1.5 text-center">
                   <button
                     type="submit"
                     [disabled]="submitting()"
-                    class="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] py-3 text-sm font-black tracking-wide text-white shadow-[0_0_30px_rgba(229,9,20,0.55)] transition-all hover:shadow-[0_0_45px_rgba(229,9,20,0.8)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 border border-red-400/40"
+                    class="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_0_25px_rgba(229,9,20,0.5)] transition-all hover:shadow-[0_0_35px_rgba(229,9,20,0.75)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 border border-red-400/40"
                   >
                     @if (submitting()) {
                       <span class="inline-flex items-center gap-2">
@@ -329,10 +318,10 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                           <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
                           <path d="M12 2a10 10 0 0 1 10 10" />
                         </svg>
-                        <span>Authenticating...</span>
+                        <span>Đang xác thực...</span>
                       </span>
                     } @else {
-                      <span>Login Now</span>
+                      <span>Đăng nhập ngay</span>
                     }
                   </button>
                 </div>
@@ -340,20 +329,24 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
             }
 
             <!-- ══════════════════════════════════════════════════════════
-                 2. FORM: ĐĂNG KÝ (REGISTER)
+                 2. FORM: ĐĂNG KÝ
             ══════════════════════════════════════════════════════════ -->
             @if (mode() === 'register') {
-              <form [formGroup]="registerForm" (ngSubmit)="submitRegister()" class="mt-5 space-y-3">
-                <!-- Full name -->
+              <form
+                [formGroup]="registerForm"
+                (ngSubmit)="submitRegister()"
+                class="mt-4 space-y-2.5"
+              >
+                <!-- Họ và tên -->
                 <div
                   class="flex items-center overflow-hidden rounded-xl border border-white/20 bg-black/55 backdrop-blur-xl focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/25"
                 >
                   <div
-                    class="flex h-11 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
+                    class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
                   >
                     <svg
-                      width="17"
-                      height="17"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -368,7 +361,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     formControlName="fullName"
                     autocomplete="name"
                     placeholder="Họ và tên của bạn"
-                    class="h-11 flex-1 bg-transparent px-3.5 text-sm font-medium text-white placeholder-white/40 outline-none"
+                    class="h-11 flex-1 bg-transparent px-3 text-xs sm:text-sm font-normal text-white placeholder-white/40 outline-none"
                   />
                 </div>
 
@@ -377,11 +370,11 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                   class="flex items-center overflow-hidden rounded-xl border border-white/20 bg-black/55 backdrop-blur-xl focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/25"
                 >
                   <div
-                    class="flex h-11 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
+                    class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
                   >
                     <svg
-                      width="17"
-                      height="17"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -396,20 +389,20 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     formControlName="email"
                     autocomplete="email"
                     placeholder="Địa chỉ Email"
-                    class="h-11 flex-1 bg-transparent px-3.5 text-sm font-medium text-white placeholder-white/40 outline-none"
+                    class="h-11 flex-1 bg-transparent px-3 text-xs sm:text-sm font-normal text-white placeholder-white/40 outline-none"
                   />
                 </div>
 
-                <!-- Phone -->
+                <!-- Số điện thoại -->
                 <div
                   class="flex items-center overflow-hidden rounded-xl border border-white/20 bg-black/55 backdrop-blur-xl focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/25"
                 >
                   <div
-                    class="flex h-11 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
+                    class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
                   >
                     <svg
-                      width="17"
-                      height="17"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -425,20 +418,20 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     formControlName="phone"
                     autocomplete="tel"
                     placeholder="Số điện thoại (tùy chọn)"
-                    class="h-11 flex-1 bg-transparent px-3.5 text-sm font-medium text-white placeholder-white/40 outline-none tabular-nums"
+                    class="h-11 flex-1 bg-transparent px-3 text-xs sm:text-sm font-normal text-white placeholder-white/40 outline-none tabular-nums"
                   />
                 </div>
 
-                <!-- Password -->
+                <!-- Mật khẩu -->
                 <div
                   class="flex items-center overflow-hidden rounded-xl border border-white/20 bg-black/55 backdrop-blur-xl focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/25"
                 >
                   <div
-                    class="flex h-11 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
+                    class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
                   >
                     <svg
-                      width="17"
-                      height="17"
+                      width="16"
+                      height="16"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -453,17 +446,17 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     formControlName="password"
                     autocomplete="new-password"
                     placeholder="Mật khẩu (tối thiểu 8 ký tự)"
-                    class="h-11 flex-1 bg-transparent px-3.5 text-sm font-medium text-white placeholder-white/40 outline-none"
+                    class="h-11 flex-1 bg-transparent px-3 text-xs sm:text-sm font-normal text-white placeholder-white/40 outline-none"
                   />
                   <button
                     type="button"
                     (click)="toggleShowRegisterPassword()"
-                    class="px-3.5 text-white/50 hover:text-white transition"
+                    class="px-3 text-white/50 hover:text-white transition"
                   >
                     @if (showRegisterPassword()) {
                       <svg
-                        width="16"
-                        height="16"
+                        width="15"
+                        height="15"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -474,8 +467,8 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                       </svg>
                     } @else {
                       <svg
-                        width="16"
-                        height="16"
+                        width="15"
+                        height="15"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -488,29 +481,30 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                   </button>
                 </div>
 
-                <div class="pt-2 text-center">
+                <!-- Nút Đăng ký -->
+                <div class="pt-1.5 text-center">
                   <button
                     type="submit"
                     [disabled]="submitting()"
-                    class="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] py-3 text-sm font-black tracking-wide text-white shadow-[0_0_30px_rgba(229,9,20,0.55)] transition-all hover:shadow-[0_0_45px_rgba(229,9,20,0.8)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 border border-red-400/40"
+                    class="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_0_25px_rgba(229,9,20,0.5)] transition-all hover:shadow-[0_0_35px_rgba(229,9,20,0.75)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 border border-red-400/40"
                   >
-                    <span>Register Now</span>
+                    <span>Đăng ký ngay</span>
                   </button>
                 </div>
               </form>
             }
 
             <!-- ══════════════════════════════════════════════════════════
-                 3. FORM: QUÊN MẬT KHẨU (FORGOT)
+                 3. FORM: QUÊN MẬT KHẨU
             ══════════════════════════════════════════════════════════ -->
             @if (mode() === 'forgot') {
               @if (forgotSent()) {
                 <div
-                  class="mt-5 flex items-start gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-950/60 p-4 text-xs font-semibold text-emerald-200"
+                  class="mt-4 flex items-start gap-3 rounded-xl border border-emerald-500/40 bg-emerald-950/60 p-3.5 text-xs font-semibold text-emerald-200"
                 >
                   <svg
-                    width="20"
-                    height="20"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -521,24 +515,24 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     <path d="m9 11 3 3L22 4" />
                   </svg>
                   <div>
-                    <p class="font-bold text-sm">Email đã được gửi!</p>
+                    <p class="font-bold text-sm">Email đã được gửi thành công!</p>
                     <p class="mt-1 opacity-80 leading-relaxed">
-                      Vui lòng kiểm tra hộp thư của bạn (kể cả thư mục Spam) để nhận liên kết khôi
-                      phục mật khẩu.
+                      Vui lòng kiểm tra hộp thư của bạn (kể cả mục Thư rác/Spam) để lấy đường dẫn
+                      đặt lại mật khẩu.
                     </p>
                   </div>
                 </div>
               } @else {
-                <form [formGroup]="forgotForm" (ngSubmit)="submitForgot()" class="mt-5 space-y-3.5">
+                <form [formGroup]="forgotForm" (ngSubmit)="submitForgot()" class="mt-4 space-y-3">
                   <div
                     class="flex items-center overflow-hidden rounded-xl border border-white/20 bg-black/55 backdrop-blur-xl focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/25"
                   >
                     <div
-                      class="flex h-11 w-12 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
+                      class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/15 bg-white/[0.04] text-amber-300"
                     >
                       <svg
-                        width="17"
-                        height="17"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -551,15 +545,15 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                     <input
                       type="email"
                       formControlName="email"
-                      placeholder="Email tài khoản CineHub của bạn"
-                      class="h-11 flex-1 bg-transparent px-3.5 text-sm font-medium text-white placeholder-white/40 outline-none"
+                      placeholder="Nhập email tài khoản của bạn"
+                      class="h-11 flex-1 bg-transparent px-3 text-xs sm:text-sm font-normal text-white placeholder-white/40 outline-none"
                     />
                   </div>
 
                   <button
                     type="submit"
                     [disabled]="submitting()"
-                    class="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] py-3 text-sm font-black tracking-wide text-white shadow-[0_0_30px_rgba(229,9,20,0.55)] transition-all hover:shadow-[0_0_45px_rgba(229,9,20,0.8)] active:scale-[0.99] disabled:opacity-50 border border-red-400/40"
+                    class="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_0_25px_rgba(229,9,20,0.5)] transition-all hover:shadow-[0_0_35px_rgba(229,9,20,0.75)] active:scale-[0.99] disabled:opacity-50 border border-red-400/40"
                   >
                     <span>Gửi liên kết khôi phục</span>
                   </button>
@@ -568,25 +562,24 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
             }
 
             <!-- ══════════════════════════════════════════════════════════
-                 LOGIN WITH OTHERS + HÀNG NÚT TRÒN GOOGLE, FACEBOOK, VIP
-                 (Đúng chính xác 100% theo Ảnh 1)
+                 HOẶC ĐĂNG NHẬP VỚI + HÀNG NÚT TRÒN GỌN GÀNG, HÀI HÒA
             ══════════════════════════════════════════════════════════ -->
-            <div class="mt-6 text-center">
-              <span class="text-[11px] font-bold tracking-[0.25em] uppercase text-white/60">
-                Login with Others
+            <div class="mt-5 text-center">
+              <span class="text-[11px] font-semibold tracking-wider uppercase text-white/55">
+                Hoặc đăng nhập với
               </span>
             </div>
 
-            <!-- Hàng nút tròn mạng xã hội (Image 1 Style) -->
-            <div class="mt-3 flex items-center justify-center gap-4">
-              <!-- Nút tròn 1: Google -->
+            <!-- Hàng nút tròn mạng xã hội: Kích thước 40px vừa vặn, chuẩn mắt -->
+            <div class="mt-2.5 flex items-center justify-center gap-3.5">
+              <!-- Nút tròn: Google -->
               <button
                 type="button"
                 (click)="signInDemoCustomer()"
-                title="Đăng nhập với Google"
-                class="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_4px_20px_rgba(0,0,0,0.5)] transition-all hover:scale-110 hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] active:scale-95"
+                title="Đăng nhập bằng tài khoản Google"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all hover:scale-110 hover:shadow-[0_0_18px_rgba(255,255,255,0.6)] active:scale-95"
               >
-                <svg class="h-5 w-5" viewBox="0 0 24 24">
+                <svg class="h-4.5 w-4.5" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -606,29 +599,29 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                 </svg>
               </button>
 
-              <!-- Nút tròn 2: Facebook -->
+              <!-- Nút tròn: Facebook -->
               <button
                 type="button"
                 (click)="signInDemoCustomer()"
-                title="Đăng nhập với Facebook"
-                class="flex h-11 w-11 items-center justify-center rounded-full bg-[#1877F2] text-white shadow-[0_4px_20px_rgba(24,119,242,0.4)] transition-all hover:scale-110 hover:shadow-[0_0_20px_rgba(24,119,242,0.7)] active:scale-95"
+                title="Đăng nhập bằng Facebook"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-[#1877F2] text-white shadow-[0_4px_16px_rgba(24,119,242,0.4)] transition-all hover:scale-110 hover:shadow-[0_0_18px_rgba(24,119,242,0.7)] active:scale-95"
               >
-                <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                <svg class="h-4.5 w-4.5 fill-current" viewBox="0 0 24 24">
                   <path
                     d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
                   />
                 </svg>
               </button>
 
-              <!-- Nút tròn 3: CineHub VIP Demo (Sao Vàng Ánh Kim) -->
+              <!-- Nút tròn: CineHub VIP Demo -->
               <button
                 type="button"
                 (click)="signInDemoCustomer()"
                 title="Đăng nhập nhanh tài khoản VIP Demo"
-                class="flex h-11 w-11 items-center justify-center rounded-full border border-amber-400/70 bg-gradient-to-br from-[#2a1b02] via-[#3a2503] to-[#1a1000] text-amber-300 shadow-[0_4px_20px_rgba(245,158,11,0.3)] transition-all hover:scale-110 hover:border-amber-300 hover:shadow-[0_0_25px_rgba(245,158,11,0.7)] active:scale-95"
+                class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/70 bg-gradient-to-br from-[#2a1b02] via-[#3a2503] to-[#1a1000] text-amber-300 shadow-[0_4px_16px_rgba(245,158,11,0.3)] transition-all hover:scale-110 hover:border-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.7)] active:scale-95"
               >
                 <svg
-                  class="h-5 w-5 fill-amber-300 drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]"
+                  class="h-4.5 w-4.5 fill-amber-300 drop-shadow-[0_0_5px_rgba(245,158,11,0.8)]"
                   viewBox="0 0 24 24"
                 >
                   <path
@@ -638,33 +631,33 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
               </button>
             </div>
 
-            <!-- Hidden container for Google OAuth script -->
+            <!-- Container ẩn cho Google SDK -->
             <div #googleBtnContainer class="hidden" aria-hidden="true"></div>
 
-            <!-- ── Bottom Switcher: Don't have account? Sign up ── -->
+            <!-- ── Dòng chuyển đổi chân trang ── -->
             <div
-              class="mt-6 border-t border-white/10 pt-4 text-center text-xs text-white/70 space-y-1.5"
+              class="mt-5 border-t border-white/10 pt-3.5 text-center text-xs text-white/70 space-y-1.5"
             >
               @if (mode() === 'login') {
                 <p>
-                  <span>Don't have account? </span>
+                  <span>Chưa có tài khoản CineHub? </span>
                   <button
                     type="button"
                     (click)="setMode('register')"
-                    class="font-black text-[#ff3344] hover:underline transition drop-shadow-[0_0_10px_rgba(255,51,68,0.5)]"
+                    class="font-bold text-[#ff3344] hover:underline transition drop-shadow-[0_0_8px_rgba(255,51,68,0.5)] ml-0.5"
                   >
-                    Sign up
+                    Đăng ký ngay
                   </button>
                 </p>
               } @else if (mode() === 'register') {
                 <p>
-                  <span>Already have an account? </span>
+                  <span>Đã có tài khoản thành viên? </span>
                   <button
                     type="button"
                     (click)="setMode('login')"
-                    class="font-black text-[#ff3344] hover:underline transition drop-shadow-[0_0_10px_rgba(255,51,68,0.5)]"
+                    class="font-bold text-[#ff3344] hover:underline transition drop-shadow-[0_0_8px_rgba(255,51,68,0.5)] ml-0.5"
                   >
-                    Sign in
+                    Đăng nhập ngay
                   </button>
                 </p>
               }
@@ -674,7 +667,7 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
                   routerLink="/verify-email"
                   class="inline-flex items-center gap-1 font-medium text-slate-400 hover:text-amber-300 hover:underline transition text-[11px]"
                 >
-                  <span>Xác thực email bằng mã OTP</span>
+                  <span>Xác thực tài khoản bằng mã OTP</span>
                   <span>→</span>
                 </a>
               </p>
@@ -721,7 +714,6 @@ export class AuthPageComponent implements OnInit, AfterViewInit {
   );
 
   ngOnInit(): void {
-    // Tự động nhận diện khi người dùng click "Đăng ký" trên header (?mode=register)
     this.route.queryParams.subscribe((params) => {
       const targetMode = params['mode'];
       if (targetMode === 'register' || targetMode === 'signup') {
