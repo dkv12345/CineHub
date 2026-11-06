@@ -208,13 +208,15 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
             } @else {
               <div class="flex items-center gap-2">
                 <a
-                  routerLink="/auth"
+                  [routerLink]="['/auth']"
+                  [queryParams]="{ mode: 'register' }"
                   class="hidden rounded-xl px-4 py-2 text-xs font-black text-white/80 transition hover:text-white md:block"
                 >
                   {{ activeLang() === 'vi' ? 'Đăng ký' : 'Sign Up' }}
                 </a>
                 <a
-                  routerLink="/auth"
+                  [routerLink]="['/auth']"
+                  [queryParams]="{ mode: 'login' }"
                   class="rounded-xl bg-[#e50914] px-4.5 py-2 text-xs font-black text-white shadow-lg shadow-red-900/40 transition hover:bg-[#ff101c]"
                 >
                   {{ activeLang() === 'vi' ? 'Đăng nhập' : 'Sign In' }}
