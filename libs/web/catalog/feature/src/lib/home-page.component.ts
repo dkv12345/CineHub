@@ -38,7 +38,7 @@ import { cinemas as seedCinemas, dayInfo, promotions, type Movie } from '@cinehu
             >
               <div class="absolute inset-0 overflow-hidden bg-[#020617]">
                 <img
-                  [src]="slide.imageUrl"
+                  [src]="slide.image || slide.imageUrl"
                   [alt]="slide.title"
                   class="h-full w-full object-cover object-center"
                 />
