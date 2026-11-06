@@ -1,423 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=Cormorant+Garamond:wght@500;600;700&family=DM+Serif+Display&family=Fredoka:wght@500;600;700&family=Gowun+Dodum&family=Manrope:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@600;700&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import 'tailwindcss';
 @source '../../../libs/web';
 @source '../';
 
-/*
- * ==========================================================================
- * CINEHUB — BRIGHT PREMIUM CINEMA DESIGN SYSTEM TOKENS
- * Synthesizing Everyman (Brand Sophistication & Editorial Whitespace),
- * Alamo Drafthouse (Film Discovery & Cinema Personality),
- * and HOYTS (Clear Session Visibility & Commercial E-commerce UX).
- * ==========================================================================
- */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  font-family: 'Manrope', sans-serif;
+  background-color: #020617;
+  color: #ffffff;
 
-  /* CineHub Signature Color System */
-  --color-brand-primary: #7c2638; /* CineHub Burgundy */
-  --color-brand-deep: #5e1d2b; /* Deep Burgundy (Hover / active) */
-  --color-brand-accent: #b28a50; /* Champagne Gold */
-  --color-brand-subtle: #f3e9e7; /* Soft Burgundy (Selected/highlighted) */
-  --color-brand-subtle-hover: #ebe0de;
-
-  --color-background: #f7f3ec; /* Warm Ivory (Main page canvas) */
-  --color-surface: #fffdf9; /* Porcelain White (Content surfaces) */
-  --color-surface-secondary: #efe8dc; /* Sand (Secondary background/tags) */
-  --color-border: #ddd3c5; /* Stone (Borders and dividers) */
-  --color-border-subtle: #eae2d6; /* Subtle fine rules */
-
-  --color-text-primary: #24201d; /* Espresso (Primary text) */
-  --color-text-secondary: #736a60; /* Warm Gray (Secondary metadata) */
-  --color-text-muted: #958c82; /* Muted caption text */
-  --color-text-inverted: #fffdf9;
-
-  /* Semantic feedback */
-  --color-danger: #b53835;
-  --color-danger-bg: #fdf2f2;
-  --color-success: #2b7442;
-  --color-success-bg: #edf7f0;
-  --color-warning: #a06e1e;
-  --color-warning-bg: #fdf8ee;
-
-  /* Backward Compatibility Aliases */
-  --cinema-canvas: var(--color-background);
-  --cinema-surface: var(--color-surface);
-  --cinema-surface-raised: #ffffff;
-  --cinema-surface-inset: var(--color-surface-secondary);
-  --cinema-text-primary: var(--color-text-primary);
-  --cinema-text-secondary: var(--color-text-secondary);
-  --cinema-text-muted: var(--color-text-muted);
-  --cinema-border: var(--color-border);
-  --cinema-border-subtle: var(--color-border-subtle);
-  --cinema-accent: var(--color-brand-primary);
-  --cinema-accent-hover: var(--color-brand-deep);
-  --cinema-action: var(--color-brand-primary);
-  --cinema-action-text: var(--color-text-inverted);
-  --cinema-danger: var(--color-danger);
-  --cinema-danger-bg: var(--color-danger-bg);
-  --cinema-success: var(--color-success);
-  --cinema-success-bg: var(--color-success-bg);
-  --cinema-warning: var(--color-warning);
-  --cinema-warning-bg: var(--color-warning-bg);
-
-  /* Unified Typography System — Mandatory Primary Typeface: Source Sans 3 */
-  --font-family-primary:
-    'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
-  --font-ui: var(--font-family-primary);
-  --font-display: var(--font-family-primary);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-
-  /* Typography Scale & Hierarchy (Source Sans 3) */
-  --text-hero: clamp(2.75rem, 4.5vw, 3.75rem); /* Hero heading: 52–60px, weight 600 */
-  --text-page-title: clamp(2rem, 3.2vw, 2.625rem); /* Main page heading: 36–42px, weight 600 */
-  --text-section: clamp(1.5rem, 2.2vw, 2rem); /* Section heading: 28–32px, weight 600 */
-  --text-movie-title: clamp(1.25rem, 1.8vw, 1.5rem); /* Movie title: 20–24px, weight 600 */
-  --text-price: clamp(1.25rem, 1.8vw, 1.5rem); /* Price: 20–24px, weight 600 (tabular-nums) */
-  --text-card-title: 1.0625rem; /* Card title: 16–18px, weight 600 */
-  --text-body: 0.9375rem; /* Body text: 15–16px, weight 400 */
-  --text-nav: 0.9375rem; /* Navigation: 15px, weight 500 */
-  --text-button: 0.9375rem; /* Button: 15px, weight 600 */
-  --text-meta: 0.84375rem; /* Metadata: 13–14px, weight 400 */
-  --text-micro: 0.75rem; /* Micro caption: 12px, weight 500 */
-
-  /* Backward Compatibility Scale Aliases */
-  --text-display: var(--text-hero);
-  --text-h1: var(--text-page-title);
-  --text-h2: var(--text-section);
-  --text-h3: var(--text-movie-title);
-  --text-body-lg: 1.0625rem;
-
-  /* Font Weights */
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-12: 3rem;
-  --space-16: 4rem;
-
-  /* Shape and motion */
-  --radius-control: 4px;
-  --radius-panel: 6px;
-  --radius-poster: 4px;
-  --duration-fast: 140ms;
-  --duration-normal: 200ms;
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-
-  /* Layout */
-  --content-max: 1280px;
-  --page-gutter: clamp(1.25rem, 3.5vw, 3.5rem);
+  --color-brand-primary: #e50914;
+  --color-brand-subtle: rgba(229, 9, 20, 0.15);
+  --color-surface: #0b0f19;
+  --color-surface-secondary: #0f172a;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+html {
+  scroll-behavior: smooth;
+  background-color: #020617;
 }
 
-body,
-.cinema-app {
+body {
   margin: 0;
+  min-width: 320px;
   min-height: 100vh;
-  color: var(--color-text-primary);
-  background-color: var(--color-background);
-  font-family: var(--font-ui);
-  font-size: var(--text-body);
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  font-family:
+    'Manrope',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  background-color: #020617;
+  color: #ffffff;
 }
 
-.cinema-app :where(button, input, select, textarea) {
+button,
+input,
+select,
+textarea {
   font: inherit;
 }
 
-.cinema-app :where(button, a, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
-/* Headings & Typography Hierarchy */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-family-primary);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  line-height: 1.25;
-  letter-spacing: -0.012em;
-}
-
-.font-display {
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-}
-
-.font-ui {
-  font-family: var(--font-ui);
-}
-
-.tabular-nums,
-[data-tabular-nums] {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
-}
-
-.cinema-heading-hero {
-  font-family: var(--font-family-primary);
-  font-size: var(--text-hero);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.cinema-heading-page {
-  font-family: var(--font-family-primary);
-  font-size: var(--text-page-title);
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
-}
-
-.cinema-heading-section {
-  font-family: var(--font-family-primary);
-  font-size: var(--text-section);
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
-
-.cinema-movie-title {
-  font-family: var(--font-family-primary);
-  font-size: var(--text-movie-title);
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.cinema-card-title {
-  font-family: var(--font-family-primary);
-  font-size: var(--text-card-title);
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.cinema-price {
-  font-family: var(--font-family-primary);
-  font-size: var(--text-price);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
-  color: var(--color-brand-primary);
-}
-
-.cinema-metadata {
-  font-family: var(--font-family-primary);
-  font-size: var(--text-meta);
-  font-weight: 400;
-  color: var(--color-text-secondary);
-  line-height: 1.45;
-}
-
-.cinema-eyebrow {
-  font-family: var(--font-ui);
-  font-size: var(--text-micro);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-brand-primary);
-}
-
-/* Container & Surfaces */
-.cinema-container {
-  width: 100%;
-  max-width: var(--content-max);
-  margin-inline: auto;
-  padding-inline: var(--page-gutter);
-}
-
-.cinema-panel {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-  box-shadow: 0 1px 3px rgba(36, 32, 29, 0.03);
-}
-
-.cinema-panel-raised {
-  background-color: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-  box-shadow: 0 4px 16px rgba(36, 32, 29, 0.06);
-}
-
-.cinema-panel-inset {
-  background-color: var(--color-surface-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel);
-}
-
-.cinema-poster-frame {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-poster);
-  background-color: var(--color-surface-secondary);
-  box-shadow: 0 4px 12px rgba(36, 32, 29, 0.06);
-}
-
-/* Controls & Buttons — Strictly solid fills, fine borders, ZERO gradients */
-.cinema-primary-action,
-.cinema-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 42px;
-  padding: 0.625rem 1.25rem;
-  border: 1px solid var(--color-brand-primary);
-  border-radius: var(--radius-control);
-  color: #fffdf9;
-  background-color: var(--color-brand-primary);
-  font-family: var(--font-ui);
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+button {
   cursor: pointer;
-  text-decoration: none;
-  transition:
-    background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard);
-  box-shadow: 0 2px 6px rgba(124, 38, 56, 0.16);
 }
 
-.cinema-primary-action:hover:not(:disabled),
-.cinema-btn-primary:hover:not(:disabled) {
-  border-color: var(--color-brand-deep);
-  background-color: var(--color-brand-deep);
+.display {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+}
+
+.film-title {
+  font-family: 'Barlow Condensed', 'Manrope', sans-serif;
+  font-weight: 800;
+  line-height: 0.95;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.7);
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.85);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.5);
+}
+
+.glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.65);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  transition:
+    border-color 220ms ease,
+    background-color 220ms ease,
+    transform 220ms ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(15, 23, 42, 0.85);
+  transform: translateY(-2px);
+}
+
+.glass-control {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.6);
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(94, 29, 43, 0.22);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
-.cinema-primary-action:active:not(:disabled),
-.cinema-btn-primary:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.cinema-primary-action:disabled,
-.cinema-btn-primary:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-  box-shadow: none;
-}
-
-.cinema-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 42px;
-  padding: 0.625rem 1.125rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  color: var(--color-text-primary);
-  background-color: var(--color-surface);
-  font-family: var(--font-ui);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition:
-    background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard),
-    color var(--duration-fast) var(--ease-standard);
-}
-
-.cinema-btn-secondary:hover:not(:disabled) {
-  border-color: var(--color-brand-primary);
-  background-color: var(--color-brand-subtle);
-  color: var(--color-brand-primary);
-}
-
-.cinema-btn-secondary:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-/* Form Inputs */
-.cinema-input {
-  width: 100%;
-  min-height: 42px;
-  padding: 0.5625rem 0.875rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background-color: #ffffff;
-  color: var(--color-text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.875rem;
-  transition:
-    border-color var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard);
-}
-
-.cinema-input-icon-leading {
-  padding-left: 2.625rem !important;
-}
-
-.cinema-input-icon-both {
-  padding-left: 2.625rem !important;
-  padding-right: 2.625rem !important;
-}
-
-.cinema-input::placeholder {
-  color: var(--color-text-muted);
-}
-
-.cinema-input:focus {
-  border-color: var(--color-brand-primary);
-  box-shadow: 0 0 0 3px rgba(124, 38, 56, 0.1);
-  outline: none;
-}
-
-.cinema-label {
-  display: block;
-  margin-bottom: 0.375rem;
-  font-family: var(--font-ui);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-/* Hatched pattern for sold/unavailable seats (Accessible non-color differentiation) */
-.seat-sold-pattern {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 3px,
-    rgba(115, 106, 96, 0.18) 3px,
-    rgba(115, 106, 96, 0.18) 5px
-  );
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cinema-app *,
-  .cinema-app *::before,
-  .cinema-app *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+@keyframes ambient-drift {
+  0%,
+  100% {
+    transform: scale(1.04) translate3d(0, 0, 0);
   }
+  50% {
+    transform: scale(1.08) translate3d(-1%, 0.5%, 0);
+  }
+}
+
+.ambient-poster {
+  animation: ambient-drift 32s ease-in-out infinite;
 }

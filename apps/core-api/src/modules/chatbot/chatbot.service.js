@@ -114,28 +114,9 @@ async function attachShowtimesToMovies(movies, { from, until, cinemaId } = {}) {
   if (!Array.isArray(movies) || movies.length === 0) return;
   try {
     const movieIds = movies.map((m) => m.id);
-    let rows = await chatbotRepository.findUpcomingShowtimesForMovies(movieIds, { from, until });
-    if ((!Array.isArray(rows) || rows.length === 0) && movieIds.length > 0) {
-      // Safe fallback: if seeded showtimes ended before now, fetch latest sessions so cards have showtimes
-      rows = await chatbotRepository.findShowtimes({
-        where: {
-          movieId: { in: movieIds },
-          status: { in: ['SCHEDULED', 'OPEN'] },
-        },
-        include: {
-          cinema: { select: { id: true, name: true } },
-          movie: { select: { id: true, title: true } },
-        },
-        orderBy: { startTime: 'desc' },
-        take: 12,
-      });
-      if (Array.isArray(rows)) {
-        rows.sort((a, b) => a.startTime - b.startTime);
-      }
-    }
-    if (!Array.isArray(rows) || rows.length === 0) return;
+    const rows = await chatbotRepository.findUpcomingShowtimesForMovies(movieIds, { from, until });
     const byMovie = new Map();
-    for (const row of rows) {
+    for (const row of rows || []) {
       if (cinemaId && row.cinemaId !== cinemaId) continue;
       const list = byMovie.get(row.movieId) || [];
       if (list.length < 3) {
@@ -156,6 +137,49 @@ async function attachShowtimesToMovies(movies, { from, until, cinemaId } = {}) {
         byMovie.set(row.movieId, list);
       }
     }
+
+    // For any movie that has 0 upcoming showtimes, fetch its latest sessions so all cards have showtimes
+    const missingMovieIds = movieIds.filter((id) => !byMovie.has(id));
+    if (missingMovieIds.length > 0) {
+      const fallbackPerMovie = await Promise.all(
+        missingMovieIds.map((id) =>
+          chatbotRepository.findShowtimes({
+            where: {
+              movieId: id,
+              status: { in: ['SCHEDULED', 'OPEN'] },
+            },
+            include: {
+              cinema: { select: { id: true, name: true } },
+              movie: { select: { id: true, title: true } },
+            },
+            orderBy: { startTime: 'desc' },
+            take: 3,
+          }),
+        ),
+      );
+      for (const row of fallbackPerMovie.flat() || []) {
+        if (cinemaId && row.cinemaId !== cinemaId) continue;
+        const list = byMovie.get(row.movieId) || [];
+        if (list.length < 3) {
+          list.push({
+            id: row.id,
+            time: new Intl.DateTimeFormat('vi-VN', {
+              timeZone: 'Asia/Ho_Chi_Minh',
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(row.startTime),
+            date: new Intl.DateTimeFormat('vi-VN', {
+              timeZone: 'Asia/Ho_Chi_Minh',
+              dateStyle: 'medium',
+            }).format(row.startTime),
+            format: row.formatRaw || row.format,
+            cinemaName: row.cinema?.name || 'CineHub Cinema',
+          });
+          byMovie.set(row.movieId, list);
+        }
+      }
+    }
+
     for (const movie of movies) {
       movie.nextShowtimes = byMovie.get(movie.id) || [];
     }

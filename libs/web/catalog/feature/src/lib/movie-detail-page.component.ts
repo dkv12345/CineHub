@@ -1,268 +1,366 @@
-import { NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
-import { AgeBadgeComponent } from '@cinehub/web/shared/ui';
-import { dayInfo, getShows, seedReviews, type Movie } from '@cinehub/web/shared/util';
+import type { Movie } from '@cinehub/web/shared/util';
 
 @Component({
   selector: 'ch-movie-detail-page',
   standalone: true,
-  imports: [RouterLink, NgOptimizedImage, AgeBadgeComponent],
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (resolvedMovie(); as m) {
-      <div class="cinema-container py-8 sm:py-12">
-        <!-- Breadcrumb / Back Link -->
-        <div class="mb-6 flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
-          <a
-            routerLink="/"
-            class="text-[var(--color-text-secondary)] no-underline transition-colors hover:text-[var(--color-brand-primary)]"
+      <main
+        class="min-h-screen overflow-hidden bg-slate-950 text-white"
+        style="background-color: #020617; color: #ffffff;"
+      >
+        <!-- HERO BANNER SECTION -->
+        <section
+          class="relative isolate flex min-h-[520px] items-end overflow-hidden bg-slate-950 sm:min-h-[600px]"
+        >
+          <!-- Ảnh Backdrop Landscape -->
+          <img
+            [src]="m.backdrop || m.poster"
+            alt=""
+            class="absolute inset-0 z-0 h-full w-full object-cover object-center opacity-75"
+          />
+          <!-- Ambient Blur Layer theo màu Poster -->
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 z-[1] scale-125 bg-cover bg-center opacity-30 blur-3xl mix-blend-screen"
+            [style.backgroundImage]="'url(' + (m.poster || m.backdrop) + ')'"
+          ></div>
+          <!-- Gradient Overlay phủ toàn bộ chiều cao -->
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 z-10 h-full w-full bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"
+          ></div>
+
+          <div
+            class="relative z-20 mx-auto grid w-full max-w-[1440px] grid-cols-1 items-end gap-8 px-5 pb-28 pt-24 md:px-9 md:pb-36 lg:grid-cols-[minmax(0,1fr)_auto]"
           >
-            ← Danh mục phim
-          </a>
-          <span class="text-[var(--color-border)]">/</span>
-          <span class="text-[var(--color-text-primary)] font-semibold">{{ m.title }}</span>
-        </div>
+            <div class="max-w-4xl">
+              <p
+                class="mb-4 flex items-center gap-3 text-xs font-bold uppercase tracking-[.28em] text-amber-300 sm:text-sm"
+              >
+                <span class="h-px w-10 bg-amber-300"></span>
+                {{ m.country || 'Điện ảnh' }}
+              </p>
 
-        <div class="grid gap-10 lg:grid-cols-12 lg:gap-12 items-start">
-          <!-- Poster Column (Natural Aspect Ratio, Crisp Artwork Presentation) -->
-          <div class="lg:col-span-4">
-            <div
-              class="sticky top-24 overflow-hidden rounded-[var(--radius-poster)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md"
-            >
-              <img
-                [ngSrc]="m.poster"
-                [alt]="m.title"
-                width="480"
-                height="720"
-                priority
-                class="h-auto w-full object-cover"
-              />
-            </div>
-          </div>
-
-          <!-- Editorial Content & Showtimes Column -->
-          <div class="space-y-8 lg:col-span-8">
-            <!-- Movie Header & Key Metadata -->
-            <div class="space-y-3.5">
-              <div class="flex flex-wrap items-center gap-2.5">
-                <ch-age-badge [age]="m.age" />
-                <span
-                  class="inline-flex items-center gap-1 rounded-[3px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--color-text-primary)] shadow-2xs"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-[var(--color-brand-accent)]"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
-                    />
-                  </svg>
-                  <span>{{ m.rating }}</span>
-                  <span class="text-[var(--color-text-secondary)] font-normal text-[11px]"
-                    >({{ m.votes }} đánh giá)</span
-                  >
-                </span>
-                <span class="text-xs text-[var(--color-text-secondary)]">· {{ m.duration }}</span>
-              </div>
-
-              <h1 class="cinema-heading-page leading-tight text-[var(--color-text-primary)]">
-                {{ m.title }}
+              <h1
+                class="max-w-5xl text-3xl font-black tracking-wide text-white md:text-5xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+              >
+                {{ m.title.toUpperCase() }}
               </h1>
 
-              <!-- Structured Metadata Grid -->
+              <!-- Info Bar -->
               <div
-                class="grid gap-3 border-y border-[var(--color-border)] py-4 text-xs sm:grid-cols-2"
+                class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-bold text-white sm:text-sm"
               >
-                <div>
-                  <span class="text-[var(--color-text-secondary)]">Thể loại:</span>
-                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
-                    m.genre
-                  }}</span>
+                <span class="inline-flex items-center gap-1.5 text-white">
+                  📅 {{ m.release || '2026' }}
+                </span>
+                <span aria-hidden="true">|</span>
+                <span>Độ tuổi: {{ m.age }}</span>
+                <span aria-hidden="true">|</span>
+                <span class="inline-flex items-center gap-1.5 text-white">
+                  ⏱ Thời lượng: {{ m.duration }}
+                </span>
+                <span aria-hidden="true">|</span>
+                <span class="inline-flex items-center gap-1.5 text-white">
+                  🌐 {{ m.country === 'Việt Nam' ? 'Tiếng Việt' : 'Phụ đề tiếng Việt' }}
+                </span>
+              </div>
+
+              <!-- Rating Badge -->
+              <div class="mt-7 flex flex-wrap items-center gap-4">
+                <div
+                  class="grid h-[76px] w-[76px] place-items-center rounded-full border-2 border-amber-300 bg-black/70 shadow-[0_0_30px_rgba(251,191,36,.3)] backdrop-blur"
+                  [attr.aria-label]="'Đánh giá ' + m.rating"
+                >
+                  <span class="flex flex-col items-center">
+                    <span class="flex items-center gap-1 text-base font-black text-amber-300">
+                      ★ {{ m.rating }}
+                    </span>
+                    <span class="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                      Đánh giá
+                    </span>
+                  </span>
                 </div>
-                <div>
-                  <span class="text-[var(--color-text-secondary)]">Đạo diễn:</span>
-                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
-                    m.director
-                  }}</span>
-                </div>
-                <div class="sm:col-span-2">
-                  <span class="text-[var(--color-text-secondary)]">Diễn viên chính:</span>
-                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
-                    m.cast
-                  }}</span>
-                </div>
-                <div>
-                  <span class="text-[var(--color-text-secondary)]">Ngày khởi chiếu:</span>
-                  <span class="ml-1.5 font-semibold text-[var(--color-text-primary)]">{{
-                    m.release
-                  }}</span>
-                </div>
-                <div>
-                  <span class="text-[var(--color-text-secondary)]">Định dạng phát hành:</span>
-                  <span class="ml-1.5 font-semibold text-[var(--color-brand-primary)]"
-                    >2D Digital, 3D, IMAX Laser</span
-                  >
-                </div>
+                @if (m.votes) {
+                  <span class="text-xs font-semibold text-white">
+                    {{ m.votes }} lượt đánh giá
+                  </span>
+                }
               </div>
             </div>
 
-            <!-- Synopsis Section (Editorial Whitespace) -->
-            <div class="cinema-panel p-6 space-y-2">
-              <span class="cinema-eyebrow">Nội dung phim</span>
-              <p
-                class="text-sm leading-relaxed text-[var(--color-text-secondary)] whitespace-pre-line"
+            <!-- Big Round Play Trailer Button -->
+            <button
+              type="button"
+              (click)="openTrailer()"
+              [attr.aria-label]="'Xem trailer phim ' + m.title"
+              class="hidden h-16 w-16 place-items-center rounded-full border-2 border-white bg-black/40 text-white shadow-2xl backdrop-blur transition hover:scale-110 hover:border-amber-300 hover:bg-amber-400 hover:text-black md:grid lg:mb-2"
+            >
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" class="ml-1">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- DETAILED INFO SECTION -->
+        <section
+          class="relative z-10 mx-auto grid max-w-[1440px] gap-8 bg-slate-950 px-5 pb-12 pt-4 md:grid-cols-[260px_minmax(0,1fr)] md:gap-12 md:px-9 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16"
+        >
+          <!-- Left Column Poster Card -->
+          <div class="mx-auto -mt-16 w-full max-w-[280px] md:mx-0 md:-mt-24 md:max-w-none">
+            <div
+              class="overflow-hidden rounded-xl bg-slate-900 shadow-2xl shadow-black/90 ring-2 ring-white/20"
+            >
+              <img
+                [src]="m.poster || m.backdrop"
+                [alt]="'Áp phích phim ' + m.title"
+                class="aspect-[2/3] w-full object-cover"
+              />
+            </div>
+            <span
+              class="mt-4 inline-flex rounded-md border border-amber-300/50 bg-amber-400/20 px-3.5 py-1.5 text-xs font-black tracking-wide text-amber-300"
+            >
+              {{ m.age }}
+            </span>
+          </div>
+
+          <!-- Right Column Details -->
+          <div class="min-w-0 pt-1">
+            <p class="text-xs font-extrabold uppercase tracking-[.25em] text-amber-400">
+              THÔNG TIN PHIM
+            </p>
+            <h2 class="mt-2 text-2xl font-black text-white md:text-3xl">
+              {{ m.title }}
+            </h2>
+
+            <p class="mt-4 text-base font-semibold text-white">
+              <span class="font-extrabold text-amber-400">Đạo diễn:</span>
+              <span class="font-bold text-white ml-2">{{ m.director }}</span>
+            </p>
+
+            <div class="mt-8">
+              <h3
+                class="mb-3 flex items-center gap-3 text-sm font-extrabold uppercase tracking-wide text-amber-400"
               >
-                {{ m.synopsis }}
+                <span aria-hidden="true" class="h-5 w-1 rounded-full bg-amber-400"></span>
+                NỘI DUNG PHIM
+              </h3>
+              <p
+                class="max-w-3xl whitespace-pre-line text-sm font-medium leading-relaxed text-white sm:text-base"
+              >
+                {{ m.synopsis || 'Nội dung phim đang được cập nhật.' }}
               </p>
             </div>
 
-            <!-- Showtime Selection Section -->
-            <div class="cinema-panel-raised p-6 sm:p-7 space-y-6">
-              <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-                <div>
-                  <span class="cinema-eyebrow">Đặt vé xem phim</span>
-                  <h2 class="cinema-heading-section mt-0.5 text-[var(--color-text-primary)]">
-                    Lịch chiếu & Suất xem tại rạp
-                  </h2>
-                </div>
-                <span class="text-xs text-[var(--color-text-secondary)]">
-                  Suất chiếu cập nhật thời gian thực
-                </span>
-              </div>
-
-              <!-- Date Selection Strip -->
-              <div class="flex flex-wrap gap-2" role="tablist" aria-label="Chọn ngày xem">
-                @for (d of days; track d.offset) {
-                  <button
-                    type="button"
-                    (click)="selectedDayOffset.set(d.offset)"
-                    class="rounded-[4px] border px-4 py-2.5 text-xs transition-colors"
-                    [class]="
-                      selectedDayOffset() === d.offset
-                        ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[#fffdf9] font-bold shadow-xs'
-                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)]'
-                    "
+            <!-- Thể loại Pills -->
+            <div class="mt-7">
+              <h3 class="mb-3 text-xs font-extrabold uppercase tracking-wide text-amber-400">
+                THỂ LOẠI
+              </h3>
+              <div class="flex flex-wrap gap-2">
+                @for (genre of genreList(); track genre) {
+                  <span
+                    class="rounded-full border border-white/50 bg-white/10 px-4 py-1.5 text-sm font-bold text-white backdrop-blur-md"
                   >
-                    <div class="font-bold">{{ d.short }}</div>
-                    <div
-                      class="text-[11px]"
-                      [class]="
-                        selectedDayOffset() === d.offset
-                          ? 'text-[#fffdf9]/80'
-                          : 'text-[var(--color-text-secondary)]'
-                      "
-                    >
-                      {{ d.num }}
-                    </div>
-                  </button>
-                }
-              </div>
-
-              <!-- Venues & Showtimes List -->
-              <div class="space-y-4">
-                @for (cinema of store.cinemas().slice(0, 4); track cinema.id; let idx = $index) {
-                  <div
-                    class="rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5"
-                  >
-                    <div class="flex items-center justify-between gap-3">
-                      <div>
-                        <div class="text-sm font-bold text-[var(--color-text-primary)]">
-                          {{ cinema.name }}
-                        </div>
-                        <div class="text-xs text-[var(--color-text-secondary)]">
-                          {{ cinema.address }}
-                        </div>
-                      </div>
-                      <span
-                        class="rounded-[3px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-brand-accent)]"
-                      >
-                        {{ cinema.dist }}
-                      </span>
-                    </div>
-
-                    <div class="mt-4 flex flex-wrap gap-2.5">
-                      @for (slot of getCinemaShows(m.id, idx); track slot.time) {
-                        <a
-                          [routerLink]="[
-                            '/seats',
-                            m.id + '__' + cinema.id + '__' + slot.time + '__' + slot.format,
-                          ]"
-                          class="inline-flex items-center gap-2 rounded-[4px] border border-[var(--color-border)] bg-[#ffffff] px-3.5 py-2 text-xs font-bold text-[var(--color-text-primary)] no-underline transition-all hover:border-[var(--color-brand-primary)] hover:bg-[var(--color-brand-subtle)] hover:text-[var(--color-brand-primary)] shadow-2xs"
-                        >
-                          <span class="text-sm">{{ slot.time }}</span>
-                          <span
-                            class="rounded-[2px] bg-[var(--color-surface-secondary)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-brand-primary)]"
-                          >
-                            {{ slot.format }}
-                          </span>
-                        </a>
-                      }
-                    </div>
-                  </div>
+                    {{ genre }}
+                  </span>
                 }
               </div>
             </div>
 
-            <!-- Audience Reviews (Restrained Editorial Format) -->
-            @defer (on viewport) {
-              <div class="cinema-panel p-6 space-y-4">
-                <div>
-                  <span class="cinema-eyebrow">Cộng đồng khán giả</span>
-                  <h2 class="cinema-card-title mt-0.5 text-[var(--color-text-primary)]">
-                    Nhận xét từ người xem CineHub
-                  </h2>
-                </div>
+            <!-- CTA Action Buttons -->
+            <div class="mt-8 flex flex-wrap gap-4">
+              <button
+                type="button"
+                (click)="openTrailer()"
+                class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/15 px-6 py-3 text-sm font-extrabold text-white backdrop-blur-md transition hover:bg-white hover:text-black shadow-lg"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                Xem trailer
+              </button>
 
-                <div class="space-y-3">
-                  @for (rev of reviews; track rev.name) {
-                    <div
-                      class="rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface-secondary)] p-4 text-xs"
+              <a
+                [routerLink]="['/showtimes']"
+                [queryParams]="{ movieId: m.id }"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-8 py-3 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path
+                    d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a3 3 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a3 3 0 0 1 0-4z"
+                  />
+                </svg>
+                Mua vé ngay
+              </a>
+            </div>
+
+            <!-- Diễn viên Pills -->
+            @if (castList().length > 0) {
+              <div class="mt-8">
+                <h3 class="mb-3 text-xs font-extrabold uppercase tracking-wide text-amber-400">
+                  DIỄN VIÊN
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                  @for (actor of castList(); track actor) {
+                    <span
+                      class="rounded-full border border-white/20 bg-slate-900/80 px-3.5 py-1 text-xs font-bold text-white/90"
                     >
-                      <div class="flex items-center justify-between">
-                        <span class="font-bold text-[var(--color-text-primary)]">{{
-                          rev.name
-                        }}</span>
-                        <span class="text-[var(--color-text-muted)]">{{ rev.when }}</span>
-                      </div>
-                      <p class="mt-1.5 leading-relaxed text-[var(--color-text-secondary)]">
-                        "{{ rev.text }}"
-                      </p>
-                    </div>
+                      {{ actor }}
+                    </span>
                   }
                 </div>
               </div>
-            } @placeholder {
-              <div class="cinema-panel p-4 text-xs text-[var(--color-text-secondary)]">
-                Đang tải nhận xét...
-              </div>
             }
           </div>
-        </div>
-      </div>
+        </section>
+
+        <!-- SIMILAR MOVIES SECTION -->
+        @if (similarMovies().length > 0) {
+          <section class="mx-auto max-w-[1440px] px-5 py-12 md:px-9 border-t border-white/10">
+            <h2 class="mb-6 text-xl font-black uppercase text-amber-300">Có thể bạn thích</h2>
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              @for (sim of similarMovies(); track sim.id) {
+                <a
+                  [routerLink]="['/movie', sim.id]"
+                  class="group rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg transition hover:border-amber-400"
+                >
+                  <div class="aspect-[2/3] overflow-hidden rounded-xl bg-slate-950">
+                    <img
+                      [src]="sim.poster"
+                      [alt]="sim.title"
+                      class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <h3
+                    class="mt-2.5 truncate text-xs font-black text-white group-hover:text-amber-300"
+                  >
+                    {{ sim.title }}
+                  </h3>
+                  <p class="text-[11px] font-bold text-amber-300">★ {{ sim.rating }}</p>
+                </a>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- YOUTUBE TRAILER MODAL -->
+        @if (showTrailerModal() && trailerUrl()) {
+          <div
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
+            (click)="closeTrailer()"
+          >
+            <div
+              class="relative w-full max-w-4xl overflow-hidden rounded-2xl border-2 border-white/20 bg-black shadow-2xl"
+              (click)="$event.stopPropagation()"
+            >
+              <button
+                type="button"
+                (click)="closeTrailer()"
+                aria-label="Đóng trailer"
+                class="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-slate-900/90 text-white border border-white/30 hover:border-amber-400 hover:text-amber-300 transition"
+              >
+                ✕
+              </button>
+              <div class="aspect-video w-full">
+                <iframe
+                  [src]="trailerUrl()"
+                  title="Trailer video"
+                  class="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        }
+      </main>
     }
   `,
 })
-export class MovieDetailPageComponent {
+export class MovieDetailPageComponent implements OnInit {
   readonly store = inject(CatalogStore);
+  private readonly route = inject(ActivatedRoute);
+  private readonly sanitizer = inject(DomSanitizer);
+
   readonly id = input<string>('');
   readonly movie = input<Movie | null>(null);
 
-  readonly selectedDayOffset = signal(0);
-  readonly days = [0, 1, 2, 3, 4].map((offset) => dayInfo(offset));
-  readonly reviews = seedReviews;
+  readonly showTrailerModal = signal(false);
 
-  readonly resolvedMovie = computed(
-    () => this.movie() ?? this.store.findMovieById(this.id()) ?? this.store.movies()[0] ?? null,
-  );
+  readonly resolvedMovie = computed(() => {
+    if (this.movie()) return this.movie();
+    const currentId = this.id() || this.route.snapshot.paramMap.get('id') || '';
+    return this.store.findMovieById(currentId) ?? this.store.movies()[0] ?? null;
+  });
 
-  getCinemaShows(
-    movieId: string | number,
-    cinemaIdx: number,
-  ): Array<{ time: string; format: string }> {
-    return getShows(movieId, cinemaIdx, this.selectedDayOffset());
+  readonly genreList = computed(() => {
+    const g = this.resolvedMovie()?.genre || '';
+    return g
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  });
+
+  readonly castList = computed(() => {
+    const c = this.resolvedMovie()?.cast || '';
+    return c
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item && item !== 'Đang cập nhật');
+  });
+
+  readonly similarMovies = computed(() => {
+    const m = this.resolvedMovie();
+    if (!m) return [];
+    return this.store
+      .movies()
+      .filter((candidate) => candidate.id !== m.id)
+      .slice(0, 5);
+  });
+
+  readonly trailerUrl = computed<SafeResourceUrl | null>(() => {
+    const m = this.resolvedMovie();
+    const raw = m?.trailer;
+    if (!raw) {
+      return this.sanitizer.bypassSecurityTrustResourceUrl(
+        'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1',
+      );
+    }
+    const match = raw.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/);
+    const id = match?.[1] || 'dQw4w9WgXcQ';
+    return this.sanitizer.bypassSecurityTrustResourceUrl(
+      `https://www.youtube.com/embed/${id}?autoplay=1`,
+    );
+  });
+
+  ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('trailer') === '1') {
+      this.showTrailerModal.set(true);
+    }
+  }
+
+  openTrailer(): void {
+    this.showTrailerModal.set(true);
+  }
+
+  closeTrailer(): void {
+    this.showTrailerModal.set(false);
   }
 }

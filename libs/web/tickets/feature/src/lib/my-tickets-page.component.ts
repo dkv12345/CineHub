@@ -1,142 +1,208 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { BookingStore } from '@cinehub/web/booking/data-access';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { BookingStore, type IssuedTicket } from '@cinehub/web/booking/data-access';
+import { CatalogStore } from '@cinehub/web/catalog/data-access';
 import { fmt } from '@cinehub/web/shared/util';
 import { TicketsStore } from '@cinehub/web/tickets/data-access';
 
 @Component({
   selector: 'ch-my-tickets-page',
   standalone: true,
-  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="cinema-container max-w-5xl py-8 sm:py-12">
-      <div
-        class="mb-6 flex flex-col justify-between gap-4 border-b border-[var(--color-border)] pb-6 sm:flex-row sm:items-end"
-      >
-        <div class="space-y-1">
-          <span class="cinema-eyebrow">Tài khoản thành viên</span>
-          <h1 class="cinema-heading-section text-[var(--color-text-primary)]">
-            Vé điện tử của tôi
-          </h1>
-          <p class="cinema-metadata text-xs">
-            Quản lý lịch sử đặt vé, trạng thái thanh toán và mã QR vào phòng chiếu.
-          </p>
+    <main class="min-h-screen bg-[#020617] text-white selection:bg-amber-400 selection:text-black">
+      <section class="mx-auto max-w-5xl px-5 py-8 md:px-9">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[.2em] text-amber-400">Quản lý vé</p>
+            <h1 class="mt-1 text-2xl font-black text-white sm:text-3xl">Vé điện tử của tôi</h1>
+          </div>
+
+          <!-- Status Filter Tabs -->
+          <div class="flex gap-2">
+            @for (tab of statusTabs; track tab.key) {
+              <button
+                type="button"
+                (click)="ticketsStore.setStatusFilter(tab.key)"
+                class="rounded-xl border-2 px-4 py-2 text-xs font-black transition"
+                [class]="
+                  ticketsStore.statusFilter() === tab.key
+                    ? 'border-amber-300 bg-amber-400 text-slate-950 shadow-[0_0_12px_rgba(251,191,36,0.4)]'
+                    : 'border-white/20 bg-slate-900 text-white/80 hover:border-white/50'
+                "
+              >
+                {{ tab.label }}
+              </button>
+            }
+          </div>
         </div>
 
-        <!-- Status Filter Tabs -->
-        <div
-          class="inline-flex rounded-[4px] border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-2xs"
-          role="tablist"
-          aria-label="Lọc vé theo trạng thái"
-        >
-          @for (tab of statusTabs; track tab.key) {
-            <button
-              type="button"
-              role="tab"
-              [attr.aria-selected]="ticketsStore.statusFilter() === tab.key"
-              (click)="ticketsStore.setStatusFilter(tab.key)"
-              class="rounded-[3px] px-4 py-1.5 text-xs font-bold transition-colors"
-              [class]="
-                ticketsStore.statusFilter() === tab.key
-                  ? 'bg-[var(--color-brand-primary)] text-[#fffdf9] shadow-xs'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-              "
+        <!-- Ticket Stubs List -->
+        <ul class="flex flex-col gap-6">
+          @for (ticket of filteredTickets(); track ticket.id) {
+            <li
+              class="relative flex flex-col overflow-hidden rounded-3xl border-2 border-white/20 bg-slate-900/90 shadow-2xl transition duration-300 hover:border-amber-400/80 md:flex-row"
             >
-              {{ tab.label }}
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- Tickets Grid -->
-      <div class="grid gap-5 md:grid-cols-2">
-        @for (ticket of filteredTickets(); track ticket.id) {
-          <article
-            class="cinema-panel flex flex-col justify-between p-5 transition-all hover:border-[var(--color-brand-primary)] hover:shadow-sm"
-          >
-            <div class="space-y-3">
+              <!-- 1. Cuống Vé Trắng Bên Trái (White Stub) -->
               <div
-                class="flex items-center justify-between border-b border-dashed border-[var(--color-border)] pb-3"
+                class="relative flex w-full shrink-0 flex-col justify-between bg-white p-5 text-slate-950 md:w-[260px]"
               >
-                <span
-                  class="font-mono text-xs font-bold tracking-wider text-[var(--color-brand-primary)]"
-                >
-                  {{ ticket.bookingCode }}
-                </span>
-                <span
-                  class="rounded-[3px] border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                  [class]="
-                    ticket.status === 'VALID'
-                      ? 'border-[var(--color-success)] bg-[var(--color-success-bg)] text-[var(--color-success)]'
-                      : 'border-[var(--color-border)] bg-[var(--color-surface-secondary)] text-[var(--color-text-muted)]'
-                  "
-                >
-                  {{ ticket.status === 'VALID' ? 'Còn hiệu lực' : 'Đã sử dụng' }}
-                </span>
-              </div>
-
-              <div>
-                <h2 class="cinema-card-title leading-tight text-[var(--color-text-primary)]">
-                  {{ ticket.movieTitle }}
-                </h2>
-                <div class="mt-1 text-xs text-[var(--color-text-secondary)]">
-                  {{ ticket.cinemaName }} · {{ ticket.screenName }}
-                </div>
-              </div>
-
-              <div class="text-xs text-[var(--color-text-secondary)] space-y-0.5">
                 <div>
-                  <span class="text-[var(--color-text-secondary)]">Suất:</span>
-                  <span class="ml-1 font-semibold text-[var(--color-text-primary)]"
-                    >{{ ticket.showTime }} ({{ ticket.format }})</span
+                  <div
+                    class="flex items-center justify-between border-b border-slate-200 pb-2 text-[10px] font-black uppercase tracking-wider text-slate-500"
                   >
-                </div>
-                <div>
-                  <span class="text-[var(--color-text-secondary)]">Ghế:</span>
-                  <span class="ml-1 font-bold text-[var(--color-brand-primary)]">{{
-                    ticket.seats.join(', ')
-                  }}</span>
-                </div>
-              </div>
-            </div>
+                    <span>RẠP CHIẾU</span>
+                    <span class="font-bold text-red-600">{{ ticket.format || '2D' }}</span>
+                  </div>
 
-            <div
-              class="mt-5 flex items-center justify-between border-t border-[var(--color-border-subtle)] pt-3"
-            >
-              <div>
-                <div class="text-[10px] text-[var(--color-text-secondary)]">
-                  Đã thanh toán ({{ ticket.paymentMethod }})
+                  <div class="mt-3 grid grid-cols-2 gap-2 text-left">
+                    <div>
+                      <span class="block text-[9px] font-black uppercase text-slate-400">
+                        HÀNG
+                      </span>
+                      <b class="text-xs font-black text-slate-900">{{
+                        ticket.seats[0]?.[0] || 'F'
+                      }}</b>
+                    </div>
+                    <div>
+                      <span class="block text-[9px] font-black uppercase text-slate-400">GHẾ</span>
+                      <b class="text-xs font-black text-slate-900">{{ ticket.seats.join(', ') }}</b>
+                    </div>
+                    <div class="col-span-2 mt-1">
+                      <span class="block text-[9px] font-black uppercase text-slate-400">
+                        NGÀY & GIỜ
+                      </span>
+                      <b class="text-xs font-black text-slate-900">
+                        {{ ticket.showTime }}
+                      </b>
+                    </div>
+                  </div>
                 </div>
+
+                <!-- Barcode Graphics -->
                 <div
-                  class="cinema-price font-semibold tabular-nums text-sm text-[var(--color-brand-primary)]"
+                  class="my-4 flex flex-col items-center justify-center border-t border-slate-200 pt-3"
                 >
-                  {{ formatCurrency(ticket.totalPaid) }}
+                  <div class="flex h-9 items-stretch gap-[2px] overflow-hidden px-1">
+                    @for (w of barcodePattern(ticket.bookingCode); track $index) {
+                      <span [style.width.px]="w" class="inline-block h-full bg-slate-950"></span>
+                    }
+                  </div>
+                  <span
+                    class="mt-1 font-mono text-[10px] font-black tracking-widest text-slate-700"
+                  >
+                    {{ ticket.bookingCode }}
+                  </span>
                 </div>
               </div>
 
-              <a
-                [routerLink]="['/result', ticket.id]"
-                class="cinema-btn-secondary !min-h-[36px] !px-3.5 !py-1 !text-xs font-bold"
-              >
-                Xem mã vé QR
-              </a>
+              <!-- 2. Thân Vé Dark Luxury Bên Phải -->
+              <div class="relative flex flex-1 flex-col justify-between p-6">
+                <div>
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <span
+                      class="rounded-md border border-emerald-400/40 bg-emerald-500/20 px-3 py-1 text-xs font-black text-emerald-400"
+                    >
+                      {{ ticket.status === 'VALID' ? 'Đã thanh toán' : 'Đã sử dụng' }}
+                    </span>
+                    <span class="text-xs font-bold text-white/50">{{ ticket.paymentMethod }}</span>
+                  </div>
+
+                  <h2 class="mt-3 text-xl font-black text-white md:text-2xl">
+                    {{ ticket.movieTitle }}
+                  </h2>
+                  <p class="mt-1 text-xs font-bold text-slate-300">
+                    {{ ticket.cinemaName }} · {{ ticket.screenName }}
+                  </p>
+                  <p class="mt-1 text-xs font-black text-amber-300">
+                    Suất chiếu: {{ ticket.showTime }} ({{ ticket.format }}) · Ghế:
+                    {{ ticket.seats.join(', ') }}
+                  </p>
+                </div>
+
+                <div
+                  class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4"
+                >
+                  <div>
+                    <span class="text-[11px] font-semibold text-white/60">Tổng thanh toán:</span>
+                    <div class="text-lg font-black text-amber-300">
+                      {{ formatCurrency(ticket.totalPaid) }}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="openQrModal(ticket)"
+                    class="inline-flex items-center gap-2 rounded-xl border-2 border-amber-400/60 bg-amber-400/15 px-4 py-2.5 text-xs font-black text-amber-200 transition hover:bg-amber-400 hover:text-slate-950"
+                  >
+                    <span>📱</span>
+                    <span>Mã QR vào rạp</span>
+                  </button>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <div
+              class="rounded-3xl border-2 border-slate-700 bg-slate-900/80 p-12 text-center text-sm font-bold text-white/60"
+            >
+              Bạn chưa có vé nào trong mục này. Hãy đặt vé xem phim ngay!
             </div>
-          </article>
-        } @empty {
+          }
+        </ul>
+
+        <!-- Zoomed QR Code Modal -->
+        @if (activeQrTicket(); as ticket) {
           <div
-            class="cinema-panel col-span-full p-12 text-center text-sm text-[var(--color-text-secondary)]"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
+            (click)="closeQrModal()"
           >
-            Chưa có vé nào trong danh mục này.
+            <div
+              class="relative w-full max-w-sm rounded-3xl border-2 border-amber-400/50 bg-slate-950 p-6 text-center shadow-2xl"
+              (click)="$event.stopPropagation()"
+            >
+              <button
+                type="button"
+                (click)="closeQrModal()"
+                class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-slate-800 text-white hover:bg-slate-700"
+              >
+                ✕
+              </button>
+
+              <div class="mt-2 text-xs font-black uppercase tracking-wider text-amber-300">
+                MÃ VÉ ĐIỆN TỬ
+              </div>
+              <h3 class="mt-1 text-lg font-black text-white">{{ ticket.movieTitle }}</h3>
+              <p class="text-xs text-slate-400">
+                {{ ticket.cinemaName }} · Ghế {{ ticket.seats.join(', ') }}
+              </p>
+
+              <!-- Simulated High-res QR Grid -->
+              <div
+                class="mx-auto my-6 grid h-[200px] w-[200px] place-items-center rounded-2xl bg-white p-3 shadow-2xl"
+              >
+                <div class="flex flex-col items-center justify-center text-slate-950">
+                  <div class="font-mono text-3xl font-black">QR</div>
+                  <div class="font-mono text-xs font-black tracking-widest mt-2">
+                    {{ ticket.bookingCode }}
+                  </div>
+                </div>
+              </div>
+
+              <p class="text-[11px] font-bold text-slate-400">
+                Đưa mã này cho nhân viên soát vé tại cửa phòng chiếu.
+              </p>
+            </div>
           </div>
         }
-      </div>
-    </div>
+      </section>
+    </main>
   `,
 })
 export class MyTicketsPageComponent {
   readonly bookingStore = inject(BookingStore);
   readonly ticketsStore = inject(TicketsStore);
+  readonly catalogStore = inject(CatalogStore);
+
+  readonly activeQrTicket = signal<IssuedTicket | null>(null);
 
   readonly statusTabs = [
     { key: 'ALL' as const, label: 'Tất cả' },
@@ -150,6 +216,19 @@ export class MyTicketsPageComponent {
     if (status === 'ALL') return list;
     return list.filter((t) => t.status === status);
   });
+
+  barcodePattern(code: string): number[] {
+    const arr = [2, 1, 3, 1, 2, 2, 1, 3, 1, 2, 1, 3, 2, 1, 2, 3, 1, 2, 1, 3, 2, 1];
+    return arr;
+  }
+
+  openQrModal(ticket: IssuedTicket): void {
+    this.activeQrTicket.set(ticket);
+  }
+
+  closeQrModal(): void {
+    this.activeQrTicket.set(null);
+  }
 
   formatCurrency(n: number): string {
     return fmt(n);
