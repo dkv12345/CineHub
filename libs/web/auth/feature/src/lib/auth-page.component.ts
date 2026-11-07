@@ -610,14 +610,14 @@ export const AUTH_FEATURED_MOVIES: Movie[] = (() => {
 
           <!-- Hàng nút tròn mạng xã hội: Kích thước 40px vừa vặn, chuẩn mắt -->
           <div class="mt-2.5 flex items-center justify-center gap-3.5">
-            <!-- Nút tròn: Google -->
-            <button
-              type="button"
-              (click)="signInDemoCustomer()"
+            <!-- Nút tròn: Google Sign-In -->
+            <div
+              (click)="triggerGoogleAuth()"
               title="Đăng nhập bằng tài khoản Google"
-              class="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all hover:scale-110 hover:shadow-[0_0_18px_rgba(255,255,255,0.6)] active:scale-95"
+              class="group relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all hover:scale-110 hover:shadow-[0_0_18px_rgba(255,255,255,0.6)] active:scale-95 cursor-pointer"
             >
-              <svg class="h-4.5 w-4.5" viewBox="0 0 24 24">
+              <!-- SVG icon Google nền tảng -->
+              <svg class="pointer-events-none h-4.5 w-4.5" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -635,7 +635,13 @@ export const AUTH_FEATURED_MOVIES: Movie[] = (() => {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-            </button>
+
+              <!-- Container để Google SDK render nút chính thức dạng tròn phủ lên -->
+              <div
+                #googleBtnContainer
+                class="absolute -inset-1 flex items-center justify-center opacity-[0.02] hover:opacity-100 transition-opacity"
+              ></div>
+            </div>
 
             <!-- Nút tròn: Facebook -->
             <button
@@ -666,9 +672,6 @@ export const AUTH_FEATURED_MOVIES: Movie[] = (() => {
               </svg>
             </button>
           </div>
-
-          <!-- Container ẩn cho Google SDK -->
-          <div #googleBtnContainer class="hidden" aria-hidden="true"></div>
 
           <!-- ── Dòng chuyển đổi chân trang ── -->
           <div
@@ -891,10 +894,18 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const el = this.googleBtnContainer()?.nativeElement;
     if (el) {
-      void this.googleAuth.initializeButton(el, (idToken) => {
-        void this.handleGoogleCredential(idToken);
-      });
+      void this.googleAuth.initializeButton(
+        el,
+        (idToken) => {
+          void this.handleGoogleCredential(idToken);
+        },
+        { type: 'icon', shape: 'circle', size: 'large' },
+      );
     }
+  }
+
+  triggerGoogleAuth(): void {
+    this.googleAuth.promptOneTap();
   }
 
   setMode(next: 'login' | 'register' | 'forgot'): void {

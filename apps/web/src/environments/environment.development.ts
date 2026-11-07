@@ -9,7 +9,7 @@ export interface AppEnvironment {
 export const environment: AppEnvironment = {
   production: false,
   apiBaseUrl: '/api/v1',
-  googleClientId: '227642466702-eb0l4ee6efscac08s4137b1tco4jc64c.apps.googleusercontent.com',
+  googleClientId: '430901569705-7pbpscnh5ur1avinojbqd015jg8ii0vg.apps.googleusercontent.com',
   useMocks: false,
   defaultLang: 'vi',
 };
