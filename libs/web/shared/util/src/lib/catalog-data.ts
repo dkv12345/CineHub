@@ -115,6 +115,7 @@ export const movieThemes: Record<
 export const movies: Movie[] = [
   {
     id: 'e2308892-7a93-4845-8849-2cefde6f2d1d',
+    dbId: '01a152a7-68a5-7132-8c98-2864b88e5308',
     title: 'Loạn Thế',
     genre: 'Hành động',
     duration: '1h 45m',
@@ -139,6 +140,7 @@ export const movies: Movie[] = [
   },
   {
     id: '853e58a5-6e99-43df-b36f-3c78930bf555',
+    dbId: '01a152a7-68a4-7ac0-b483-fedbd83cae30',
     title: 'Người Mẹ Xấu',
     genre: 'Hành động, Tình cảm',
     duration: '1h 45m',
@@ -163,6 +165,7 @@ export const movies: Movie[] = [
   },
   {
     id: '0e5899cb-3e8b-43f8-82d6-aa8e3dbadbbb',
+    dbId: '01a1b6d4-4b98-7372-91c1-8a6d1a0d2dbd',
     title: "BTS World Tour 'Arirang' In Jakarta: Live Viewing",
     genre: 'Ca nhạc',
     duration: '1h 45m',
@@ -187,6 +190,7 @@ export const movies: Movie[] = [
   },
   {
     id: '7c3b8b99-1256-4bf4-b353-e452b20191cb',
+    dbId: '01a152a7-68a2-7380-a55e-b1888c7d4423',
     title: 'Huyết Thống',
     genre: 'Kinh dị',
     duration: '1h 45m',
@@ -211,6 +215,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'e2a74c63-c131-4764-9786-17a1f19ef49b',
+    dbId: '01a152a7-68a1-7653-af3b-3e50252c48e3',
     title: 'Dune: Hành Tinh Cát - Phần 3',
     genre: 'Hành động, Giả Tưởng',
     duration: '1h 45m',
@@ -235,6 +240,7 @@ export const movies: Movie[] = [
   },
   {
     id: '353debbc-e2e9-416f-9be8-69700eecd3a8',
+    dbId: '01a152a7-689f-7170-ba14-e79c69d72a82',
     title: 'Avengers: Ngày Tận Thế',
     genre: 'Hành động, Phiêu lưu, Giả Tưởng',
     duration: '1h 45m',
@@ -259,6 +265,7 @@ export const movies: Movie[] = [
   },
   {
     id: '46455528-296d-4153-ad83-ee4bd30c6ee4',
+    dbId: '01a152a7-689d-7b81-8bdf-e7f7ae2b59e5',
     title: 'Con Mắt Thứ Ba',
     genre: 'Kinh dị',
     duration: '1h 45m',
@@ -283,6 +290,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'c6c7defc-589c-4d62-a187-d24dd92b600c',
+    dbId: '01a152a7-689b-7201-bbab-5b82c0bfa6b3',
     title: 'Đêm Hung Tàn 2',
     genre: 'Hành động, Hài',
     duration: '1h 45m',
@@ -307,6 +315,7 @@ export const movies: Movie[] = [
   },
   {
     id: '1bfe8cfe-cc4a-4382-b5ff-4e4216295b65',
+    dbId: '01a152a7-6899-7801-9976-08d4d419919f',
     title: 'Gặp Gỡ Thông Gia: Dâu Mới Trình Làng',
     genre: 'Hài, Gia đình',
     duration: '1h 45m',
@@ -331,6 +340,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'e448da81-597b-4c53-b624-68c0c4cb795f',
+    dbId: '01a152a7-6898-7282-9442-a9191a852f02',
     title: 'Hexed: Thế Giới Phép Thuật',
     genre: 'Hoạt hình, Hài, Gia đình',
     duration: '1h 45m',
@@ -355,6 +365,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'a76910b4-3deb-43b7-ab6d-39ae383bd488',
+    dbId: '01a1b6d4-4ab3-7fb0-a20a-a3b763e47efb',
     title: "BTS World Tour 'Arirang' In Kaohsiung: Live Viewing",
     genre: 'Ca nhạc',
     duration: '1h 45m',
@@ -379,6 +390,7 @@ export const movies: Movie[] = [
   },
   {
     id: '1de95948-d7fd-4183-8bc4-3225751afabf',
+    dbId: '01a152a7-6896-7950-a75b-70ab7801de5f',
     title: 'Trại Giam Hạnh Phúc',
     genre: 'Hài, Gia đình, Tình cảm',
     duration: '1h 45m',
@@ -403,6 +415,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'b0f2c55a-afb6-47fd-9a63-4cd7ecfb7e59',
+    dbId: '01a1b6d4-49a9-7080-bbfa-121797aa4c04',
     title: 'Tiếng Hát Cá Voi',
     genre: 'Hoạt hình',
     duration: '1h 19m',
@@ -429,6 +442,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'eccd0752-1289-4ff5-8551-1ae8f8c98614',
+    dbId: '01a1b6d4-48ac-7a31-8b8c-cadc0c40faac',
     title: 'Tôi Hiểu Sự Bức Xúc Của Các Vị',
     genre: 'Tâm lý',
     duration: '1h 57m',
@@ -455,6 +469,7 @@ export const movies: Movie[] = [
   },
   {
     id: '1be5a381-79df-420c-96db-e4ac2bc53128',
+    dbId: '01a1b6d4-47d0-76f0-a81b-2eab9c46981f',
     title: 'Rose',
     genre: 'Tâm lý, Tiểu sử',
     duration: '1h 34m',
@@ -479,6 +494,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'a4939e9b-21f1-476b-8f55-5b6cac494c59',
+    dbId: '01a152a7-6894-79b3-b3d9-fb756d01718c',
     title: 'Ebenezer Phép Màu Đêm Giáng Sinh',
     genre: 'Hài, Giả Tưởng',
     duration: '1h 45m',
@@ -503,6 +519,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'e8308998-448e-4fc8-9086-db3b14104f04',
+    dbId: '01a1b6d4-46d2-7292-94d2-062bc8029efe',
     title: 'Những Đứa Con Của Chúa',
     genre: 'Tâm lý',
     duration: '1h 45m',
@@ -527,6 +544,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'eb3e1ed7-65b5-4e5d-9de5-f736acf79a17',
+    dbId: '01a1b6d4-45fb-7610-ba86-3d0df91175b5',
     title: 'Chao Ôi, Cái Khoảng Trống Khủng Khiếp Này',
     genre: 'Tâm lý, Hài',
     duration: '2h 17m',
@@ -553,6 +571,7 @@ export const movies: Movie[] = [
   },
   {
     id: '990c02ff-8cf7-455a-a3bd-f6c11ddfe205',
+    dbId: '01a152a7-6892-7ab3-b4a6-84e626a4b9f7',
     title: 'Ngày Con Còn Mẹ',
     genre: 'Tâm lý, Gia đình',
     duration: '1h 45m',
@@ -577,6 +596,7 @@ export const movies: Movie[] = [
   },
   {
     id: '0c6d2b13-65d7-4f9c-b9a9-3490996f42a7',
+    dbId: '01a1b6d4-441c-7c41-823e-dca40d005e71',
     title: 'Khi Thần Chết Đổ Chuông',
     genre: 'Kinh dị',
     duration: '1h 26m',
@@ -601,6 +621,7 @@ export const movies: Movie[] = [
   },
   {
     id: '3b48bb60-9211-4f74-8d6d-08ab802eb8a6',
+    dbId: '01a1b6d4-4261-7770-a703-1c4ff9530369',
     title: 'Ramayana: Khởi Nguồn Một Huyền Thoại',
     genre: 'Hành động, Giả Tưởng',
     duration: '2h 48m',
@@ -625,6 +646,7 @@ export const movies: Movie[] = [
   },
   {
     id: '775308d8-86cf-4188-806e-ef86761d6e6f',
+    dbId: '01a152a7-6891-7ad3-80a8-eeb3490c6842',
     title: 'Chàng Mèo Mang Mũ',
     genre: 'Hoạt hình, Phiêu lưu',
     duration: '1h 47m',
@@ -649,6 +671,7 @@ export const movies: Movie[] = [
   },
   {
     id: '9199da61-389b-442a-8030-b2fc93127e39',
+    dbId: '01a152a7-688e-77f0-8ad7-5e5302acdfbf',
     title: 'Godzilla Trừ Không',
     genre: 'Hành động',
     duration: '2h 15m',
@@ -656,8 +679,8 @@ export const movies: Movie[] = [
     cast: 'Kamiki Ryunosuke, Hamabe Minami, Yamada Yuki, Ando Sakura, Nagasawa Masami',
     age: 'T16',
     rating: 9.2,
-    votes: 87,
-    views: 3622,
+    votes: 89,
+    views: 3638,
     poster: 'https://cdn.galaxycine.vn/media/2026/9/10/godzilla-minus-zero-3_1789024056336.jpg',
     backdrop: 'https://cdn.galaxycine.vn/media/2026/9/10/godzilla-minus-zero-1_1789024065714.jpg',
     status: 'now',
@@ -673,6 +696,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'b2c37d3f-ba4e-47e3-952f-c857a8bcae97',
+    dbId: '01a152a7-688c-7bd0-8f7f-461d411c1e79',
     title: 'Chuyến Đi Nhờ Đời',
     genre: 'Tâm lý, Gia đình',
     duration: '1h 45m',
@@ -697,6 +721,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'd4b8fca7-5fa2-42d6-b811-b9766a2bc92f',
+    dbId: '01a1b6d4-433a-7cc3-8a0b-017eae4fa924',
     title: 'Thiên Đường Tăm Tối',
     genre: 'Tâm lý, Giật gân',
     duration: '1h 40m',
@@ -721,6 +746,7 @@ export const movies: Movie[] = [
   },
   {
     id: '9edc9013-5b37-4cb3-887f-756be114c80d',
+    dbId: '01a152a7-688f-7921-831f-51680bc0f39b',
     title: 'Bò Sữa Bay',
     genre: 'Hành động, Hài, Tình cảm',
     duration: '1h 48m',
@@ -745,6 +771,7 @@ export const movies: Movie[] = [
   },
   {
     id: '954fa634-bba5-4478-b250-11524e4ef85b',
+    dbId: '01a152a7-687a-7f13-be29-30b51261d6d4',
     title: "BTS World Tour 'Arirang' In São Paulo: Live Viewing",
     genre: 'Ca nhạc',
     duration: '3h 15m',
@@ -771,6 +798,7 @@ export const movies: Movie[] = [
   },
   {
     id: '444d4cfd-c748-49dc-8e47-346fcc903f4e',
+    dbId: '01a152a7-688a-71d3-ab37-fb0a0919407d',
     title: 'Trấn Yểm',
     genre: 'Kinh dị',
     duration: '1h 45m',
@@ -795,6 +823,7 @@ export const movies: Movie[] = [
   },
   {
     id: '155326e7-ea5f-47d5-a9fe-cee100a23fc5',
+    dbId: '01a152a7-6889-7e03-915b-68bf62bb7c0a',
     title: 'Chị Chị Em Em 3',
     genre: 'Tâm lý, Tình cảm',
     duration: '2h 2m',
@@ -819,6 +848,7 @@ export const movies: Movie[] = [
   },
   {
     id: '87799faf-4447-4db6-bff3-a4fd830bfaab',
+    dbId: '01a152a7-6885-7f12-b086-5b197f76c5fd',
     title: 'Clayface',
     genre: 'Kinh dị, Giật gân',
     duration: '1h 48m',
@@ -843,6 +873,7 @@ export const movies: Movie[] = [
   },
   {
     id: '798a4f93-29e0-4c31-98dc-024501ed0839',
+    dbId: '01a152a7-6878-7583-9c51-5dd5f357b04b',
     title: "BTS World Tour 'Arirang' In Buenos Aires: Live Viewing",
     genre: 'Ca nhạc',
     duration: '3h 15m',
@@ -869,6 +900,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'cf20905e-551c-482a-a782-9dbbc9ed9f8f',
+    dbId: '01a161c1-0183-7d72-8bdb-3224c8d8f98e',
     title: "TXT World Tour 'Act : Tomorrow'",
     genre: 'Hành động, Kịch tính',
     duration: '1h 37m',
@@ -893,6 +925,7 @@ export const movies: Movie[] = [
   },
   {
     id: '664ce2e1-be03-4be0-ab4e-3164ba8b068f',
+    dbId: '01a161c1-0180-7c80-a1e8-7a8422ae1fe9',
     title: "ENHYPEN World Tour 'Blood Saga'",
     genre: 'Hành động, Kịch tính',
     duration: '1h 41m',
@@ -917,6 +950,7 @@ export const movies: Movie[] = [
   },
   {
     id: '3def810b-2cab-423a-a239-7ad816440c6a',
+    dbId: '01a161c1-017b-7ef3-baab-188f1b148260',
     title: 'Hybe Cheering Party',
     genre: 'Hành động, Kịch tính',
     duration: '1h ',
@@ -941,6 +975,7 @@ export const movies: Movie[] = [
   },
   {
     id: '1fa9744a-84d6-44cd-97f8-c46d09a030ff',
+    dbId: '01a161c1-0178-7783-af58-9c9b13e6415b',
     title: 'SEVENTEEN World Tour [New_]',
     genre: 'Hành động, Kịch tính',
     duration: '1h 42m',
@@ -967,6 +1002,7 @@ export const movies: Movie[] = [
   },
   {
     id: '130cc8e9-e7c6-418b-bcba-b7448879e005',
+    dbId: '01a161c1-0174-7ed3-b2a7-b9a24ec3f173',
     title: 'Ngự Miêu Phá Án',
     genre: 'Hoạt hình, Phiêu lưu',
     duration: '1h 38m',
@@ -991,6 +1027,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'f46792e9-83fb-4beb-a78a-53f0b1f52298',
+    dbId: '01a161c1-0171-76c0-b4a6-b11e8cc74ce5',
     title: 'Gia Đình x Điệp Viên Mã: Trắng',
     genre: 'Hành động, Kịch tính',
     duration: '1h 51m',
@@ -1015,6 +1052,7 @@ export const movies: Movie[] = [
   },
   {
     id: '81ae13ef-cf72-4526-8d9d-7c46d198ef38',
+    dbId: '01a161c1-016e-7a51-9f5c-b202649b6795',
     title: 'Bambi: Lãnh Địa Săn Mồi',
     genre: 'Hành động, Kịch tính',
     duration: '1h 45m',
@@ -1039,6 +1077,7 @@ export const movies: Movie[] = [
   },
   {
     id: '3609a6ba-576d-4c6a-975e-6324ac7a2602',
+    dbId: '01a161c1-0169-73c0-b6cd-8942d69a166b',
     title: 'Cõi Nguyền',
     genre: 'Hành động, Kịch tính',
     duration: '1h 29m',
@@ -1064,6 +1103,7 @@ export const movies: Movie[] = [
   },
   {
     id: '9a0a7336-5c73-41ee-81c9-8c23720f9009',
+    dbId: '01a161c1-0164-7301-b32e-bb65661ef6e6',
     title: 'Oán Linh Đòi Mạng',
     genre: 'Hành động, Kịch tính',
     duration: '1h 38m',
@@ -1088,6 +1128,7 @@ export const movies: Movie[] = [
   },
   {
     id: '0cdc0d16-3fc3-4d2e-b025-15c715a9f732',
+    dbId: '01a152a7-6887-7da0-9ac7-0138751380f2',
     title: 'Án Mạng Karaoke',
     genre: 'Kinh dị',
     duration: '1h 36m',
@@ -1112,6 +1153,7 @@ export const movies: Movie[] = [
   },
   {
     id: '3d1ca7f6-f840-4144-a5e3-717336b811d1',
+    dbId: '01a152a7-6884-7372-a94d-b47441fa3c54',
     title: 'Mẹ Mìn',
     genre: 'Tâm lý, Giật gân',
     duration: '1h 52m',
@@ -1136,6 +1178,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'bf09505e-1e29-4ea8-aaec-9f733d5829e6',
+    dbId: '01a152a7-6882-7f03-af6f-37c5ce83be08',
     title: 'Digger',
     genre: 'Hài, Giật gân',
     duration: '1h 45m',
@@ -1160,6 +1203,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'c3064926-58ee-4e20-9528-49d850ef622d',
+    dbId: '01a152a7-6881-7d62-9569-e1af955f64b3',
     title: 'Street Fighter',
     genre: 'Hành động',
     duration: '1h 59m',
@@ -1184,6 +1228,7 @@ export const movies: Movie[] = [
   },
   {
     id: '5197e446-6bbb-4737-8ba7-371b7107a7f2',
+    dbId: '01a152a7-687f-7530-a30a-13e70f57b703',
     title: 'Cá Voi Nuốt Chửng',
     genre: 'Kinh dị, Ly kì',
     duration: '1h 46m',
@@ -1208,6 +1253,7 @@ export const movies: Movie[] = [
   },
   {
     id: '16c8660d-dfa8-4572-8428-24ac2d7ef1e1',
+    dbId: '01a152a7-6874-7d60-b646-ce72d746d1ba',
     title: 'Shaun The Sheep: "Quái Lạ" Ghé Nhà',
     genre: 'Hoạt hình',
     duration: '1h 31m',
@@ -1234,6 +1280,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'a94edbf0-2e9b-46c4-8ae4-9f5ef0f9e91c',
+    dbId: '01a152a7-687d-7fb2-a2cc-4a5ac07f94b0',
     title: 'Bí Mật Bị Chôn Vùi',
     genre: 'Giật gân, Ly kì',
     duration: '1h 45m',
@@ -1258,6 +1305,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'f826d0c7-8d89-47c3-a518-846090e1278c',
+    dbId: '01a152a7-687b-7983-bfba-cf9256ee3f87',
     title: 'Quỷ Ăn Tạng 4: Hổ Tinh',
     genre: 'Hành động, Kinh dị, Hài',
     duration: '1h 51m',
@@ -1282,6 +1330,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'bd560d71-e4c7-4d33-a31b-61003bcf4c82',
+    dbId: '01a152a7-6876-73c0-a80d-ddfab8e7d71a',
     title: 'Always Lalisa',
     genre: 'Tài liệu',
     duration: '1h 40m',
@@ -1306,6 +1355,7 @@ export const movies: Movie[] = [
   },
   {
     id: '298dab7b-c31a-41a1-b695-1d33707f34da',
+    dbId: '01a152a7-6872-7250-8cb0-8a899161906c',
     title: 'Người Mẹ Khác',
     genre: 'Kinh dị',
     duration: '1h 33m',
@@ -1332,6 +1382,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'af5b4b77-28e5-4821-a052-dc3a6fa453ab',
+    dbId: '01a152a7-6870-74f3-9ee5-af6478e24123',
     title: 'Án Mạng Xém Hoàn Hảo',
     genre: 'Tâm lý, Hài',
     duration: '2h 4m',
@@ -1357,6 +1408,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'd6215aa7-8bc2-409a-99e5-5caa61da3ae1',
+    dbId: '01a152a7-686d-7a63-9826-402484dbad09',
     title: 'Trái Tim Quái Thú',
     genre: 'Hành động',
     duration: '1h 41m',
@@ -1381,6 +1433,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'e68f7f14-ff54-4ea6-84d9-eb5ab5c914b6',
+    dbId: '01a152a7-686b-7a33-af1f-5b8b2cea2bc4',
     title: 'Khóa Chặt Cửa Vào Suzume',
     genre: 'Hoạt hình, Giả Tưởng',
     duration: '2h 2m',
@@ -1405,6 +1458,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'a630bb2e-1ce3-4809-9b86-352a274d1c0d',
+    dbId: '01a152a7-6861-7a43-a9b6-1d770c85e64d',
     title: 'Scotty: Giải Cứu Hoàng Thượng',
     genre: 'Hoạt hình, Phiêu lưu',
     duration: '1h 20m',
@@ -1429,6 +1483,7 @@ export const movies: Movie[] = [
   },
   {
     id: '9457ce5e-071f-49d6-80a1-214ae308cd0d',
+    dbId: '01a152a7-685f-7703-82aa-41c4e0618555',
     title: 'Thần Sư Chung Quỳ: Linh Giới Đại Chiến',
     genre: 'Hoạt hình',
     duration: '1h 36m',
@@ -1455,6 +1510,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'a0cd6a78-f461-4264-9e7d-ee220b3bde9d',
+    dbId: '01a152a7-6868-7572-9c8f-44ce78448c29',
     title: 'Quyết Cua Anh Này',
     genre: 'Lãng mạn, Hài',
     duration: '1h 55m',
@@ -1479,6 +1535,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'ba5ee523-67dc-4bd3-b0c0-9c2873f36b3f',
+    dbId: '01a152a7-686e-7910-870f-d7bd9685a88d',
     title: 'Avengers: Hồi Kết',
     genre: 'Hành động, Phiêu lưu, Giả Tưởng',
     duration: '3h 3m',
@@ -1503,6 +1560,7 @@ export const movies: Movie[] = [
   },
   {
     id: '3433c42f-b587-4bb9-af93-8938b4457a36',
+    dbId: '01a152a7-6864-7cb2-b91f-2d28398c4ccc',
     title: 'Hòn Đảo Quên Lãng',
     genre: 'Hoạt hình, Phiêu lưu',
     duration: '1h 49m',
@@ -1527,6 +1585,7 @@ export const movies: Movie[] = [
   },
   {
     id: '1e403224-98da-4a69-9d21-f6d034ee90e1',
+    dbId: '01a152a7-685c-7301-9835-e8eef3537a5c',
     title: 'Trại Buôn Người',
     genre: 'Hành động, Tâm lý',
     duration: '2h 15m',
@@ -1551,6 +1610,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'ab2bfbcf-fb4e-41ac-b240-a6eaa15810fa',
+    dbId: '01a152a7-6866-7d01-86c4-162d61da7165',
     title: 'Út Lan 2',
     genre: 'Kinh dị',
     duration: '1h 47m',
@@ -1575,6 +1635,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'ec9d9637-81db-44ed-ac41-608d8d350df4',
+    dbId: '01a152a7-6862-7571-a4e0-7114a532c7ed',
     title: 'Vùng Đất Quỷ Dữ',
     genre: 'Hành động, Kinh dị',
     duration: '1h 34m',
@@ -1599,6 +1660,7 @@ export const movies: Movie[] = [
   },
   {
     id: 'da20c199-c137-4ed9-a93e-9401fb37fa8f',
+    dbId: '01a152a7-6869-7960-8d2e-afd4a3e9313a',
     title: 'Lên Hương',
     genre: 'Tâm lý, Gia đình',
     duration: '2h 1m',
