@@ -34,6 +34,7 @@
     "db:seed": "npm run seed -w @cinehub/db",
     "db:studio": "npm run studio -w @cinehub/db",
     "db:validate": "npm run validate -w @cinehub/db",
+    "db:clean-user": "node tools/clean-user.mjs",
     "generate": "npm run generate -w @cinehub/db",
     "prepare": "husky"
   },

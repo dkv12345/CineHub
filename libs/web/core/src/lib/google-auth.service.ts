@@ -6,22 +6,25 @@ interface GoogleCredentialResponse {
   readonly credential: string;
 }
 
+export interface GoogleButtonOptions {
+  type?: 'standard' | 'icon';
+  theme?: 'outline' | 'filled_blue' | 'filled_black';
+  size?: 'large' | 'medium' | 'small';
+  shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+  text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+  width?: number;
+  logo_alignment?: 'left' | 'center';
+}
+
 interface GoogleAccountsId {
   initialize(config: {
     client_id: string;
     callback: (response: GoogleCredentialResponse) => void;
     auto_select?: boolean;
+    cancel_on_tap_outside?: boolean;
   }): void;
-  renderButton(
-    parent: HTMLElement,
-    options: {
-      theme?: 'outline' | 'filled_blue' | 'filled_black';
-      size?: 'large' | 'medium' | 'small';
-      width?: number;
-      text?: 'signin_with' | 'signup_with' | 'continue_with';
-    },
-  ): void;
-  prompt(): void;
+  renderButton(parent: HTMLElement, options: GoogleButtonOptions): void;
+  prompt(momentListener?: (notification: unknown) => void): void;
 }
 
 interface WindowWithGoogle extends Window {
@@ -46,6 +49,7 @@ export class GoogleAuthService {
   async initializeButton(
     container: HTMLElement,
     onCredential: (idToken: string) => void,
+    options?: GoogleButtonOptions,
   ): Promise<void> {
     if (!isPlatformBrowser(this.platformId) || !this.config.googleClientId) {
       return;
@@ -63,12 +67,20 @@ export class GoogleAuthService {
         }
       },
     });
+
     gis.renderButton(container, {
-      theme: 'filled_black',
+      theme: 'outline',
       size: 'large',
-      width: 320,
-      text: 'continue_with',
+      type: 'icon',
+      shape: 'circle',
+      ...options,
     });
+  }
+
+  promptOneTap(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const win = this.document.defaultView as WindowWithGoogle | null;
+    win?.google?.accounts?.id?.prompt();
   }
 
   private loadScript(): Promise<void> {
