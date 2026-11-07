@@ -1,7 +1,20 @@
 import { computed } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { MAX_SEATS_PER_BOOKING, SEAT_HOLD_SECONDS } from '@cinehub/contracts';
-import { cinemas as seedCinemas, movies as seedMovies, PRICE } from '@cinehub/web/shared/util';
+import { PRICE } from '@cinehub/web/shared/util';
+
+export interface ShowtimeMetadata {
+  readonly movieTitle?: string;
+  readonly movieId?: string;
+  readonly cinemaName?: string;
+  readonly cinemaId?: string;
+  readonly cinemaCode?: string;
+  readonly showTime?: string;
+  readonly showDate?: string;
+  readonly format?: string;
+  readonly screenName?: string;
+  readonly backdropUrl?: string;
+}
 
 export interface SelectedSeatItem {
   readonly id: string;
@@ -13,9 +26,11 @@ export interface IssuedTicket {
   readonly id: string;
   readonly bookingCode: string;
   readonly movieTitle: string;
+  readonly movieBackdropUrl: string;
   readonly cinemaName: string;
   readonly screenName: string;
   readonly showTime: string;
+  readonly showDate: string;
   readonly format: string;
   readonly seats: readonly string[];
   readonly totalPaid: number;
@@ -26,10 +41,15 @@ export interface IssuedTicket {
 
 export interface BookingState {
   readonly showtimeId: string;
+  readonly movieId: string;
   readonly movieTitle: string;
+  readonly movieBackdropUrl: string;
+  readonly cinemaId: string;
+  readonly cinemaCode: string;
   readonly cinemaName: string;
   readonly screenName: string;
   readonly showTime: string;
+  readonly showDate: string;
   readonly format: string;
   readonly selectedSeats: readonly SelectedSeatItem[];
   readonly holdRemainingSeconds: number;
@@ -46,33 +66,23 @@ const VOUCHER_CATALOG: Record<string, { label: string; amount: number }> = {
 };
 
 const initialState: BookingState = {
-  showtimeId: 'default-showtime',
-  movieTitle: seedMovies[0]?.title ?? 'Dune: Hành Tinh Cát',
-  cinemaName: seedCinemas[0]?.name ?? 'Galaxy CineX Hanoi Centre',
-  screenName: 'IMAX Laser 01',
-  showTime: '19:45',
-  format: 'IMAX',
+  showtimeId: '',
+  movieId: '',
+  movieTitle: '',
+  movieBackdropUrl: '',
+  cinemaId: '',
+  cinemaCode: '',
+  cinemaName: '',
+  screenName: '',
+  showTime: '',
+  showDate: '',
+  format: '',
   selectedSeats: [],
   holdRemainingSeconds: SEAT_HOLD_SECONDS,
   voucherCode: null,
   discountAmount: 0,
   paymentMethod: 'VNPAY',
-  issuedTickets: [
-    {
-      id: 'ticket-seed-01',
-      bookingCode: 'CH-884920',
-      movieTitle: seedMovies[0]?.title ?? 'Loạn Thế',
-      cinemaName: 'Galaxy CineX Thiso Mall Sala',
-      screenName: 'Cinema 02 · Dolby Atmos',
-      showTime: '20:15 · Hôm nay',
-      format: '2D',
-      seats: ['F7', 'F8'],
-      totalPaid: 230000,
-      paymentMethod: 'VNPAY',
-      createdAt: new Date().toISOString(),
-      status: 'VALID',
-    },
-  ],
+  issuedTickets: [],
 };
 
 function seatPriceForZone(zone: 'normal' | 'vip' | 'sweetbox'): number {
@@ -100,24 +110,31 @@ export const BookingStore = signalStore(
     }),
   })),
   withMethods((store) => ({
-    initShowtimeFromParam(rawShowtimeId: string): void {
+    initShowtimeFromParam(rawShowtimeId: string, metadata: ShowtimeMetadata = {}): void {
       if (!rawShowtimeId) return;
       const parts = rawShowtimeId.split('__');
-      const movieId = parts[0] ?? '';
-      const cinemaId = parts[1] ?? '';
-      const time = parts[2] ?? '19:45';
-      const format = parts[3] ?? '2D';
-
-      const foundMovie = seedMovies.find((m) => String(m.id) === movieId) ?? seedMovies[0];
-      const foundCinema = seedCinemas.find((c) => String(c.id) === cinemaId) ?? seedCinemas[0];
+      const isNewShowtime = store.showtimeId() !== rawShowtimeId;
 
       patchState(store, {
         showtimeId: rawShowtimeId,
-        movieTitle: foundMovie?.title ?? 'Phim đang chiếu',
-        cinemaName: foundCinema?.name ?? 'Galaxy Cinema',
-        showTime: time,
-        format,
-        holdRemainingSeconds: SEAT_HOLD_SECONDS,
+        movieId: metadata.movieId || parts[0] || '',
+        movieTitle: metadata.movieTitle || '',
+        movieBackdropUrl: metadata.backdropUrl || '',
+        cinemaId: metadata.cinemaId || '',
+        cinemaCode: metadata.cinemaCode || parts[1] || '',
+        cinemaName: metadata.cinemaName || '',
+        screenName: metadata.screenName || '',
+        showTime: metadata.showTime || parts[2] || '',
+        showDate: metadata.showDate || '',
+        format: metadata.format || parts[3] || '',
+        selectedSeats: isNewShowtime ? [] : store.selectedSeats(),
+        holdRemainingSeconds: isNewShowtime ? SEAT_HOLD_SECONDS : store.holdRemainingSeconds(),
+      });
+    },
+
+    decrementHold(): void {
+      patchState(store, {
+        holdRemainingSeconds: Math.max(0, store.holdRemainingSeconds() - 1),
       });
     },
 
@@ -164,8 +181,7 @@ export const BookingStore = signalStore(
 
     completeCheckout(concessionTotal: number): IssuedTicket {
       const seats = store.selectedSeats().map((s) => s.id);
-      const effectiveSeats = seats.length > 0 ? seats : ['F8'];
-      const subtotal = (store.seatsSubtotal() || PRICE.vip) + concessionTotal;
+      const subtotal = store.seatsSubtotal() + concessionTotal;
       const totalPaid = Math.max(0, subtotal - store.discountAmount());
       const ticketId = `tkt-${Date.now()}`;
       const bookingCode = `CH-${String(Math.floor(100000 + Math.random() * 900000))}`;
@@ -174,11 +190,13 @@ export const BookingStore = signalStore(
         id: ticketId,
         bookingCode,
         movieTitle: store.movieTitle(),
+        movieBackdropUrl: store.movieBackdropUrl(),
         cinemaName: store.cinemaName(),
         screenName: store.screenName(),
         showTime: store.showTime(),
+        showDate: store.showDate(),
         format: store.format(),
-        seats: effectiveSeats,
+        seats,
         totalPaid,
         paymentMethod: store.paymentMethod(),
         createdAt: new Date().toISOString(),

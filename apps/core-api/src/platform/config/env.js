@@ -23,6 +23,8 @@ const schema = z.object({
   GEMINI_EMBEDDING_MODEL: z.string().default('gemini-embedding-001'),
   GEMINI_EMBEDDING_DIMS: z.coerce.number().int().positive().default(768),
   GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(20000),
+  SHOWTIMES_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  SHOWTIMES_UPSTREAM_RETRY_SECONDS: z.coerce.number().int().positive().default(30),
   MONGODB_DB: z.string().default('cinehub'),
   SMTP_HOST: z.string().default('sandbox.smtp.mailtrap.io'),
   SMTP_PORT: z.coerce.number().default(2525),

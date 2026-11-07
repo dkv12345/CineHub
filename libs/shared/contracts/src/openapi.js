@@ -111,28 +111,67 @@ export function generateOpenApiDocument() {
     'SessionDto',
     z.object({
       id: z.string(),
-      movieId: z.string(),
-      cinemaId: z.string(),
-      hallId: z.string().optional(),
-      hallName: z.string().optional(),
+      showDate: z.string(),
+      showTime: z.string(),
       startTime: z.string(),
-      endTime: z.string().optional(),
-      format: z.string(),
-      captionMode: z.string().optional(),
-      basePrice: z.number(),
+      screenName: z.string(),
+      totalSeat: z.number(),
+      bookedSeat: z.number(),
+      caption: z.enum(['voice', 'sub']),
+      version: z.string(),
+      movieFormat: z.string(),
+      status: z.string().nullable(),
+      movie: z.object({
+        id: z.string(),
+        dbId: z.string(),
+        name: z.string(),
+        age: z.string(),
+        duration: z.number(),
+        imageLandscape: z.string(),
+        imagePortrait: z.string(),
+        slug: z.string(),
+      }),
+      cinema: z.object({
+        id: z.string(),
+        dbId: z.string(),
+        code: z.string(),
+        name: z.string(),
+        address: z.string(),
+        imageLandscape: z.string(),
+        imagePortrait: z.string(),
+        imageUrls: z.array(z.string()),
+      }),
     }),
   );
+
+  const SessionsResponse = z.object({
+    response: z.object({
+      status: z.number(),
+      code: z.number(),
+      message: z.string(),
+      url: z.string(),
+    }),
+    data: z.array(SessionDto),
+    total: z.number(),
+    result: z.array(SessionDto),
+    fetchedAt: z.string(),
+    stale: z.boolean(),
+    source: z.enum(['galaxy', 'database']),
+  });
 
   const ConcessionDto = registry.register(
     'ConcessionDto',
     z.object({
       id: z.string(),
-      code: z.string().optional(),
+      externalId: z.string().nullable(),
       name: z.string(),
       description: z.string().nullable().optional(),
       category: z.enum(['COMBO', 'POPCORN', 'DRINK', 'SNACK']),
       price: z.number(),
       imageUrl: z.string().nullable().optional(),
+      minSeats: z.number().int(),
+      maxSeats: z.number().int(),
+      eligible: z.boolean(),
     }),
   );
 
@@ -431,6 +470,8 @@ export function generateOpenApiDocument() {
       query: z.object({
         movieId: z.string().optional(),
         cinemaId: z.string().optional(),
+        movie: z.string().optional(),
+        cinema: z.string().optional(),
         date: z.string().optional(),
       }),
     },
@@ -439,7 +480,7 @@ export function generateOpenApiDocument() {
         description: 'Session list',
         content: {
           'application/json': {
-            schema: z.object({ data: z.array(SessionDto) }),
+            schema: SessionsResponse,
           },
         },
       },
@@ -452,11 +493,13 @@ export function generateOpenApiDocument() {
     path: '/api/v1/concessions',
     operationId: 'listConcessions',
     tags: ['Concessions'],
-    summary: 'List F&B concessions by chain and cinema code',
+    summary: 'List active F&B concessions by chain, cinema, and ticket count',
     request: {
       query: z.object({
         chain: z.string().optional(),
         cinemaCode: z.string().optional(),
+        cinemaId: z.string().uuid().optional(),
+        seats: z.coerce.number().int().min(1).optional(),
       }),
     },
     responses: {

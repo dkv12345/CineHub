@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { applyVoucherSchema } from '@cinehub/contracts';
@@ -13,8 +21,25 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="min-h-screen bg-[#020617] text-white selection:bg-amber-400 selection:text-black">
-      <div class="mx-auto max-w-[1450px] px-5 py-6 md:px-9">
+    <main
+      class="relative min-h-screen overflow-hidden bg-[#020617] text-white selection:bg-amber-400 selection:text-black"
+    >
+      <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        @if (bookingStore.movieBackdropUrl()) {
+          <img
+            [src]="bookingStore.movieBackdropUrl()"
+            alt=""
+            class="h-full w-full scale-105 object-cover object-center opacity-80 blur-[1px]"
+          />
+        }
+        <div
+          class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_10%,_#020617_80%)]"
+        ></div>
+        <div
+          class="absolute inset-0 bg-gradient-to-b from-[#020617]/85 via-[#020617]/75 to-[#020617]"
+        ></div>
+      </div>
+      <div class="relative z-10 mx-auto max-w-[1450px] px-5 py-6 md:px-9">
         <!-- Nút quay lại & Tiến trình thanh toán 3 Bước -->
         <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
           <button
@@ -65,24 +90,18 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
           <div class="flex flex-col gap-6">
             <!-- Header Phim -->
             <div>
+              <p class="mb-1 text-xs font-black uppercase tracking-[.2em] text-amber-300">
+                Bước 3 · Xác nhận đơn vé
+              </p>
               <div class="flex flex-wrap items-center gap-3">
                 <h1 class="text-3xl font-black tracking-tight text-white sm:text-4xl">
                   {{ bookingStore.movieTitle().toUpperCase() }}
                 </h1>
-                <span class="rounded bg-amber-400 px-2 py-0.5 text-xs font-black text-black">
-                  IMDb 8.5/10
-                </span>
               </div>
-              <div class="mt-2 flex items-center gap-3">
-                <span
-                  class="rounded border border-amber-300/80 bg-amber-400/20 px-2 py-0.5 text-xs font-black text-amber-300"
-                >
-                  T13
-                </span>
-                <span class="text-xs font-extrabold text-white">
-                  120 PHÚT | ĐIỆN ẢNH CHIẾU RẠP
-                </span>
-              </div>
+              <p class="mt-2 text-xs font-bold text-slate-200">
+                {{ bookingStore.cinemaName() }} · {{ bookingStore.showTime() }} ·
+                {{ bookingStore.format() }}
+              </p>
             </div>
 
             <!-- Chi tiết đơn vé -->
@@ -99,13 +118,19 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
                 <div class="flex justify-between gap-6 py-3.5">
                   <dt class="font-semibold text-white/70">Suất chiếu</dt>
                   <dd class="text-right font-black text-white">
-                    {{ bookingStore.showTime() }} · Hôm nay ·
+                    {{ bookingStore.showTime() }} · {{ bookingStore.showDate() }} ·
                     <span class="text-amber-300">{{ bookingStore.format() }}</span>
                   </dd>
                 </div>
                 <div class="flex justify-between gap-6 py-3.5">
+                  <dt class="font-semibold text-white/70">Thời gian giữ ghế</dt>
+                  <dd class="text-right font-black text-amber-300">
+                    {{ bookingStore.holdFormatted() }}
+                  </dd>
+                </div>
+                <div class="flex justify-between gap-6 py-3.5">
                   <dt class="font-semibold text-white/70">Phòng chiếu</dt>
-                  <dd class="text-right font-black text-white">{{ bookingStore.screenName }}</dd>
+                  <dd class="text-right font-black text-white">{{ bookingStore.screenName() }}</dd>
                 </div>
                 <div class="flex justify-between gap-6 py-3.5">
                   <dt class="font-semibold text-white/70">Rạp chiếu</dt>
@@ -114,7 +139,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
                 <div class="flex justify-between gap-6 py-3.5">
                   <dt class="font-semibold text-white/70">Ghế ngồi</dt>
                   <dd class="text-right font-black text-emerald-400">
-                    {{ seatLabels().length > 0 ? seatLabels().join(', ') : 'F7, F8' }}
+                    {{ seatLabels().length > 0 ? seatLabels().join(', ') : 'Chưa chọn' }}
                   </dd>
                 </div>
                 @if (concessionsStore.selectedItems().length > 0) {
@@ -122,7 +147,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
                     <dt class="font-semibold text-white/70">Bắp nước</dt>
                     <dd class="text-right font-black text-amber-300">
                       @for (c of concessionsStore.selectedItems(); track c.id) {
-                        <div>{{ c.name }} (x{{ c.qty }})</div>
+                        <div>{{ c.name }} (x{{ c.quantity }})</div>
                       }
                     </dd>
                   </div>
@@ -201,7 +226,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
               <div class="flex justify-between">
                 <span class="text-white">Vé ({{ seatLabels().length || 1 }} ghế)</span>
                 <span class="tabular-nums text-amber-300">{{
-                  formatCurrency(bookingStore.seatsSubtotal() || 115000)
+                  formatCurrency(bookingStore.seatsSubtotal())
                 }}</span>
               </div>
               <div class="flex justify-between">
@@ -232,6 +257,7 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
             <button
               type="button"
               (click)="confirmPayment()"
+              [disabled]="bookingStore.selectedSeats().length === 0"
               class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 py-4 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
             >
               Thanh toán ngay
@@ -250,12 +276,13 @@ import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
     </main>
   `,
 })
-export class CheckoutPageComponent {
+export class CheckoutPageComponent implements OnInit, OnDestroy {
   readonly bookingStore = inject(BookingStore);
   readonly concessionsStore = inject(ConcessionsStore);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private holdTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly voucherMessage = signal<string | null>(null);
 
@@ -293,10 +320,17 @@ export class CheckoutPageComponent {
   readonly seatLabels = computed(() => this.bookingStore.selectedSeats().map((s) => s.id));
 
   readonly grandTotal = computed(() => {
-    const subtotal =
-      (this.bookingStore.seatsSubtotal() || 115000) + this.concessionsStore.totalAmount();
+    const subtotal = this.bookingStore.seatsSubtotal() + this.concessionsStore.totalAmount();
     return Math.max(0, subtotal - this.bookingStore.discountAmount());
   });
+
+  ngOnInit(): void {
+    this.holdTimer = setInterval(() => this.bookingStore.decrementHold(), 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.holdTimer) clearInterval(this.holdTimer);
+  }
 
   applyVoucher(): void {
     const raw = this.voucherForm.controls.code.value;
@@ -306,6 +340,10 @@ export class CheckoutPageComponent {
   }
 
   confirmPayment(): void {
+    if (this.bookingStore.selectedSeats().length === 0) {
+      this.toast.show('Vui lòng chọn ít nhất một ghế trước khi thanh toán.', 'warning');
+      return;
+    }
     const ticket = this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
     this.concessionsStore.clearConcessions();
     this.toast.show(`Đặt vé thành công! Mã đặt vé: ${ticket.bookingCode}`, 'success');

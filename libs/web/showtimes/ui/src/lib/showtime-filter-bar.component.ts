@@ -11,20 +11,22 @@ import type { ShowtimeFilters } from '@cinehub/web/showtimes/util';
       role="search"
       aria-label="Bộ lọc lịch chiếu"
     >
-      <div>
-        <label for="filter-movie" class="cinema-label">Phim</label>
-        <select
-          id="filter-movie"
-          [value]="filters().movieId ?? 'all'"
-          (change)="onSelectChange('movieId', $event)"
-          class="cinema-input"
-        >
-          <option value="all">Tất cả phim</option>
-          @for (movie of movies(); track movie.id) {
-            <option [value]="movie.id">{{ movie.name }}</option>
-          }
-        </select>
-      </div>
+      @if (!movieLocked()) {
+        <div>
+          <label for="filter-movie" class="cinema-label">Phim</label>
+          <select
+            id="filter-movie"
+            [value]="filters().movieId ?? 'all'"
+            (change)="onSelectChange('movieId', $event)"
+            class="cinema-input"
+          >
+            <option value="all">Tất cả phim</option>
+            @for (movie of movies(); track movie.id) {
+              <option [value]="movie.id">{{ movie.name }}</option>
+            }
+          </select>
+        </div>
+      }
 
       <div>
         <label for="filter-city" class="cinema-label">Tỉnh / Thành phố</label>
@@ -74,7 +76,7 @@ import type { ShowtimeFilters } from '@cinehub/web/showtimes/util';
         </button>
       </div>
 
-      @if (filters().movieId && filters().movieId !== 'all') {
+      @if (!movieLocked() && filters().movieId && filters().movieId !== 'all') {
         <div class="col-span-full flex flex-wrap items-center gap-2 pt-1 text-xs">
           <span class="text-slate-400">Đang lọc theo phim:</span>
           <span
@@ -99,6 +101,7 @@ export class ShowtimeFilterBarComponent {
   readonly filters = input.required<ShowtimeFilters>();
   readonly cities = input.required<ReadonlyArray<{ id: string; name: string }>>();
   readonly movies = input<ReadonlyArray<{ id: string; name: string }>>([]);
+  readonly movieLocked = input(false);
   readonly filterChanged = output<Partial<ShowtimeFilters>>();
   readonly resetClicked = output<void>();
 

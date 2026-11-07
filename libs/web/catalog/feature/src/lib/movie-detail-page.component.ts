@@ -10,7 +10,31 @@ import {
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
+import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
 import type { Movie } from '@cinehub/web/shared/util';
+import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
+
+function getReleaseYear(movie: Movie): string {
+  const date = movie.startDate || movie.release;
+  return date?.match(/\b(?:19|20)\d{2}\b/)?.[0] || 'Đang cập nhật';
+}
+
+function getDurationLabel(duration: string): string {
+  const hours = duration.match(/(\d+)\s*h/i);
+  const minutes = duration.match(/(\d+)\s*m/i);
+  if (hours || minutes) {
+    return `${Number(hours?.[1] || 0) * 60 + Number(minutes?.[1] || 0)} phút`;
+  }
+  return duration || 'Đang cập nhật';
+}
+
+function normalizeGenre(value: string): string {
+  return value
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('vi');
+}
 
 @Component({
   selector: 'ch-movie-detail-page',
@@ -66,18 +90,51 @@ import type { Movie } from '@cinehub/web/shared/util';
               <div
                 class="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-bold text-white sm:text-sm"
               >
-                <span class="inline-flex items-center gap-1.5 text-white">
-                  📅 {{ m.release || '2026' }}
+                <span class="inline-flex items-center gap-2 text-white">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    class="h-4 w-4 text-amber-300"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4M8 3v4M3 11h18" />
+                  </svg>
+                  {{ releaseYear() }}
                 </span>
                 <span aria-hidden="true">|</span>
                 <span>Độ tuổi: {{ m.age }}</span>
                 <span aria-hidden="true">|</span>
-                <span class="inline-flex items-center gap-1.5 text-white">
-                  ⏱ Thời lượng: {{ m.duration }}
+                <span class="inline-flex items-center gap-2 text-white">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    class="h-4 w-4 text-amber-300"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                  Thời lượng: {{ durationLabel() }}
                 </span>
                 <span aria-hidden="true">|</span>
-                <span class="inline-flex items-center gap-1.5 text-white">
-                  🌐 {{ m.country === 'Việt Nam' ? 'Tiếng Việt' : 'Phụ đề tiếng Việt' }}
+                <span class="inline-flex items-center gap-2 text-white">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    class="h-4 w-4 text-amber-300"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
+                  </svg>
+                  {{ languageLabel() }}
                 </span>
               </div>
 
@@ -85,20 +142,32 @@ import type { Movie } from '@cinehub/web/shared/util';
               <div class="mt-7 flex flex-wrap items-center gap-4">
                 <div
                   class="grid h-[76px] w-[76px] place-items-center rounded-full border-2 border-amber-300 bg-black/70 shadow-[0_0_30px_rgba(251,191,36,.3)] backdrop-blur"
-                  [attr.aria-label]="'Đánh giá ' + m.rating"
+                  [attr.aria-label]="
+                    'Đánh giá ' + (ratingLabel() === '—' ? 'chưa có' : ratingLabel())
+                  "
                 >
                   <span class="flex flex-col items-center">
                     <span class="flex items-center gap-1 text-base font-black text-amber-300">
-                      ★ {{ m.rating }}
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        class="h-3.5 w-3.5"
+                        fill="currentColor"
+                      >
+                        <path
+                          d="m12 2 3.1 6.3 7 .9-5.1 4.9 1.2 7-6.2-3.3-6.2 3.3 1.2-7L1.9 9.2l7-.9L12 2Z"
+                        />
+                      </svg>
+                      {{ ratingLabel() }}
                     </span>
                     <span class="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
                       Đánh giá
                     </span>
                   </span>
                 </div>
-                @if (m.votes) {
+                @if (m.votes > 0) {
                   <span class="text-xs font-semibold text-white">
-                    {{ m.votes }} lượt đánh giá
+                    {{ m.votes.toLocaleString('vi-VN') }} lượt đánh giá
                   </span>
                 }
               </div>
@@ -189,6 +258,7 @@ import type { Movie } from '@cinehub/web/shared/util';
               <button
                 type="button"
                 (click)="openTrailer()"
+                [attr.aria-label]="'Xem trailer phim ' + m.title"
                 class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/15 px-6 py-3 text-sm font-extrabold text-white backdrop-blur-md transition hover:bg-white hover:text-black shadow-lg"
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -197,19 +267,42 @@ import type { Movie } from '@cinehub/web/shared/util';
                 Xem trailer
               </button>
 
-              <a
-                [routerLink]="['/showtimes']"
-                [queryParams]="{ movieId: m.id }"
-                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-8 py-3 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                  <path
-                    d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a3 3 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a3 3 0 0 1 0-4z"
-                  />
-                </svg>
-                Mua vé ngay
-              </a>
+              @if (m.status === 'soon') {
+                <button
+                  type="button"
+                  (click)="store.toggleMovieNotification(m.id)"
+                  [attr.aria-pressed]="store.isMovieNotified(m.id)"
+                  class="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-extrabold text-white shadow-lg transition"
+                  [class]="
+                    store.isMovieNotified(m.id)
+                      ? 'bg-emerald-600 hover:bg-emerald-500'
+                      : 'bg-red-600 hover:bg-red-700'
+                  "
+                >
+                  {{ store.isMovieNotified(m.id) ? 'Đã đăng ký nhận tin' : 'Nhận thông báo' }}
+                </button>
+              } @else {
+                <a
+                  [routerLink]="['/showtimes']"
+                  [queryParams]="showtimesQueryParams(m)"
+                  [attr.aria-label]="'Mua vé phim ' + m.title"
+                  class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-8 py-3 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path
+                      d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a3 3 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a3 3 0 0 1 0-4z"
+                    />
+                  </svg>
+                  Mua vé ngay
+                </a>
+              }
             </div>
+
+            @if (m.status === 'soon') {
+              <p class="mt-3 text-xs font-semibold text-white">
+                Khởi chiếu: {{ m.release }}. Đăng ký nhận tin để cập nhật lịch mở bán vé.
+              </p>
+            }
 
             <!-- Diễn viên Pills -->
             @if (castList().length > 0) {
@@ -296,6 +389,7 @@ import type { Movie } from '@cinehub/web/shared/util';
 })
 export class MovieDetailPageComponent implements OnInit {
   readonly store = inject(CatalogStore);
+  private readonly showtimesStore = inject(ShowtimesStore);
   private readonly route = inject(ActivatedRoute);
   private readonly sanitizer = inject(DomSanitizer);
 
@@ -304,10 +398,33 @@ export class MovieDetailPageComponent implements OnInit {
 
   readonly showTrailerModal = signal(false);
 
-  readonly resolvedMovie = computed(() => {
-    if (this.movie()) return this.movie();
+  showtimesQueryParams(movie: Movie | null): Record<string, string> {
+    return buildShowtimesQueryParams(movie ?? undefined);
+  }
+
+  readonly resolvedMovie = computed<Movie | null>(() => {
     const currentId = this.id() || this.route.snapshot.paramMap.get('id') || '';
-    return this.store.findMovieById(currentId) ?? this.store.movies()[0] ?? null;
+    const movie = this.movie() ?? this.store.findMovieById(currentId) ?? null;
+    if (
+      !movie ||
+      this.showtimesStore.loading() ||
+      this.showtimesStore.error() ||
+      !this.showtimesStore.fetchedAt()
+    ) {
+      return movie;
+    }
+
+    const hasUpcomingSession = this.showtimesStore
+      .sessions()
+      .some(
+        (session) =>
+          String(session.movie.id) === String(movie.id) ||
+          (!!movie.dbId && session.movie.dbId === movie.dbId) ||
+          (!!movie.slug && session.movie.slug === movie.slug),
+      );
+    if (hasUpcomingSession && movie.status !== 'now') return { ...movie, status: 'now' };
+
+    return movie;
   });
 
   readonly genreList = computed(() => {
@@ -316,6 +433,25 @@ export class MovieDetailPageComponent implements OnInit {
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
+  });
+
+  readonly releaseYear = computed(() => {
+    const m = this.resolvedMovie();
+    return m ? getReleaseYear(m) : 'Đang cập nhật';
+  });
+
+  readonly durationLabel = computed(() => {
+    const m = this.resolvedMovie();
+    return m ? getDurationLabel(m.duration) : 'Đang cập nhật';
+  });
+
+  readonly languageLabel = computed(() => {
+    return this.resolvedMovie()?.country === 'Việt Nam' ? 'Tiếng Việt' : 'Phụ đề tiếng Việt';
+  });
+
+  readonly ratingLabel = computed(() => {
+    const rating = this.resolvedMovie()?.rating ?? 0;
+    return rating > 0 ? rating.toFixed(1) : '—';
   });
 
   readonly castList = computed(() => {
@@ -329,9 +465,24 @@ export class MovieDetailPageComponent implements OnInit {
   readonly similarMovies = computed(() => {
     const m = this.resolvedMovie();
     if (!m) return [];
+    const genres = new Set(m.genre.split(',').map(normalizeGenre).filter(Boolean));
+    if (!genres.size) return [];
+
     return this.store
       .movies()
-      .filter((candidate) => candidate.id !== m.id)
+      .filter(
+        (candidate) =>
+          String(candidate.id) !== String(m.id) &&
+          candidate.genre.split(',').some((genre) => genres.has(normalizeGenre(genre))),
+      )
+      .sort((a, b) => {
+        const sharedGenreCount = (candidate: Movie) =>
+          candidate.genre
+            .split(',')
+            .map(normalizeGenre)
+            .filter((genre) => genres.has(genre)).length;
+        return sharedGenreCount(b) - sharedGenreCount(a) || b.rating - a.rating;
+      })
       .slice(0, 5);
   });
 
@@ -351,6 +502,9 @@ export class MovieDetailPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    if (!this.showtimesStore.fetchedAt() && !this.showtimesStore.loading()) {
+      void this.showtimesStore.loadSessionsFromApi();
+    }
     if (this.route.snapshot.queryParamMap.get('trailer') === '1') {
       this.showTrailerModal.set(true);
     }

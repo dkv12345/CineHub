@@ -1,92 +1,27 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
+import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import {
-  cinemas as seedCinemas,
-  dayInfo,
-  getShows,
-  movies as seedMovies,
-} from '@cinehub/web/shared/util';
 import {
   filterShowtimes,
   getShowtimeCityName,
   type GalaxySession,
   type ShowtimeFilters,
+  vietnamDate,
 } from '@cinehub/web/showtimes/util';
-
-function buildSeedSessions(): GalaxySession[] {
-  const result: GalaxySession[] = [];
-  const sampleMovies = seedMovies;
-  const sampleCinemas = seedCinemas;
-
-  for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
-    const d = new Date();
-    d.setDate(d.getDate() + dayOffset);
-    const isoDate = d.toISOString().slice(0, 10);
-
-    sampleMovies.forEach((m, mIdx) => {
-      sampleCinemas.forEach((c, cIdx) => {
-        if ((mIdx + cIdx + dayOffset) % 3 !== 0) return;
-        const slots = getShows(m.id, cIdx, dayOffset);
-        slots.forEach((slot, sIdx) => {
-          result.push({
-            id: `${m.id}__${c.id}__${slot.time}__${slot.format}__${dayOffset}`,
-            showDate: isoDate,
-            showTime: slot.time,
-            screenName: `Cinema ${(sIdx % 6) + 1}`,
-            movieFormat: slot.format,
-            totalSeat: 120,
-            bookedSeat: 15 + ((mIdx * 7 + sIdx * 11) % 70),
-            caption: sIdx % 3 === 0 ? 'voice' : 'sub',
-            version: slot.format.toLowerCase(),
-            movie: {
-              id: String(m.id),
-              name: m.title,
-              age: m.age,
-              duration: 115,
-              startDate: m.startDate ?? '',
-              endDate: m.endDate ?? '',
-              createdAt: '',
-              imageLandscape: m.backdrop,
-              imagePortrait: m.poster,
-              slug: m.slug ?? '',
-              trailer: m.trailer ?? '',
-              rate: m.rating,
-              totalVotes: m.votes,
-              views: m.views ?? 1000,
-              order: mIdx,
-            },
-            cinema: {
-              id: String(c.id),
-              code: String(c.code),
-              name: c.name,
-              latitude: '',
-              longitude: '',
-              address: c.address,
-              phone: c.phone,
-              cityId: c.cityId,
-              imageLandscape: c.imageUrl,
-              imagePortrait: c.thumbnailUrl,
-              imageUrls: c.galleryUrls,
-              order: cIdx,
-            },
-          });
-        });
-      });
-    });
-  }
-  return result;
-}
 
 export interface ShowtimesState {
   readonly sessions: readonly GalaxySession[];
   readonly filters: ShowtimeFilters;
   readonly loading: boolean;
+  readonly error: string | null;
+  readonly stale: boolean;
+  readonly fetchedAt: string | null;
 }
 
 const initialState: ShowtimesState = {
-  sessions: buildSeedSessions(),
+  sessions: [],
   filters: {
     date: null,
     cityId: 'all',
@@ -96,6 +31,9 @@ const initialState: ShowtimesState = {
     searchQuery: '',
   },
   loading: false,
+  error: null,
+  stale: false,
+  fetchedAt: null,
 };
 
 export const ShowtimesStore = signalStore(
@@ -103,12 +41,35 @@ export const ShowtimesStore = signalStore(
   withState(initialState),
   withComputed((store) => ({
     days: computed(() =>
-      [0, 1, 2, 3, 4].map((offset) => {
-        const d = new Date();
-        d.setDate(d.getDate() + offset);
+      Array.from({ length: 7 }, (_, offset) => {
+        const today = vietnamDate();
+        const selectedDate = store.filters().date;
+        const startDate = selectedDate && selectedDate > vietnamDate(6) ? selectedDate : today;
+        const dayDate = new Date(`${startDate}T00:00:00+07:00`);
+        dayDate.setUTCDate(dayDate.getUTCDate() + offset);
+        const isoDate = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(dayDate);
+        const day = new Date(`${isoDate}T12:00:00+07:00`);
+        const matchingSessions = filterShowtimes([...store.sessions()], {
+          ...store.filters(),
+          date: isoDate,
+        });
         return {
-          ...dayInfo(offset),
-          isoDate: d.toISOString().slice(0, 10),
+          isoDate,
+          month: isoDate.slice(5, 7),
+          short:
+            isoDate === today
+              ? 'Hôm nay'
+              : new Intl.DateTimeFormat('vi-VN', {
+                  timeZone: 'Asia/Ho_Chi_Minh',
+                  weekday: 'short',
+                }).format(day),
+          num: isoDate.slice(8, 10),
+          count: matchingSessions.length,
         };
       }),
     ),
@@ -116,15 +77,24 @@ export const ShowtimesStore = signalStore(
       const map = new Map<string, string>();
       for (const s of store.sessions()) {
         const name = getShowtimeCityName(s);
-        map.set(s.cinema.cityId || name, name);
+        const key = name;
+        if (key && name !== 'Tỉnh / Thành phố chưa xác định') map.set(key, name);
       }
-      return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+      return Array.from(map.entries())
+        .map(([id, name]) => ({ id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
     }),
     movies: computed(() => {
-      const map = new Map<string, { id: string; name: string }>();
+      const map = new Map<string, { id: string; dbId: string; slug: string; name: string }>();
       for (const s of store.sessions()) {
-        if (s.movie?.id && !map.has(s.movie.id)) {
-          map.set(s.movie.id, { id: s.movie.id, name: s.movie.name });
+        const id = s.movie.slug || s.movie.dbId || s.movie.id;
+        if (id && !map.has(id)) {
+          map.set(id, {
+            id,
+            dbId: s.movie.dbId || '',
+            slug: s.movie.slug || '',
+            name: s.movie.name,
+          });
         }
       }
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
@@ -155,32 +125,34 @@ export const ShowtimesStore = signalStore(
       },
 
       async loadSessionsFromApi(): Promise<void> {
-        patchState(store, { loading: true });
+        patchState(store, { loading: true, error: null });
         try {
           const res = await firstValueFrom(
             http.get<{
-              data?: GalaxySession[] | { result?: GalaxySession[]; total?: number };
+              data?: GalaxySession[];
               result?: GalaxySession[];
+              stale?: boolean;
+              fetchedAt?: string;
             }>('/api/v1/sessions'),
           );
-          const raw = res?.data;
-          let sessions: readonly GalaxySession[] | null = null;
-          if (Array.isArray(raw)) {
-            sessions = raw;
-          } else if (raw && Array.isArray((raw as { result?: GalaxySession[] }).result)) {
-            sessions = (raw as { result: GalaxySession[] }).result;
-          } else if (Array.isArray(res?.result)) {
-            sessions = res.result;
-          }
-
-          if (sessions && sessions.length > 0) {
-            patchState(store, { sessions, loading: false });
-            return;
-          }
-        } catch {
-          // Keep rich local schedule when backend DB has no sessions
+          const sessions = Array.isArray(res?.data)
+            ? res.data
+            : Array.isArray(res?.result)
+              ? res.result
+              : [];
+          patchState(store, {
+            sessions,
+            loading: false,
+            stale: res?.stale ?? false,
+            fetchedAt: res?.fetchedAt ?? null,
+          });
+        } catch (error) {
+          const message =
+            error instanceof HttpErrorResponse
+              ? `Không thể tải lịch chiếu (HTTP ${error.status}). Vui lòng thử lại.`
+              : 'Không thể tải lịch chiếu từ máy chủ. Vui lòng thử lại.';
+          patchState(store, { loading: false, error: message });
         }
-        patchState(store, { loading: false });
       },
     };
   }),

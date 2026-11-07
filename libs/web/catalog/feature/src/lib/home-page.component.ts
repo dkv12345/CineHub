@@ -11,7 +11,9 @@ import { Router, RouterLink } from '@angular/router';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
 import { MovieCardComponent } from '@cinehub/web/catalog/ui';
 import { AuthStore } from '@cinehub/web/core';
-import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
+import type { Movie } from '@cinehub/web/shared/util';
+import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
+import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/showtimes/util';
 
 @Component({
   selector: 'ch-home-page',
@@ -118,12 +120,17 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
               <select
                 [value]="quickMovieId()"
                 (change)="onQuickMovieChange($event)"
+                [disabled]="showtimesStore.loading() || quickMovies().length === 0"
                 class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
               >
-                @for (m of nowShowingMovies(); track m.id) {
-                  <option [value]="m.id" class="bg-slate-900 font-black text-white">
-                    {{ m.title }}
-                  </option>
+                @if (quickMovies().length === 0) {
+                  <option value="">Chưa có phim có suất chiếu</option>
+                } @else {
+                  @for (m of quickMovies(); track m.id) {
+                    <option [value]="m.slug || m.id" class="bg-slate-900 font-black text-white">
+                      {{ m.title }}
+                    </option>
+                  }
                 }
               </select>
               <span
@@ -140,9 +147,11 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
               <select
                 [value]="quickCinemaId()"
                 (change)="onQuickCinemaChange($event)"
+                [disabled]="showtimesStore.loading() || quickMovies().length === 0"
                 class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
               >
-                @for (c of cinemaList; track c.id) {
+                <option value="" class="bg-slate-900 font-black text-white">Tất cả rạp</option>
+                @for (c of cinemaList(); track c.id) {
                   <option [value]="c.id" class="bg-slate-900 font-black text-white">
                     {{ c.name }}
                   </option>
@@ -160,14 +169,21 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
             Chọn ngày
             <div class="relative mt-2">
               <select
-                [value]="quickDayOffset()"
                 (change)="onQuickDayChange($event)"
-                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+                [value]="quickShowtimeDate()"
+                [disabled]="showtimesStore.loading() || quickDateOptions().length === 0"
+                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300 disabled:opacity-50"
               >
-                @for (d of dayOptions; track d.offset) {
-                  <option [value]="d.offset" class="bg-slate-900 font-black text-white">
-                    {{ d.short }} · {{ d.num }}
+                @if (quickDateOptions().length === 0) {
+                  <option value="" class="bg-slate-900 font-black text-white">
+                    Chưa có suất phù hợp
                   </option>
+                } @else {
+                  @for (d of quickDateOptions(); track d.date) {
+                    <option [value]="d.date" class="bg-slate-900 font-black text-white">
+                      {{ d.label }}
+                    </option>
+                  }
                 }
               </select>
               <span
@@ -198,7 +214,14 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
           <button
             type="button"
             (click)="submitQuickBooking()"
-            class="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125 md:w-auto"
+            [disabled]="
+              showtimesStore.loading() ||
+              store.loading() ||
+              quickMovies().length === 0 ||
+              !quickShowtimeDate()
+            "
+            aria-label="Mua vé nhanh theo phim, rạp và ngày đã chọn"
+            class="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
           >
             <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
               <path
@@ -207,6 +230,11 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
             </svg>
             Mua vé nhanh
           </button>
+          @if (!showtimesStore.loading() && quickMovies().length > 0 && !quickShowtimeDate()) {
+            <p class="text-xs font-bold text-amber-200 md:col-span-full">
+              Không có suất chiếu cho phim và rạp đã chọn.
+            </p>
+          }
         </section>
       </div>
 
@@ -220,7 +248,7 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
             <h2 class="mt-2 text-2xl font-black text-white">Top thịnh hành</h2>
           </div>
           <a
-            routerLink="/showtimes"
+            [routerLink]="buildShowtimesLink()"
             class="inline-flex items-center gap-1 text-xs font-black text-amber-300 transition hover:text-amber-200"
           >
             Xem lịch chiếu →
@@ -414,6 +442,32 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
 
       <!-- 6. Section PHIM (Đang chiếu / Sắp chiếu & Country Pills) -->
       <section class="mx-auto max-w-[1400px] px-5 py-16 md:px-9">
+        @if (store.error()) {
+          <div
+            role="alert"
+            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-red-950/60 px-4 py-3 text-sm text-red-100"
+          >
+            <span>{{ store.error() }} Đang hiển thị dữ liệu đã có.</span>
+            <button type="button" (click)="refreshCatalog()" class="font-black text-amber-200">
+              Thử cập nhật lại
+            </button>
+          </div>
+        } @else if (store.loading()) {
+          <p role="status" class="mb-5 text-sm font-bold text-slate-300">
+            Đang cập nhật danh sách phim mới nhất…
+          </p>
+        }
+        @if (showtimesStore.error()) {
+          <div
+            role="alert"
+            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-red-950/60 px-4 py-3 text-sm text-red-100"
+          >
+            <span>{{ showtimesStore.error() }}</span>
+            <button type="button" (click)="refreshShowtimes()" class="font-black text-amber-200">
+              Thử tải lịch lại
+            </button>
+          </div>
+        }
         <div class="mb-5 flex items-center gap-3">
           <span aria-hidden="true" class="h-7 w-1 rounded-full bg-amber-400"></span>
           <h2 class="text-xl font-black uppercase tracking-wide text-white">PHIM</h2>
@@ -502,7 +556,7 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
             </p>
           </div>
           <a
-            routerLink="/showtimes"
+            [routerLink]="buildShowtimesLink()"
             class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-7 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
           >
             Khám phá suất chiếu →
@@ -514,6 +568,7 @@ import { cinemas as seedCinemas, dayInfo } from '@cinehub/web/shared/util';
 })
 export class HomePageComponent implements OnInit, OnDestroy {
   readonly store = inject(CatalogStore);
+  readonly showtimesStore = inject(ShowtimesStore);
   readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
 
@@ -559,11 +614,23 @@ export class HomePageComponent implements OnInit, OnDestroy {
   private isCarouselPaused = false;
 
   // QuickBooking Bar State
-  readonly cinemaList = seedCinemas;
-  readonly dayOptions = Array.from({ length: 7 }, (_, i) => dayInfo(i));
+  readonly cinemaList = computed(() => {
+    const cinemas = new Map<string, { id: string; name: string }>();
+    const movieId = this.quickMovieId();
+    const sessions = movieId
+      ? filterShowtimes([...this.showtimesStore.sessions()], { movieId })
+      : [...this.showtimesStore.sessions()];
+    for (const session of sessions) {
+      const id = session.cinema.code || session.cinema.id;
+      if (id && !cinemas.has(id)) {
+        cinemas.set(id, { id, name: session.cinema.name });
+      }
+    }
+    return [...cinemas.values()].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  });
   readonly quickMovieId = signal<string>('');
-  readonly quickCinemaId = signal<string>(seedCinemas[0]?.id ?? '1');
-  readonly quickDayOffset = signal<number>(0);
+  readonly quickCinemaId = signal<string>('');
+  readonly quickShowtimeDate = signal<string>('');
 
   // Tabs & Filters
   readonly activeTab = signal<'now' | 'soon'>('now');
@@ -586,11 +653,63 @@ export class HomePageComponent implements OnInit, OnDestroy {
     { key: 'trending' as const, label: 'Đang thịnh hành', icon: '✨' },
   ];
 
-  readonly nowShowingMovies = computed(() => this.store.movies().filter((m) => m.status === 'now'));
+  readonly nowShowingMovies = computed(() =>
+    this.store
+      .movies()
+      .filter((movie) => this.isMovieCurrentlyShowing(movie))
+      .map((movie) => this.withStatus(movie, 'now')),
+  );
+  readonly quickMovies = computed(() =>
+    this.nowShowingMovies().filter(
+      (movie) =>
+        filterShowtimes([...this.showtimesStore.sessions()], { movieId: movie.slug || movie.id })
+          .length > 0,
+    ),
+  );
+  readonly quickDateOptions = computed(() => {
+    const movieId = this.quickMovieId();
+    if (!movieId) return [];
+
+    const sessions = filterShowtimes([...this.showtimesStore.sessions()], {
+      movieId,
+      cinemaId: this.quickCinemaId() || 'all',
+    });
+    const counts = new Map<string, number>();
+    for (const session of sessions) {
+      const date = session.showDate.slice(0, 10);
+      counts.set(date, (counts.get(date) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, count]) => {
+        const dateValue = new Date(`${date}T12:00:00+07:00`);
+        const weekday =
+          date === vietnamDate()
+            ? 'Hôm nay'
+            : new Intl.DateTimeFormat('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                weekday: 'short',
+              })
+                .format(dateValue)
+                .replace(/\.$/, '');
+        return {
+          date,
+          count,
+          label: `${weekday} · ${date.slice(8, 10)}/${date.slice(5, 7)} · ${count} suất`,
+        };
+      });
+  });
+  readonly comingSoonMovies = computed(() =>
+    this.store
+      .movies()
+      .filter((movie) => this.isMovieComingSoon(movie))
+      .map((movie) => this.withStatus(movie, 'soon')),
+  );
 
   readonly trendingMovies = computed(() =>
     [...this.store.movies()]
-      .filter((m) => m.status === 'now')
+      .filter((movie) => this.isMovieCurrentlyShowing(movie))
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 10),
   );
@@ -598,7 +717,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly recommendedMovies = computed(() => this.trendingMovies().slice(0, 3));
 
   readonly shelfMovies = computed(() => {
-    const list = this.store.movies();
+    const list = [...this.nowShowingMovies(), ...this.comingSoonMovies()];
     if (this.shelf() === 'trending') {
       return this.trendingMovies().slice(0, 6);
     }
@@ -608,8 +727,8 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly displayMovies = computed(() => {
     const tab = this.activeTab();
     const filter = this.catalogFilter();
-    return this.store.movies().filter((m) => {
-      if (m.status !== tab) return false;
+    const movies = tab === 'now' ? this.nowShowingMovies() : this.comingSoonMovies();
+    return movies.filter((m) => {
       if (filter === 'all') return true;
       if (filter === 'ghibli') return m.studio === 'Studio Ghibli';
       if (filter === 'conan') return m.studio === 'Detective Conan';
@@ -622,12 +741,12 @@ export class HomePageComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    void this.store.refreshFromApi();
+    void Promise.all([this.store.refreshFromApi(), this.showtimesStore.loadSessionsFromApi()]).then(
+      () => {
+        this.syncQuickBookingDefaults();
+      },
+    );
     this.startCarousel();
-    const firstNow = this.nowShowingMovies()[0];
-    if (firstNow) {
-      this.quickMovieId.set(String(firstNow.id));
-    }
   }
 
   ngOnDestroy(): void {
@@ -666,22 +785,109 @@ export class HomePageComponent implements OnInit, OnDestroy {
 
   onQuickMovieChange(event: Event): void {
     this.quickMovieId.set((event.target as HTMLSelectElement).value);
+    this.quickCinemaId.set('');
+    this.selectFirstQuickDate();
   }
 
   onQuickCinemaChange(event: Event): void {
     this.quickCinemaId.set((event.target as HTMLSelectElement).value);
+    this.selectFirstQuickDate();
   }
 
   onQuickDayChange(event: Event): void {
-    this.quickDayOffset.set(Number((event.target as HTMLSelectElement).value));
+    this.quickShowtimeDate.set((event.target as HTMLSelectElement).value);
   }
 
   submitQuickBooking(): void {
-    const mId = this.quickMovieId() || this.nowShowingMovies()[0]?.id || '1';
+    const movie = this.quickMovies().find(
+      (candidate) =>
+        candidate.slug === this.quickMovieId() || String(candidate.id) === this.quickMovieId(),
+    );
+    const date = this.quickShowtimeDate();
+    if (
+      !movie ||
+      !date ||
+      this.store.loading() ||
+      this.showtimesStore.loading() ||
+      !this.quickDateOptions().some((option) => option.date === date)
+    ) {
+      return;
+    }
     const cId = this.quickCinemaId();
-    const day = this.quickDayOffset();
-    void this.router.navigate(['/showtimes'], {
-      queryParams: { movieId: mId, cinema: cId, day },
-    });
+    void this.router.navigateByUrl(buildShowtimesLink(movie, { cinemaId: cId || undefined, date }));
+  }
+
+  refreshCatalog(): void {
+    void this.store.refreshFromApi();
+  }
+
+  refreshShowtimes(): void {
+    void this.showtimesStore.loadSessionsFromApi();
+  }
+
+  buildShowtimesLink(): string {
+    return buildShowtimesLink();
+  }
+
+  private syncQuickBookingDefaults(): void {
+    const availableMovies = this.quickMovies();
+    const selectedMovieExists = availableMovies.some(
+      (movie) => movie.slug === this.quickMovieId() || String(movie.id) === this.quickMovieId(),
+    );
+    if (!selectedMovieExists) {
+      const firstMovie = availableMovies[0];
+      this.quickMovieId.set(firstMovie ? firstMovie.slug || String(firstMovie.id) : '');
+    }
+    if (!this.cinemaList().some((cinema) => cinema.id === this.quickCinemaId())) {
+      this.quickCinemaId.set('');
+    }
+    this.selectFirstQuickDate();
+  }
+
+  private selectFirstQuickDate(): void {
+    const currentDate = this.quickShowtimeDate();
+    if (this.quickDateOptions().some((option) => option.date === currentDate)) return;
+    this.quickShowtimeDate.set(this.quickDateOptions()[0]?.date ?? '');
+  }
+
+  private isMovieCurrentlyShowing(movie: Movie): boolean {
+    if (this.showtimesStore.loading()) return movie.status === 'now';
+    if (!this.showtimesStore.fetchedAt() || this.showtimesStore.error()) {
+      return movie.status === 'now';
+    }
+
+    return this.showtimesStore
+      .sessions()
+      .some(
+        (session) =>
+          String(session.movie.id) === String(movie.id) ||
+          (!!movie.dbId && session.movie.dbId === movie.dbId) ||
+          (!!movie.slug && session.movie.slug === movie.slug),
+      );
+  }
+
+  private withStatus(movie: Movie, status: Movie['status']): Movie {
+    return movie.status === status ? movie : { ...movie, status };
+  }
+
+  private isMovieComingSoon(movie: Movie): boolean {
+    if (this.showtimesStore.loading() || !this.showtimesStore.fetchedAt()) {
+      return movie.status === 'soon';
+    }
+    if (this.isMovieCurrentlyShowing(movie)) return false;
+    if (!movie.release || movie.release === 'Đang chiếu') return false;
+
+    const releaseDate = movie.startDate?.slice(0, 10);
+    if (releaseDate && /^\d{4}-\d{2}-\d{2}$/.test(releaseDate)) {
+      return releaseDate >= vietnamDate();
+    }
+
+    const [day, month, year] = movie.release.split('/');
+    if (day && month && year) {
+      const normalizedRelease = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      return normalizedRelease >= vietnamDate();
+    }
+
+    return movie.status === 'soon';
   }
 }
