@@ -59,13 +59,15 @@ export interface BookingState {
   readonly issuedTickets: readonly IssuedTicket[];
 }
 
+const STORAGE_KEY = 'cinehub_booking_store_state';
+
 const VOUCHER_CATALOG: Record<string, { label: string; amount: number }> = {
   CINEHUB50: { label: 'Giảm 50.000đ thành viên mới', amount: 50000 },
   GALAXY30: { label: 'Giảm 30.000đ đối tác Galaxy', amount: 30000 },
   VIP2026: { label: 'Giảm 45.000đ hạng VIP', amount: 45000 },
 };
 
-const initialState: BookingState = {
+const defaultInitialState: BookingState = {
   showtimeId: '',
   movieId: '',
   movieTitle: '',
@@ -85,6 +87,27 @@ const initialState: BookingState = {
   issuedTickets: [],
 };
 
+// Hàm đọc dữ liệu đã lưu từ Session Storage
+function loadSavedState(): BookingState {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultInitialState;
+    const parsed = JSON.parse(raw);
+    return { ...defaultInitialState, ...parsed };
+  } catch {
+    return defaultInitialState;
+  }
+}
+
+// Hàm hỗ trợ lưu State xuống Session Storage
+function persistState(state: BookingState): void {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    console.warn('[BookingStore] không thể lưu state:', err);
+  }
+}
+
 function seatPriceForZone(zone: 'normal' | 'vip' | 'sweetbox'): number {
   switch (zone) {
     case 'sweetbox':
@@ -98,7 +121,7 @@ function seatPriceForZone(zone: 'normal' | 'vip' | 'sweetbox'): number {
 
 export const BookingStore = signalStore(
   { providedIn: 'root' },
-  withState(initialState),
+  withState(loadSavedState()),
   withComputed((store) => ({
     selectedSeatIds: computed(() => new Set(store.selectedSeats().map((s) => s.id))),
     seatsSubtotal: computed(() => store.selectedSeats().reduce((sum, s) => sum + s.price, 0)),
@@ -115,47 +138,90 @@ export const BookingStore = signalStore(
       const parts = rawShowtimeId.split('__');
       const isNewShowtime = store.showtimeId() !== rawShowtimeId;
 
+      const updatedSeats = isNewShowtime ? [] : store.selectedSeats();
+      const updatedHold = isNewShowtime ? SEAT_HOLD_SECONDS : store.holdRemainingSeconds();
+
       patchState(store, {
         showtimeId: rawShowtimeId,
-        movieId: metadata.movieId || parts[0] || '',
-        movieTitle: metadata.movieTitle || '',
-        movieBackdropUrl: metadata.backdropUrl || '',
-        cinemaId: metadata.cinemaId || '',
-        cinemaCode: metadata.cinemaCode || parts[1] || '',
-        cinemaName: metadata.cinemaName || '',
-        screenName: metadata.screenName || '',
-        showTime: metadata.showTime || parts[2] || '',
-        showDate: metadata.showDate || '',
-        format: metadata.format || parts[3] || '',
-        selectedSeats: isNewShowtime ? [] : store.selectedSeats(),
-        holdRemainingSeconds: isNewShowtime ? SEAT_HOLD_SECONDS : store.holdRemainingSeconds(),
+        movieId: metadata.movieId || parts[0] || store.movieId(),
+        movieTitle: metadata.movieTitle || store.movieTitle(),
+        movieBackdropUrl: metadata.backdropUrl || store.movieBackdropUrl(),
+        cinemaId: metadata.cinemaId || store.cinemaId(),
+        cinemaCode: metadata.cinemaCode || parts[1] || store.cinemaCode(),
+        cinemaName: metadata.cinemaName || store.cinemaName(),
+        screenName: metadata.screenName || store.screenName(),
+        showTime: metadata.showTime || parts[2] || store.showTime(),
+        showDate: metadata.showDate || store.showDate(),
+        format: metadata.format || parts[3] || store.format(),
+        selectedSeats: updatedSeats,
+        holdRemainingSeconds: updatedHold,
+      });
+
+      persistState({
+        showtimeId: store.showtimeId(),
+        movieId: store.movieId(),
+        movieTitle: store.movieTitle(),
+        movieBackdropUrl: store.movieBackdropUrl(),
+        cinemaId: store.cinemaId(),
+        cinemaCode: store.cinemaCode(),
+        cinemaName: store.cinemaName(),
+        screenName: store.screenName(),
+        showTime: store.showTime(),
+        showDate: store.showDate(),
+        format: store.format(),
+        selectedSeats: store.selectedSeats(),
+        holdRemainingSeconds: store.holdRemainingSeconds(),
+        voucherCode: store.voucherCode(),
+        discountAmount: store.discountAmount(),
+        paymentMethod: store.paymentMethod(),
+        issuedTickets: store.issuedTickets(),
       });
     },
 
     decrementHold(): void {
-      patchState(store, {
-        holdRemainingSeconds: Math.max(0, store.holdRemainingSeconds() - 1),
-      });
+      const newSec = Math.max(0, store.holdRemainingSeconds() - 1);
+      patchState(store, { holdRemainingSeconds: newSec });
     },
 
     toggleSeat(id: string, zone: 'normal' | 'vip' | 'sweetbox'): { ok: boolean; reason?: string } {
       const current = store.selectedSeats();
       const exists = current.some((s) => s.id === id);
+      let updatedSeats: SelectedSeatItem[];
+
       if (exists) {
-        patchState(store, {
-          selectedSeats: current.filter((s) => s.id !== id),
-        });
-        return { ok: true };
+        updatedSeats = current.filter((s) => s.id !== id);
+      } else {
+        if (current.length >= MAX_SEATS_PER_BOOKING) {
+          return {
+            ok: false,
+            reason: `Chỉ được chọn tối đa ${MAX_SEATS_PER_BOOKING} ghế mỗi giao dịch.`,
+          };
+        }
+        updatedSeats = [...current, { id, zone, price: seatPriceForZone(zone) }];
       }
-      if (current.length >= MAX_SEATS_PER_BOOKING) {
-        return {
-          ok: false,
-          reason: `Chỉ được chọn tối đa ${MAX_SEATS_PER_BOOKING} ghế mỗi giao dịch.`,
-        };
-      }
-      patchState(store, {
-        selectedSeats: [...current, { id, zone, price: seatPriceForZone(zone) }],
+
+      patchState(store, { selectedSeats: updatedSeats });
+
+      persistState({
+        showtimeId: store.showtimeId(),
+        movieId: store.movieId(),
+        movieTitle: store.movieTitle(),
+        movieBackdropUrl: store.movieBackdropUrl(),
+        cinemaId: store.cinemaId(),
+        cinemaCode: store.cinemaCode(),
+        cinemaName: store.cinemaName(),
+        screenName: store.screenName(),
+        showTime: store.showTime(),
+        showDate: store.showDate(),
+        format: store.format(),
+        selectedSeats: updatedSeats,
+        holdRemainingSeconds: store.holdRemainingSeconds(),
+        voucherCode: store.voucherCode(),
+        discountAmount: store.discountAmount(),
+        paymentMethod: store.paymentMethod(),
+        issuedTickets: store.issuedTickets(),
       });
+
       return { ok: true };
     },
 
@@ -172,6 +238,27 @@ export const BookingStore = signalStore(
         voucherCode: code,
         discountAmount: entry.amount,
       });
+
+      persistState({
+        showtimeId: store.showtimeId(),
+        movieId: store.movieId(),
+        movieTitle: store.movieTitle(),
+        movieBackdropUrl: store.movieBackdropUrl(),
+        cinemaId: store.cinemaId(),
+        cinemaCode: store.cinemaCode(),
+        cinemaName: store.cinemaName(),
+        screenName: store.screenName(),
+        showTime: store.showTime(),
+        showDate: store.showDate(),
+        format: store.format(),
+        selectedSeats: store.selectedSeats(),
+        holdRemainingSeconds: store.holdRemainingSeconds(),
+        voucherCode: code,
+        discountAmount: entry.amount,
+        paymentMethod: store.paymentMethod(),
+        issuedTickets: store.issuedTickets(),
+      });
+
       return { ok: true, message: `Đã áp dụng ${code}: ${entry.label}` };
     },
 
@@ -209,6 +296,10 @@ export const BookingStore = signalStore(
         voucherCode: null,
         discountAmount: 0,
       });
+
+      // Xóa cache session sau khi hoàn tất vé thành công
+      sessionStorage.removeItem(STORAGE_KEY);
+
       return ticket;
     },
 
