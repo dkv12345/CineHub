@@ -9,6 +9,7 @@ import { moviesRouter } from '../modules/movies/index.js';
 import { sessionsRouter } from '../modules/sessions/index.js';
 import { bookingRouter } from '../modules/booking/index.js';
 import { paymentRouter } from '../modules/payment/index.js';
+import { ticketsRouter } from '../modules/tickets/index.js';
 import { simulatePaymentController } from '../modules/payment/payment.controller.js';
 
 export const routes = Router();
@@ -24,6 +25,7 @@ routes.use('/movies', moviesRouter);
 routes.use('/sessions', sessionsRouter);
 routes.use('/booking', bookingRouter);
 routes.use('/showtimes', bookingRouter);
+routes.use('/tickets', ticketsRouter);
 
 routes.use('/payments', paymentRouter); // 2. Mount đường dẫn /payments
 routes.use('/v1/payments', paymentRouter);
