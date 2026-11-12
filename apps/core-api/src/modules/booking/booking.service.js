@@ -9,6 +9,8 @@ import {
   getActiveSeatLeases,
 } from '../../platform/cache/seat-lease.js';
 import { momoAdapter } from '../../integrations/payments/momo.adapter.js';
+import { vnpayAdapter } from '../../integrations/payments/vnpay.adapter.js';
+import { zalopayAdapter } from '../../integrations/payments/zalopay.adapter.js';
 import { settlePayment } from '../../integrations/payments/settle-payment.js';
 import { buildQr } from '../../platform/utils/qr.js';
 import { logger } from '../../platform/observability/logger.js';
@@ -290,14 +292,15 @@ export async function initiatePayment({
 
   // Call provider adapter
   let paymentResult;
-  if (provider.toUpperCase() === 'MOMO') {
+  const prov = provider.toUpperCase();
+  if (prov === 'MOMO') {
     paymentResult = await momoAdapter.createPaymentUrl({ booking, payment });
+  } else if (prov === 'VNPAY') {
+    paymentResult = await vnpayAdapter.createPaymentUrl({ booking, payment, clientIp: _clientIp });
+  } else if (prov === 'ZALOPAY') {
+    paymentResult = await zalopayAdapter.createPaymentUrl({ booking, payment });
   } else {
-    throw new AppError(
-      400,
-      'BAD_REQUEST',
-      `Cổng thanh toán ${provider} chưa được khởi tạo ở pha này`,
-    );
+    throw new AppError(400, 'BAD_REQUEST', `Cổng thanh toán ${provider} không được hỗ trợ`);
   }
 
   // Update payment status to PENDING

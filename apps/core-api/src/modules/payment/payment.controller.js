@@ -1,4 +1,6 @@
 import { prisma } from '@cinehub/db';
+import { vnpayAdapter } from '../../integrations/payments/vnpay.adapter.js';
+import { zalopayAdapter } from '../../integrations/payments/zalopay.adapter.js';
 import { momoAdapter } from '../../integrations/payments/momo.adapter.js';
 import { settlePayment } from '../../integrations/payments/settle-payment.js';
 import { simulatePaymentSuccess } from '../../integrations/payments/simulate.js';
@@ -108,6 +110,103 @@ export const simulatePaymentController = async (req, res, next) => {
     res.status(200).json({ data: result });
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * Xử lý VNPAY IPN / Return
+ */
+export const vnpayIPNController = async (req, res) => {
+  try {
+    const payload = Object.keys(req.body || {}).length > 0 ? req.body : req.query;
+    logger.info(
+      { txnRef: payload.vnp_TxnRef, responseCode: payload.vnp_ResponseCode },
+      '[VNPay IPN Received]',
+    );
+
+    const isSignatureValid = vnpayAdapter.verifyWebhookSignature(payload);
+    const eventKey = `${payload.vnp_TxnRef}_${payload.vnp_TransactionNo || Date.now()}`;
+
+    try {
+      await prisma.paymentWebhookEvent.create({
+        data: {
+          provider: 'VNPAY',
+          eventKey,
+          txnRef: payload.vnp_TxnRef,
+          payload: JSON.parse(JSON.stringify(payload)),
+          signatureValid: isSignatureValid,
+          processedAt: new Date(),
+        },
+      });
+    } catch (e) {
+      logger.warn({ err: e.message }, '[VNPay IPN] Event logging duplicate');
+    }
+
+    if (!isSignatureValid) {
+      return res.status(200).json({ RspCode: '97', Message: 'Checksum failed' });
+    }
+
+    const parsed = vnpayAdapter.parseWebhookPayload(payload);
+    await settlePayment({
+      txnRef: parsed.txnRef,
+      provider: 'VNPAY',
+      isSuccess: parsed.isSuccess,
+      providerTxnNo: parsed.providerTxnNo,
+      bankCode: parsed.bankCode,
+      failureCode: parsed.failureCode,
+      rawResponse: parsed.raw,
+    });
+
+    return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
+  } catch (err) {
+    logger.error({ err: err.message }, '[VNPay IPN Fatal]');
+    return res.status(200).json({ RspCode: '99', Message: 'Unknown error' });
+  }
+};
+
+/**
+ * Xử lý ZaloPay Callback
+ */
+export const zalopayCallbackController = async (req, res) => {
+  try {
+    const payload = req.body;
+    logger.info('[ZaloPay Callback Received]');
+
+    const isSignatureValid = zalopayAdapter.verifyWebhookSignature(payload);
+    const parsed = zalopayAdapter.parseWebhookPayload(payload);
+    const eventKey = `${parsed.txnRef}_${parsed.providerTxnNo || Date.now()}`;
+
+    try {
+      await prisma.paymentWebhookEvent.create({
+        data: {
+          provider: 'ZALOPAY',
+          eventKey,
+          txnRef: parsed.txnRef,
+          payload: JSON.parse(JSON.stringify(payload)),
+          signatureValid: isSignatureValid,
+          processedAt: new Date(),
+        },
+      });
+    } catch (e) {
+      logger.warn({ err: e.message }, '[ZaloPay Callback] Event duplicate');
+    }
+
+    if (!isSignatureValid) {
+      return res.status(200).json({ return_code: -1, return_message: 'mac not equal' });
+    }
+
+    await settlePayment({
+      txnRef: parsed.txnRef,
+      provider: 'ZALOPAY',
+      isSuccess: parsed.isSuccess,
+      providerTxnNo: parsed.providerTxnNo,
+      rawResponse: parsed.raw,
+    });
+
+    return res.status(200).json({ return_code: 1, return_message: 'success' });
+  } catch (err) {
+    logger.error({ err: err.message }, '[ZaloPay Callback Error]');
+    return res.status(200).json({ return_code: 0, return_message: err.message });
   }
 };
 
