@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import {
   filterShowtimes,
   getShowtimeCityName,
@@ -128,12 +128,14 @@ export const ShowtimesStore = signalStore(
         patchState(store, { loading: true, error: null });
         try {
           const res = await firstValueFrom(
-            http.get<{
-              data?: GalaxySession[];
-              result?: GalaxySession[];
-              stale?: boolean;
-              fetchedAt?: string;
-            }>('/api/v1/sessions'),
+            http
+              .get<{
+                data?: GalaxySession[];
+                result?: GalaxySession[];
+                stale?: boolean;
+                fetchedAt?: string;
+              }>('/api/v1/sessions')
+              .pipe(timeout(6000)),
           );
           const sessions = Array.isArray(res?.data)
             ? res.data
