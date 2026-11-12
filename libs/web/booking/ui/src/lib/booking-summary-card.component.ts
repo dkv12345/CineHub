@@ -6,18 +6,22 @@ import { fmt } from '@cinehub/web/shared/util';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="cinema-panel-raised p-5 space-y-4">
-      <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
-        <span class="cinema-eyebrow">Tóm tắt đơn đặt vé</span>
+    <div
+      class="rounded-3xl border-2 border-slate-700 bg-slate-900/90 p-5 shadow-2xl backdrop-blur-xl text-white space-y-4"
+    >
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <span class="text-xs font-black uppercase tracking-wider text-amber-300"
+          >Tóm tắt đơn đặt vé</span
+        >
         <span
-          class="inline-flex items-center gap-1 rounded-[3px] border border-[var(--color-warning)] bg-[var(--color-warning-bg)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--color-warning)]"
+          class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1 text-[11px] font-black text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.2)]"
         >
           <svg
             class="h-3 w-3"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2"
+            stroke-width="2.5"
             aria-hidden="true"
           >
             <circle cx="12" cy="12" r="10" />
@@ -27,38 +31,32 @@ import { fmt } from '@cinehub/web/shared/util';
         </span>
       </div>
 
-      <div class="space-y-2 text-xs text-[var(--color-text-secondary)]">
+      <div class="space-y-2.5 text-xs text-slate-300">
         <div>
-          <div class="cinema-card-title leading-tight text-[var(--color-text-primary)]">
+          <div class="text-base font-black text-white leading-tight">
             {{ movieTitle() }}
           </div>
-          <div class="mt-0.5 text-[var(--color-text-secondary)]">{{ cinemaName() }}</div>
+          <div class="mt-1 text-xs font-medium text-slate-400">{{ cinemaName() }}</div>
         </div>
 
-        <div
-          class="flex items-center justify-between border-t border-[var(--color-border-subtle)] pt-2"
-        >
-          <span>Suất chiếu:</span>
-          <span class="font-bold text-[var(--color-text-primary)]">
-            {{ showTime() }} ({{ format() }})
-          </span>
+        <div class="flex items-center justify-between border-t border-white/10 pt-2.5">
+          <span class="text-slate-400">Suất chiếu:</span>
+          <span class="font-bold text-white"> {{ showTime() }} ({{ format() }}) </span>
         </div>
 
         <div class="flex items-center justify-between">
-          <span>Ghế đã chọn:</span>
-          <span class="font-bold text-[var(--color-brand-primary)]">
+          <span class="text-slate-400">Ghế đã chọn:</span>
+          <span class="font-black text-amber-300">
             {{ seatLabels().length > 0 ? seatLabels().join(', ') : 'Chưa chọn ghế' }}
           </span>
         </div>
       </div>
 
       <div
-        class="flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm font-semibold text-[var(--color-text-primary)]"
+        class="flex items-center justify-between border-t border-white/10 pt-3 text-sm font-semibold text-white"
       >
-        <span>Tổng tạm tính</span>
-        <span
-          class="cinema-price font-semibold tabular-nums text-lg text-[var(--color-brand-primary)]"
-        >
+        <span class="font-bold text-slate-300">Tổng tạm tính</span>
+        <span class="font-black tabular-nums text-xl text-amber-300">
           {{ formatCurrency(totalAmount()) }}
         </span>
       </div>

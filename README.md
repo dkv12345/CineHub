@@ -249,6 +249,8 @@ CI fails if the generated client is out of date (`git diff --exit-code`).
 
 ## 6. Onboarding and Local Setup
 
+> 📘 **Tài liệu hướng dẫn tiếng Việt chi tiết**: Xem thêm tại [docs/TEAM_ONBOARDING_AND_TEST_GUIDE.md](file:///Users/dokhanhvi/CineHub/docs/TEAM_ONBOARDING_AND_TEST_GUIDE.md) để biết hướng dẫn từng bước từ pull code, setup DB, khởi chạy và checklist test toàn bộ tính năng.
+
 Prerequisites: Node.js >= 20, npm >= 10, Docker + Compose >= 24.
 
 ```bash
