@@ -1,11 +1,12 @@
 import crypto from 'crypto';
 import https from 'https';
+import { env } from '../../platform/config/env.js';
 
 export async function createZaloPayPaymentUrl({ bookingId, amount }) {
   // 1. Credentials Sandbox chuẩn ZaloPay V2
-  const appId = process.env.ZALOPAY_APP_ID || '2554';
-  const key1 = process.env.ZALOPAY_KEY1 || 'sdngD8w4FiMuCoyF';
-  const redirectUrl = process.env.ZALOPAY_REDIRECT_URL || 'http://localhost:4200/checkout';
+  const appId = String(env.ZALOPAY_APP_ID);
+  const key1 = env.ZALOPAY_KEY1;
+  const redirectUrl = env.ZALOPAY_REDIRECT_URL;
 
   const numericAmount = Math.round(Number(amount || 100000));
 

@@ -1,15 +1,13 @@
 import crypto from 'crypto';
 import https from 'https';
+import { env } from '../../platform/config/env.js';
 
 export async function createMoMoPaymentUrl({ bookingId, amount }) {
-  // 1. Chìa khóa Sandbox chuẩn MoMo V2
-  const partnerCode = 'MOMO';
-  const accessKey = 'F8BBA842ECF85';
-  const secretKey = 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
-
-  // Chuẩn hóa redirectUrl không chứa trailing slash dư thừa
-  const redirectUrl = 'http://localhost:4200/checkout';
-  const ipnUrl = 'http://localhost:4000/api/v1/payments/momo-ipn';
+  const partnerCode = env.MOMO_PARTNER_CODE;
+  const accessKey = env.MOMO_ACCESS_KEY;
+  const secretKey = env.MOMO_SECRET_KEY;
+  const redirectUrl = env.MOMO_REDIRECT_URL;
+  const ipnUrl = env.MOMO_IPN_URL;
 
   // 2. Định dạng dữ liệu
   const cleanBookingId = String(bookingId || `CH${Date.now()}`).replace(/[^a-zA-Z0-9]/g, '');
@@ -129,7 +127,7 @@ export const vietqrService = async (MAGD, bankId) => {
 };
 
 export function verifyMomoSignature(data) {
-  const secretKey = 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
+  const secretKey = env.MOMO_SECRET_KEY;
 
   const rawSignature =
     `accessKey=${data.accessKey}` +

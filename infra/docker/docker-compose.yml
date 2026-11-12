@@ -38,6 +38,12 @@ services:
     ports: ['27017:27017']
     volumes: ['mongo_data:/data/db']
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: cinehub-mailpit
+    restart: unless-stopped
+    ports: ['1025:1025', '8025:8025']
+
 volumes:
   mysql_data:
   redis_data:
