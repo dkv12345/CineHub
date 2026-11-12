@@ -1,0 +1,29 @@
+flowchart LR
+    %% CineHub Discovery & Showtimes Use Case Diagram (3.6.3)
+    Actor_Guest["Khách xem phim<br/>(Guest)"]
+    Actor_Cust["Thành viên<br/>(Customer)"]
+    Actor_Gemini["Gemini AI<br/>(Embeddings & RAG)"]
+
+    subgraph Boundary_Discovery ["PHÂN HỆ KHÁM PHÁ & LỊCH CHIẾU (DISCOVERY)"]
+        UC_ViewList(["Xem danh sách phim<br/>(Đang chiếu / Sắp chiếu)"])
+        UC_ViewDetail(["Xem chi tiết phim & Trailer"])
+        UC_SearchFilter(["Tìm kiếm & Lọc phim nâng cao"])
+        UC_Showtimes(["Tra cứu lịch chiếu theo ngày & rạp"])
+        UC_WriteReview(["Đánh giá & Bình luận phim"])
+        UC_ChatAI(["Trò chuyện với CineBot gợi ý phim"])
+        UC_Auth(["Xác thực tài khoản"])
+    end
+
+    Actor_Cust -- Kế thừa --> Actor_Guest
+
+    Actor_Guest --> UC_ViewList
+    Actor_Guest --> UC_ViewDetail
+    Actor_Guest --> UC_SearchFilter
+    Actor_Guest --> UC_Showtimes
+    Actor_Guest --> UC_ChatAI
+
+    Actor_Cust --> UC_WriteReview
+
+    UC_WriteReview -.->|<<include>>| UC_Auth
+    UC_ChatAI <--> Actor_Gemini
+

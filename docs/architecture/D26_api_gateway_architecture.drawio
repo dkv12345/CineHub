@@ -1,0 +1,152 @@
+<mxfile host="app.diagrams.net" modified="2026-11-08T18:00:00.000Z" agent="Mozilla/5.0" version="24.0.0" type="device">
+  <diagram id="api_gateway_architecture" name="Figure 3.10 - RESTful API Gateway Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1350" pageHeight="700" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="Figure 3.10: RESTful API Gateway Architecture and Standardized Request Processing Pipeline" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="250" y="20" width="850" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- CLIENT REQUEST -->
+        <mxCell id="client" value="&lt;b&gt;Client Request&lt;/b&gt;&lt;br&gt;(Angular 19 SPA /&lt;br&gt;External Gateway)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#475569;strokeWidth=2;fontSize=12;fontColor=#0f172a;" vertex="1" parent="1">
+          <mxGeometry x="40" y="230" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- CONTAINER 1: GATEWAY & MIDDLEWARE -->
+        <mxCell id="box_gateway" value="Express API Gateway Pipeline (/api/v1)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#94a3b8;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#1e293b;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="90" width="460" height="260" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="mw_cors" value="&lt;b&gt;1. CORS &amp;amp; Security&lt;/b&gt;&lt;br&gt;(Helmet, Secure Headers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#0f172a;" vertex="1" parent="box_gateway">
+          <mxGeometry x="20" y="45" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mw_rate" value="&lt;b&gt;2. Rate Limiter&lt;/b&gt;&lt;br&gt;(Redis Sliding Window)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#0f172a;" vertex="1" parent="box_gateway">
+          <mxGeometry x="250" y="45" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mw_auth" value="&lt;b&gt;3. Auth Middleware&lt;/b&gt;&lt;br&gt;(JWT Bearer Verify &amp;amp; RBAC)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;fontSize=11;fontColor=#1e3a8a;" vertex="1" parent="box_gateway">
+          <mxGeometry x="20" y="155" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mw_zod" value="&lt;b&gt;4. Zod Validation&lt;/b&gt;&lt;br&gt;(Contract-First Schema)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2563eb;strokeWidth=1.5;fontSize=11;fontColor=#1e3a8a;" vertex="1" parent="box_gateway">
+          <mxGeometry x="250" y="155" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- INTERNAL GATEWAY ARROWS -->
+        <mxCell id="edge_cors_rate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="box_gateway" source="mw_cors" target="mw_rate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_rate_auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="box_gateway" source="mw_rate" target="mw_auth">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="125" />
+              <mxPoint x="110" y="125" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_auth_zod" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;" edge="1" parent="box_gateway" source="mw_auth" target="mw_zod">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CONTAINER 2: DOMAIN MODULES -->
+        <mxCell id="box_domain" value="Domain Modules (/src/modules/*)" style="swimlane;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#1e40af;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="90" width="230" height="260" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mod_ctrl" value="&lt;b&gt;Module Controller&lt;/b&gt;&lt;br&gt;(Extract DTO &amp;amp; Context)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=11;fontColor=#1e3a8a;" vertex="1" parent="box_domain">
+          <mxGeometry x="25" y="55" width="180" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mod_svc" value="&lt;b&gt;Domain Service&lt;/b&gt;&lt;br&gt;(Business Logic, Lua Lock,&lt;br&gt;Prisma Transaction)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=11;fontColor=#1e3a8a;" vertex="1" parent="box_domain">
+          <mxGeometry x="25" y="160" width="180" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_ctrl_svc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#3b82f6;strokeWidth=1.5;" edge="1" parent="box_domain" source="mod_ctrl" target="mod_svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CONTAINER 3: RESPONSE ENVELOPES -->
+        <mxCell id="box_envelope" value="Response Standardization" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#0f172a;startSize=30;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="90" width="290" height="490" as="geometry" />
+        </mxCell>
+
+        <mxCell id="env_success" value="&lt;b&gt;Standard Success Envelope&lt;/b&gt;&lt;br&gt;(HTTP 200 / 201 Created)&lt;hr&gt;&lt;div align=&quot;left&quot; style=&quot;font-family:monospace;font-size:10px;&quot;&gt;{&lt;br&gt;&amp;nbsp;&amp;nbsp;&quot;success&quot;: true,&lt;br&gt;&amp;nbsp;&amp;nbsp;&quot;data&quot;: { ... },&lt;br&gt;&amp;nbsp;&amp;nbsp;&quot;meta&quot;: { &quot;timestamp&quot;, &quot;requestId&quot; }&lt;br&gt;}&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;strokeWidth=1.5;fontSize=11;fontColor=#166534;" vertex="1" parent="box_envelope">
+          <mxGeometry x="20" y="45" width="250" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="env_error" value="&lt;b&gt;Standard Error Envelope&lt;/b&gt;&lt;br&gt;(HTTP 400, 401, 403, 409, 500)&lt;hr&gt;&lt;div align=&quot;left&quot; style=&quot;font-family:monospace;font-size:10px;&quot;&gt;{&lt;br&gt;&amp;nbsp;&amp;nbsp;&quot;success&quot;: false,&lt;br&gt;&amp;nbsp;&amp;nbsp;&quot;error&quot;: {&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&quot;code&quot;: &quot;SEAT_CONFLICT&quot;,&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&quot;message&quot;: &quot;Seat already held&quot;,&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&quot;details&quot;: { ... }&lt;br&gt;&amp;nbsp;&amp;nbsp;},&lt;br&gt;&amp;nbsp;&amp;nbsp;&quot;meta&quot;: { &quot;timestamp&quot;, &quot;requestId&quot; }&lt;br&gt;}&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#dc2626;strokeWidth=1.5;fontSize=11;fontColor=#991b1b;" vertex="1" parent="box_envelope">
+          <mxGeometry x="20" y="225" width="250" height="210" as="geometry" />
+        </mxCell>
+
+        <!-- MAIN FLOW ARROWS -->
+        <mxCell id="edge_client_gateway" value="HTTP Request&lt;br&gt;+ JWT Header" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0f172a;strokeWidth=2;fontSize=11;" edge="1" parent="1" source="client" target="mw_cors">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="110" y="160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge_gateway_ctrl" value="Validated DTO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=2;fontSize=11;fontColor=#1e40af;" edge="1" parent="1" source="mw_zod" target="mod_ctrl">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="570" y="310" />
+              <mxPoint x="710" y="310" />
+              <mxPoint x="710" y="172" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge_svc_success" value="Success Result&lt;br&gt;(200 / 201)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16a34a;strokeWidth=2;fontSize=11;fontColor=#166534;" edge="1" parent="1" source="mod_svc" target="env_success">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="990" y="282" />
+              <mxPoint x="990" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ERROR FLOWS (DASHED RED) -->
+        <mxCell id="edge_err_auth" value="401 / 403" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#dc2626;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#dc2626;" edge="1" parent="1" source="mw_auth" target="env_error">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge_err_zod" value="400 Bad Request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#dc2626;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#dc2626;" edge="1" parent="1" source="mw_zod" target="env_error">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="570" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge_err_svc" value="409 Conflict / 500 Error" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#dc2626;strokeWidth=1.5;dashed=1;fontSize=10;fontColor=#dc2626;" edge="1" parent="1" source="mod_svc" target="env_error">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="855" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- RETURN TO CLIENT -->
+        <mxCell id="edge_return_client" value="JSON Response (Success or Error Envelope)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#0f172a;strokeWidth=2;fontSize=11;fontColor=#0f172a;" edge="1" parent="1" source="box_envelope" target="client">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1165" y="620" />
+              <mxPoint x="110" y="620" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+

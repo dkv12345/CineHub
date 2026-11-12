@@ -485,6 +485,55 @@
             },
             "minItems": 1,
             "maxItems": 6
+          },
+          "ticketTypes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "enforceOrphanRule": {
+            "type": "boolean"
+          },
+          "ttlSeconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 1800
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "movieId": {
+                "type": "string"
+              },
+              "movieTitle": {
+                "type": "string"
+              },
+              "cinemaId": {
+                "type": "string"
+              },
+              "cinemaCode": {
+                "type": "string"
+              },
+              "cinemaName": {
+                "type": "string"
+              },
+              "screenName": {
+                "type": "string"
+              },
+              "showDate": {
+                "type": "string"
+              },
+              "showTime": {
+                "type": "string"
+              },
+              "format": {
+                "type": "string"
+              },
+              "backdropUrl": {
+                "type": "string"
+              }
+            }
           }
         },
         "required": ["showtimeId", "seatIds"]
@@ -500,6 +549,13 @@
                 "concessionId": {
                   "type": "string",
                   "minLength": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "unitPrice": {
+                  "type": "integer",
+                  "minimum": 0
                 },
                 "quantity": {
                   "type": "integer",
@@ -519,6 +575,13 @@
           "code": {
             "type": "string",
             "minLength": 1
+          },
+          "subtotalAmount": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "bookingId": {
+            "type": "string"
           }
         },
         "required": ["code"]

@@ -14,18 +14,35 @@ export function getRedisClient() {
   if (!redisClient) {
     redisClient = new Redis(env.REDIS_URL, {
       lazyConnect: true,
-      maxRetriesPerRequest: 3,
+      connectTimeout: 500,
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      retryStrategy(times) {
+        if (times > 2) return null;
+        return Math.min(times * 100, 300);
+      },
     });
     redisClient.on('error', (err) => {
-      logger.warn({ err: err.message }, '[Redis] Connection warning');
+      logger.debug({ err: err.message }, '[Redis] Connection warning');
     });
+    if (env.NODE_ENV !== 'test') {
+      void redisClient.connect().catch(() => {});
+    }
   }
   return redisClient;
 }
 
 export async function closeRedis() {
   if (redisClient) {
-    await redisClient.quit();
+    try {
+      if (redisClient.status === 'ready' || redisClient.status === 'connect') {
+        await redisClient.quit();
+      } else {
+        redisClient.disconnect();
+      }
+    } catch {
+      redisClient.disconnect();
+    }
     redisClient = null;
   }
 }

@@ -1,0 +1,63 @@
+flowchart LR
+    %% CineHub System Overview Use Case Diagram (3.6.1)
+    subgraph Actors_Group ["TÁC NHÂN (ACTORS)"]
+        Guest["Khách vãng lai<br/>(Guest)"]
+        Customer["Thành viên<br/>(Customer)"]
+        Staff["Nhân viên soát vé<br/>(Cinema Staff)"]
+        Admin["Quản trị viên<br/>(System Admin)"]
+    end
+
+    subgraph Ext_Group ["HỆ THỐNG NGOẠI VI"]
+        Ext_OAuth["Google OAuth"]
+        Ext_Pay["Cổng VNPay / ZaloPay"]
+        Ext_AI["Google Gemini AI"]
+        Ext_Mail["SMTP Mail Server"]
+    end
+
+    subgraph CineHub_System ["HỆ THỐNG CINEHUB"]
+        subgraph Sub_Auth ["1. Phân hệ Tài khoản"]
+            UC_Auth["Đăng ký / Đăng nhập / Quản lý hồ sơ"]
+        end
+
+        subgraph Sub_Discovery ["2. Phân hệ Khám phá"]
+            UC_Disc["Xem phim, tra cứu lịch chiếu & Đánh giá"]
+        end
+
+        subgraph Sub_Booking ["3. Phân hệ Đặt vé"]
+            UC_Book["Chọn ghế, giữ ghế & mua bắp nước"]
+        end
+
+        subgraph Sub_Payment ["4. Phân hệ Thanh toán & Vé"]
+            UC_Pay["Thanh toán, áp voucher & nhận vé QR"]
+        end
+
+        subgraph Sub_Checkin ["5. Phân hệ Soát vé"]
+            UC_Check["Quét QR & Đối soát vé vào rạp"]
+        end
+
+        subgraph Sub_Admin ["6. Phân hệ Quản trị"]
+            UC_Adm["Quản lý phim, lịch, giá, voucher & báo cáo"]
+        end
+
+        subgraph Sub_AI ["7. Phân hệ Trợ lý AI"]
+            UC_Bot["Chatbot CineBot tư vấn & gợi ý phim"]
+        end
+    end
+
+    Guest --> UC_Auth
+    Guest --> UC_Disc
+    Guest --> UC_Bot
+
+    Customer -- Kế thừa quyền --> Guest
+    Customer --> UC_Book
+    Customer --> UC_Pay
+    Customer --> UC_Disc
+
+    Staff --> UC_Check
+    Admin --> UC_Adm
+
+    UC_Auth <--> Ext_OAuth
+    UC_Pay <--> Ext_Pay
+    UC_Pay --> Ext_Mail
+    UC_Bot <--> Ext_AI
+

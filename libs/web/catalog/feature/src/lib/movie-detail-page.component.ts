@@ -267,21 +267,7 @@ function normalizeGenre(value: string): string {
                 Xem trailer
               </button>
 
-              @if (m.status === 'soon') {
-                <button
-                  type="button"
-                  (click)="store.toggleMovieNotification(m.id)"
-                  [attr.aria-pressed]="store.isMovieNotified(m.id)"
-                  class="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-extrabold text-white shadow-lg transition"
-                  [class]="
-                    store.isMovieNotified(m.id)
-                      ? 'bg-emerald-600 hover:bg-emerald-500'
-                      : 'bg-red-600 hover:bg-red-700'
-                  "
-                >
-                  {{ store.isMovieNotified(m.id) ? 'Đã đăng ký nhận tin' : 'Nhận thông báo' }}
-                </button>
-              } @else {
+              @if (hasBookableShowtimes() || m.status !== 'soon') {
                 <a
                   [routerLink]="['/showtimes']"
                   [queryParams]="showtimesQueryParams(m)"
@@ -295,6 +281,20 @@ function normalizeGenre(value: string): string {
                   </svg>
                   Mua vé ngay
                 </a>
+              } @else {
+                <button
+                  type="button"
+                  (click)="store.toggleMovieNotification(m.id)"
+                  [attr.aria-pressed]="store.isMovieNotified(m.id)"
+                  class="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-extrabold text-white shadow-lg transition"
+                  [class]="
+                    store.isMovieNotified(m.id)
+                      ? 'bg-emerald-600 hover:bg-emerald-500'
+                      : 'bg-red-600 hover:bg-red-700'
+                  "
+                >
+                  {{ store.isMovieNotified(m.id) ? 'Đã đăng ký nhận tin' : 'Nhận thông báo' }}
+                </button>
               }
             </div>
 
@@ -402,6 +402,19 @@ export class MovieDetailPageComponent implements OnInit {
     return buildShowtimesQueryParams(movie ?? undefined);
   }
 
+  readonly hasBookableShowtimes = computed(() => {
+    const movie = this.resolvedMovie();
+    if (!movie) return false;
+    return this.showtimesStore
+      .sessions()
+      .some(
+        (session) =>
+          String(session.movie.id) === String(movie.id) ||
+          (!!movie.dbId && session.movie.dbId === movie.dbId) ||
+          (!!movie.slug && session.movie.slug === movie.slug),
+      );
+  });
+
   readonly resolvedMovie = computed<Movie | null>(() => {
     const currentId = this.id() || this.route.snapshot.paramMap.get('id') || '';
     const movie = this.movie() ?? this.store.findMovieById(currentId) ?? null;
@@ -502,6 +515,9 @@ export class MovieDetailPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    if (!this.store.loading()) {
+      void this.store.refreshFromApi();
+    }
     if (!this.showtimesStore.fetchedAt() && !this.showtimesStore.loading()) {
       void this.showtimesStore.loadSessionsFromApi();
     }

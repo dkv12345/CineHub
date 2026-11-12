@@ -681,29 +681,69 @@ async function main() {
   }
 
   // 11. Concessions & Vouchers
-  console.log('[11/11] Seeding Concessions & Vouchers...');
+  console.log('[11/12] Seeding Concessions & Vouchers...');
   await seedConcessions(prisma, galaxyChain.id);
 
   const vouchers = [
     {
+      code: 'CINEHUB50',
+      description: 'Giảm 50.000đ thành viên mới',
+      type: 'FIXED',
+      value: 50000,
+      maxDiscount: 50000,
+      minOrderAmount: 0,
+      usageLimit: 1000,
+      perUserLimit: 10,
+      startsAt: new Date('2025-01-01'),
+      endsAt: new Date('2028-12-31'),
+    },
+    {
+      code: 'GALAXY30',
+      description: 'Giảm 30.000đ đối tác Galaxy',
+      type: 'FIXED',
+      value: 30000,
+      maxDiscount: 30000,
+      minOrderAmount: 0,
+      usageLimit: 1000,
+      perUserLimit: 10,
+      startsAt: new Date('2025-01-01'),
+      endsAt: new Date('2028-12-31'),
+    },
+    {
+      code: 'VIP2026',
+      description: 'Giảm 45.000đ hạng VIP',
+      type: 'FIXED',
+      value: 45000,
+      maxDiscount: 45000,
+      minOrderAmount: 0,
+      usageLimit: 1000,
+      perUserLimit: 10,
+      startsAt: new Date('2025-01-01'),
+      endsAt: new Date('2028-12-31'),
+    },
+    {
       code: 'CINEHUB20',
-      description: 'Giảm 20% tổng đơn hàng',
+      description: 'Giảm 20% tổng đơn hàng (tối đa 50.000đ)',
       type: 'PERCENT',
       value: 20,
       maxDiscount: 50000,
       minOrderAmount: 100000,
-      startsAt: new Date('2026-01-01'),
-      endsAt: new Date('2026-12-31'),
+      usageLimit: 1000,
+      perUserLimit: 10,
+      startsAt: new Date('2025-01-01'),
+      endsAt: new Date('2028-12-31'),
     },
     {
       code: 'CINEHUB50K',
-      description: 'Giảm trực tiếp 50.000đ',
+      description: 'Giảm trực tiếp 50.000đ cho đơn từ 150.000đ',
       type: 'FIXED',
       value: 50000,
       maxDiscount: 50000,
-      minOrderAmount: 200000,
-      startsAt: new Date('2026-01-01'),
-      endsAt: new Date('2026-12-31'),
+      minOrderAmount: 150000,
+      usageLimit: 1000,
+      perUserLimit: 10,
+      startsAt: new Date('2025-01-01'),
+      endsAt: new Date('2028-12-31'),
     },
   ];
   for (const v of vouchers) {
@@ -711,9 +751,15 @@ async function main() {
       where: { code: v.code },
       update: {
         description: v.description,
+        type: v.type,
         value: v.value,
         maxDiscount: v.maxDiscount,
         minOrderAmount: v.minOrderAmount,
+        usageLimit: v.usageLimit,
+        perUserLimit: v.perUserLimit,
+        startsAt: v.startsAt,
+        endsAt: v.endsAt,
+        isActive: true,
       },
       create: v,
     });
@@ -722,8 +768,76 @@ async function main() {
   console.log('[11b] Generating mock seat maps for auditoriums...');
   await seedSeats(prisma, seatTypeMap);
 
+  // 12. Demo Users (Customer A, Customer B, Staff, Admin) — Password: Password123!
+  console.log('[12/12] Seeding Demo Accounts (Customer A, Customer B, Staff, Admin)...');
+  const demoPasswordHash = '$2a$10$szHYF87ulpZCVykNztb8YuyfnDV03u5qdlB0LBncCA50aVNlkJ2l2';
+  const firstCinema = await prisma.cinema.findFirst({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+  const demoUsers = [
+    {
+      email: 'customer.a@cinehub.vn',
+      fullName: 'Nguyễn Văn A (Demo Customer A)',
+      phone: '0901000001',
+      role: 'CUSTOMER',
+      cinemaId: null,
+    },
+    {
+      email: 'customer.b@cinehub.vn',
+      fullName: 'Trần Thị B (Demo Customer B)',
+      phone: '0901000002',
+      role: 'CUSTOMER',
+      cinemaId: null,
+    },
+    {
+      email: 'staff@cinehub.vn',
+      fullName: 'Lê Văn Soát Vé (Demo Staff)',
+      phone: '0901000003',
+      role: 'STAFF',
+      cinemaId: firstCinema?.id ?? null,
+    },
+    {
+      email: 'admin@cinehub.vn',
+      fullName: 'Quản Trị Viên CineHub (Admin)',
+      phone: '0901000009',
+      role: 'ADMIN',
+      cinemaId: null,
+    },
+  ];
+  for (const u of demoUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {
+        fullName: u.fullName,
+        phone: u.phone,
+        role: u.role,
+        status: 'ACTIVE',
+        passwordHash: demoPasswordHash,
+        emailVerifiedAt: new Date(),
+        cinemaId: u.cinemaId,
+      },
+      create: {
+        email: u.email,
+        fullName: u.fullName,
+        phone: u.phone,
+        role: u.role,
+        status: 'ACTIVE',
+        authProvider: 'LOCAL',
+        passwordHash: demoPasswordHash,
+        emailVerifiedAt: new Date(),
+        cinemaId: u.cinemaId,
+      },
+    });
+  }
+
   console.log('===============================================================');
   console.log('[SUCCESS] CineHub database seeding finished successfully!');
+  console.log('   Demo credentials (Password: Password123!):');
+  console.log('   - Customer A: customer.a@cinehub.vn');
+  console.log('   - Customer B: customer.b@cinehub.vn');
+  console.log('   - Staff:      staff@cinehub.vn');
+  console.log('   - Admin:      admin@cinehub.vn');
   console.log('===============================================================');
 }
 

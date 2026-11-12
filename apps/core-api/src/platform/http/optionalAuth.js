@@ -12,7 +12,9 @@ export function optionalAuth(req, _res, next) {
       const payload = jwt.verify(match[1], env.JWT_ACCESS_SECRET);
       if (payload && typeof payload === 'object') {
         const id = payload.sub ?? payload.userId ?? payload.id;
-        if (typeof id === 'string' && UUID_PATTERN.test(id)) req.user = { id };
+        if (typeof id === 'string' && (UUID_PATTERN.test(id) || id.length > 0)) {
+          req.user = { id, email: payload.email, role: payload.role };
+        }
       }
     } catch {
       // Chat remains available to guests and callers with expired tokens.

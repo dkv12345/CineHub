@@ -37,8 +37,8 @@ const sendSession = (res, result, status = 200) => {
  * @param {import('express').Response} res
  */
 export async function register(req, res) {
-  const { user } = await authService.registerUser(req.valid.body);
-  res.status(201).json({ data: { user } });
+  const { user, devOtp } = await authService.registerUser(req.valid.body);
+  res.status(201).json({ data: { user, ...(devOtp ? { devOtp } : {}) } });
 }
 
 /**

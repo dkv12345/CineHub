@@ -11,6 +11,9 @@ import { bookingRouter } from '../modules/booking/index.js';
 import { paymentRouter } from '../modules/payment/index.js';
 import { ticketsRouter } from '../modules/tickets/index.js';
 import { simulatePaymentController } from '../modules/payment/payment.controller.js';
+import { staffRouter } from '../modules/staff/index.js';
+import { adminRouter } from '../modules/admin/index.js';
+import { memberRouter } from '../modules/member/index.js';
 
 export const routes = Router();
 
@@ -31,3 +34,10 @@ routes.use('/tickets', ticketsRouter);
 routes.use('/payments', paymentRouter); // 2. Mount đường dẫn /payments
 routes.use('/v1/payments', paymentRouter);
 routes.post('/dev/payments/:paymentId/simulate', simulatePaymentController);
+
+routes.use('/staff', staffRouter);
+routes.use('/v1/staff', staffRouter);
+routes.use('/admin', adminRouter);
+routes.use('/v1/admin', adminRouter);
+routes.use('/member', memberRouter);
+routes.use('/v1/member', memberRouter);

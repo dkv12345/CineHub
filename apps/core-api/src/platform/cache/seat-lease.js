@@ -1,8 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { SEAT_HOLD_SECONDS } from '@cinehub/contracts';
 import { getRedisClient } from './redis.js';
+import { logger } from '../observability/logger.js';
 
 export const SEAT_LEASE_TTL_SECONDS = SEAT_HOLD_SECONDS;
+
+const memoryLeases = new Map();
+
+function cleanExpiredMemoryLeases() {
+  const now = Date.now();
+  for (const [k, entry] of memoryLeases.entries()) {
+    if (entry.expiresAt <= now) {
+      memoryLeases.delete(k);
+    }
+  }
+}
 
 export function buildSeatLeaseKey(showtimeId, seatId) {
   return `seat:{${showtimeId}}:${seatId}`;
@@ -58,17 +70,17 @@ end
 return released
 `;
 
+async function getConnectedRedis() {
+  const redis = getRedisClient();
+  if (redis.status === 'wait') {
+    await redis.connect();
+  }
+  return redis;
+}
+
 /**
  * Acquire Redis lease locks for a list of seats atomically.
  * All-or-nothing: if any seat is already locked, none are locked.
- *
- * @param {Object} params
- * @param {string} params.showtimeId
- * @param {string[]} params.seatIds
- * @param {string} params.userId
- * @param {string} [params.holdToken]
- * @param {number} [params.ttlSeconds]
- * @returns {Promise<{ success: boolean, holdToken?: string, expiresAt?: Date, conflicts?: string[] }>}
  */
 export async function acquireSeatLeases({
   showtimeId,
@@ -78,80 +90,136 @@ export async function acquireSeatLeases({
   ttlSeconds = SEAT_LEASE_TTL_SECONDS,
 }) {
   if (!seatIds || seatIds.length === 0) {
-    return { success: true, holdToken, expiresAt: new Date(Date.now() + ttlSeconds * 1000) };
-  }
-
-  const redis = getRedisClient();
-  const keys = seatIds.map((seatId) => buildSeatLeaseKey(showtimeId, seatId));
-  const leaseValue = `${userId}:${holdToken}`;
-  const userHoldSetKey = buildUserHoldSetKey(showtimeId, userId);
-
-  const args = [leaseValue, ttlSeconds.toString(), userHoldSetKey, ...seatIds];
-
-  const rawResult = await redis.eval(ACQUIRE_SEAT_LEASES_LUA, keys.length, ...keys, ...args);
-
-  const result = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
-
-  if (!result.ok) {
     return {
-      success: false,
-      conflicts: result.conflicts || [],
+      success: true,
+      acquired: true,
+      holdToken,
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000),
     };
   }
 
-  return {
-    success: true,
-    holdToken,
-    expiresAt: new Date(Date.now() + ttlSeconds * 1000),
-  };
+  const keys = seatIds.map((seatId) => buildSeatLeaseKey(showtimeId, seatId));
+  const leaseValue = buildSeatLeaseValue(userId, holdToken);
+  const userHoldSetKey = buildUserHoldSetKey(showtimeId, userId);
+  const args = [leaseValue, ttlSeconds.toString(), userHoldSetKey, ...seatIds];
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+
+  try {
+    const redis = await getConnectedRedis();
+    const rawResult = await redis.eval(ACQUIRE_SEAT_LEASES_LUA, keys.length, ...keys, ...args);
+    const result = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+
+    if (!result.ok) {
+      return {
+        success: false,
+        acquired: false,
+        conflicts: result.conflicts || [],
+      };
+    }
+
+    return {
+      success: true,
+      acquired: true,
+      holdToken,
+      expiresAt,
+    };
+  } catch (err) {
+    logger.warn({ err: err.message }, '[SeatLease] Redis unavailable, using atomic memory lease');
+    cleanExpiredMemoryLeases();
+    const conflicts = [];
+    keys.forEach((k, idx) => {
+      if (memoryLeases.has(k)) {
+        conflicts.push(seatIds[idx]);
+      }
+    });
+    if (conflicts.length > 0) {
+      return { success: false, acquired: false, conflicts };
+    }
+    for (const k of keys) {
+      memoryLeases.set(k, { value: leaseValue, expiresAt: expiresAt.getTime() });
+    }
+    return { success: true, acquired: true, holdToken, expiresAt };
+  }
 }
 
 /**
  * Release Redis lease locks for a list of seats belonging to a user.
- *
- * @param {Object} params
- * @param {string} params.showtimeId
- * @param {string[]} params.seatIds
- * @param {string} params.userId
- * @returns {Promise<number>} Number of seats released
  */
 export async function releaseSeatLeases({ showtimeId, seatIds, userId }) {
   if (!seatIds || seatIds.length === 0) return 0;
 
-  const redis = getRedisClient();
   const keys = seatIds.map((seatId) => buildSeatLeaseKey(showtimeId, seatId));
   const userPrefix = `${userId}:`;
   const userHoldSetKey = buildUserHoldSetKey(showtimeId, userId);
-
   const args = [userPrefix, userHoldSetKey, ...seatIds];
 
-  const releasedCount = await redis.eval(RELEASE_SEAT_LEASES_LUA, keys.length, ...keys, ...args);
+  cleanExpiredMemoryLeases();
+  let memReleased = 0;
+  for (const k of keys) {
+    const existing = memoryLeases.get(k);
+    if (existing && (existing.value.startsWith(userPrefix) || userId === '*')) {
+      memoryLeases.delete(k);
+      memReleased++;
+    }
+  }
 
-  return Number(releasedCount);
+  try {
+    const redis = await getConnectedRedis();
+    const releasedCount = await redis.eval(RELEASE_SEAT_LEASES_LUA, keys.length, ...keys, ...args);
+    return Number(releasedCount);
+  } catch (err) {
+    logger.warn({ err: err.message }, '[SeatLease] Redis release fallback to memory');
+    return memReleased;
+  }
+}
+
+/**
+ * Force-deletes seat lease keys upon booking confirmation or hold expiry sweep.
+ */
+export async function forceDeleteSeatLeases({ showtimeId, seatIds }) {
+  if (!seatIds?.length) return;
+  const keys = seatIds.map((seatId) => buildSeatLeaseKey(showtimeId, seatId));
+  for (const k of keys) {
+    memoryLeases.delete(k);
+  }
+  try {
+    const redis = await getConnectedRedis();
+    await redis.del(...keys);
+  } catch (err) {
+    logger.warn({ err: err.message }, '[SeatLease] Redis force delete fallback');
+  }
 }
 
 /**
  * Check which seats among given seatIds are currently leased in Redis.
- *
- * @param {string} showtimeId
- * @param {string[]} seatIds
- * @returns {Promise<Map<string, { userId: string, holdToken: string }>>}
  */
 export async function getActiveSeatLeases(showtimeId, seatIds) {
   const leaseMap = new Map();
   if (!seatIds || seatIds.length === 0) return leaseMap;
 
-  const redis = getRedisClient();
   const keys = seatIds.map((seatId) => buildSeatLeaseKey(showtimeId, seatId));
-  const values = await redis.mget(...keys);
 
-  for (let i = 0; i < seatIds.length; i++) {
-    const val = values[i];
-    if (val) {
-      const [uId, token] = val.split(':');
-      leaseMap.set(seatIds[i], { userId: uId, holdToken: token });
+  try {
+    const redis = await getConnectedRedis();
+    const values = await redis.mget(...keys);
+
+    for (let i = 0; i < seatIds.length; i++) {
+      const val = values[i];
+      if (val) {
+        const [uId, token] = val.split(':');
+        leaseMap.set(seatIds[i], { userId: uId, holdToken: token });
+      }
     }
+    return leaseMap;
+  } catch {
+    cleanExpiredMemoryLeases();
+    for (let i = 0; i < seatIds.length; i++) {
+      const entry = memoryLeases.get(keys[i]);
+      if (entry) {
+        const [uId, token] = entry.value.split(':');
+        leaseMap.set(seatIds[i], { userId: uId, holdToken: token });
+      }
+    }
+    return leaseMap;
   }
-
-  return leaseMap;
 }

@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { AppError } from '../../platform/utils/errors.js';
+import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
 import {
   REFRESH_TOKEN_TTL_MS,
@@ -99,6 +100,7 @@ async function issueEmailOtp(user) {
       expiresInMinutes: OTP_TTL_MINUTES,
     }),
   );
+  return otp;
 }
 
 /**
@@ -170,8 +172,9 @@ export async function registerUser({ email, password, fullName, phone }) {
     }
   }
 
-  await issueEmailOtp(user);
-  return { user: sanitizeUser(user) };
+  const otp = await issueEmailOtp(user);
+  const exposeDevOtp = env.NODE_ENV === 'development' && (!env.SMTP_USER || !env.SMTP_PASS);
+  return { user: sanitizeUser(user), ...(exposeDevOtp ? { devOtp: otp } : {}) };
 }
 
 /**

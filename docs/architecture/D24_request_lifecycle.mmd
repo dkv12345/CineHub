@@ -1,0 +1,47 @@
+sequenceDiagram
+    autonumber
+    actor Client as Angular SPA / HTTP Client
+    participant MW as Middleware Chain (Cors, RateLimit, Helmet, Auth)
+    participant Route as Express Router & Zod Validation
+    participant Controller as Module Controller (e.g. BookingController)
+    participant Service as Domain Service (e.g. BookingService)
+    participant Redis as Redis 7.0 In-Memory Engine
+    participant Repo as Module Repository (Prisma Client)
+    participant DB as MySQL 8.0 Database (ACID)
+    participant Err as Centralized errorHandler
+
+    Client->>MW: (1) HTTP POST /api/v1/booking/hold (Bearer Token, Payload)
+    Note over MW: Verify CORS, Rate Limit, and decode JWT accessToken
+    alt Invalid Token / Rate Exceeded
+        MW-->>Client: Return HTTP 401 Unauthorized / 429 Too Many Requests
+    end
+
+    MW->>Route: (2) Pass sanitized request to matching route
+    Note over Route: Parse request body against Zod Schema (booking.schema.js)
+    alt Payload Validation Fails
+        Route->>Err: Pass ZodValidationError
+        Err-->>Client: Return HTTP 400 Bad Request (Field details)
+    end
+
+    Route->>Controller: (3) Forward validated DTO to controller handler
+    Note over Controller: Extract params, user context, and invoke domain logic
+
+    Controller->>Service: (4) Call service method: holdSeats(userId, showtimeId, seatIds)
+    
+    Service->>Redis: (5) Execute Atomic Lua Script (SET NX seat:lease:...)
+    alt Any Seat Already Leased
+        Redis-->>Service: Return Lock Conflict
+        Service-->>Controller: Throw SeatUnavailableException
+        Controller->>Err: Pass Conflict Error
+        Err-->>Client: Return HTTP 409 Conflict (Seats currently held by another user)
+    end
+
+    Service->>Repo: (6) Begin Prisma Transaction ($transaction)
+    Note over Repo,DB: Query ShowtimeSeat FOR UPDATE<br/>Verify version & create Booking (PENDING)<br/>Set activeLock = showtimeSeatId
+    Repo->>DB: Execute SQL Queries inside ACID Transaction
+    DB-->>Repo: Transaction Committed Successfully
+    Repo-->>Service: Return Booking Entity with Countdown
+
+    Service-->>Controller: (7) Return business domain result
+    Controller-->>Client: (8) Return Standard JSON Envelope: HTTP 201 Created<br/>{ success: true, data: { bookingId, expiresAt: 900s, seats: [...] } }
+

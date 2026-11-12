@@ -1,37 +1,8 @@
-import mongoose from 'mongoose';
+import { prisma } from '@cinehub/db';
 
-const paymentSchema = new mongoose.Schema(
-  {
-    bookingId: {
-      type: String,
-      required: true,
-    },
-    userId: {
-      type: String,
-    },
-    amount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    method: {
-      type: String,
-      default: 'MOMO',
-    },
-    status: {
-      type: String,
-      default: 'PENDING',
-    },
-    gatewayOrderId: {
-      type: String,
-      trim: true,
-    },
-    note: {
-      type: String,
-      trim: true,
-    },
-  },
-  { timestamps: true },
-);
-
-export const PaymentModel = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);
+/**
+ * Payment persistence is managed in MySQL via Prisma (`prisma.payment` and `prisma.paymentWebhookEvent`).
+ * Exported for backward compatibility.
+ */
+export const Payment = prisma.payment;
+export default Payment;

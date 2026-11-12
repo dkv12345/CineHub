@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   OnDestroy,
   OnInit,
@@ -13,7 +14,12 @@ import { MovieCardComponent } from '@cinehub/web/catalog/ui';
 import { AuthStore } from '@cinehub/web/core';
 import type { Movie } from '@cinehub/web/shared/util';
 import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
-import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/showtimes/util';
+import {
+  buildShowtimesLink,
+  buildShowtimesQueryParams,
+  filterShowtimes,
+  vietnamDate,
+} from '@cinehub/web/showtimes/util';
 
 @Component({
   selector: 'ch-home-page',
@@ -215,10 +221,7 @@ import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/s
             type="button"
             (click)="submitQuickBooking()"
             [disabled]="
-              showtimesStore.loading() ||
-              store.loading() ||
-              quickMovies().length === 0 ||
-              !quickShowtimeDate()
+              showtimesStore.loading() || quickMovies().length === 0 || !quickShowtimeDate()
             "
             aria-label="Mua vé nhanh theo phim, rạp và ngày đã chọn"
             class="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
@@ -259,35 +262,54 @@ import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/s
           class="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto pb-4 pl-12 pr-6 md:-mx-9 md:pl-14 md:pr-9"
         >
           @for (m of trendingMovies(); track m.id; let idx = $index) {
-            <a
-              [routerLink]="['/movie', m.id]"
-              class="group relative w-[190px] shrink-0 snap-start rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 pt-3 shadow-xl transition hover:border-amber-400 sm:w-[220px]"
+            <article
+              class="group relative flex w-[190px] shrink-0 snap-start flex-col rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 pt-3 shadow-xl transition hover:border-amber-400 sm:w-[220px]"
             >
               <!-- Số 3D nhô hẳn ra ngoài khung (-left-7) -->
               <span
-                class="display absolute -left-7 bottom-10 z-20 font-black leading-none text-amber-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.95)] transition-all duration-300 group-hover:scale-110 group-hover:text-amber-400"
+                class="pointer-events-none display absolute -left-7 bottom-14 z-20 font-black leading-none text-amber-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.95)] transition-all duration-300 group-hover:scale-110 group-hover:text-amber-400"
                 [class]="idx >= 9 ? 'text-[100px] tracking-tighter' : 'text-[108px]'"
               >
                 {{ idx + 1 }}
               </span>
 
-              <div class="ml-9 overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20">
+              <a
+                [routerLink]="['/movie', m.id]"
+                class="ml-9 block overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
+              >
                 <img
                   [src]="m.poster"
                   [alt]="'Poster ' + m.title"
                   class="aspect-[2/3] w-full object-cover transition duration-500 group-hover:scale-105"
                 />
-              </div>
+              </a>
 
-              <span
+              <a
+                [routerLink]="['/movie', m.id]"
                 class="mt-3 block truncate pl-9 text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
               >
                 {{ m.title }}
-              </span>
+              </a>
               <span class="block pl-9 text-xs font-black text-amber-300">
                 ★ {{ m.rating }} · {{ m.country || 'Quốc tế' }}
               </span>
-            </a>
+
+              <div class="mt-2.5 flex items-center gap-1.5 pl-9 pr-1 pb-1">
+                <a
+                  [routerLink]="['/showtimes']"
+                  [queryParams]="showtimesQueryParams(m)"
+                  class="inline-flex flex-1 items-center justify-center rounded-lg bg-[#e50914] px-2.5 py-1.5 text-[11px] font-black text-white shadow transition hover:bg-red-500"
+                >
+                  Mua vé
+                </a>
+                <a
+                  [routerLink]="['/movie', m.id]"
+                  class="inline-flex items-center justify-center rounded-lg border border-white/25 bg-slate-800 px-2.5 py-1.5 text-[11px] font-bold text-white/90 transition hover:border-amber-300 hover:text-amber-300"
+                >
+                  Chi tiết
+                </a>
+              </div>
+            </article>
           }
         </div>
       </section>
@@ -325,29 +347,42 @@ import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/s
 
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             @for (m of recommendedMovies(); track m.id) {
-              <a
-                [routerLink]="['/movie', m.id]"
+              <div
                 class="group flex min-w-0 gap-3 rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-md transition hover:border-amber-400 hover:bg-slate-800"
               >
-                <img
-                  [src]="m.poster"
-                  [alt]="'Poster ' + m.title"
-                  class="h-28 w-[74px] shrink-0 rounded-lg object-cover shadow-md ring-1 ring-white/20"
-                />
-                <div class="min-w-0 py-1">
-                  <h3
-                    class="line-clamp-2 text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
-                  >
-                    {{ m.title }}
-                  </h3>
-                  <p class="mt-2 line-clamp-2 text-xs font-bold leading-5 text-amber-300">
-                    {{ m.genre.split(',')[0] }} · Đang được yêu thích
-                  </p>
-                  <p class="mt-2 text-[11px] font-black text-white">
-                    {{ m.age || 'Phim chiếu rạp' }}
-                  </p>
+                <a [routerLink]="['/movie', m.id]" class="shrink-0">
+                  <img
+                    [src]="m.poster"
+                    [alt]="'Poster ' + m.title"
+                    class="h-28 w-[74px] rounded-lg object-cover shadow-md ring-1 ring-white/20"
+                  />
+                </a>
+                <div class="flex min-w-0 flex-1 flex-col justify-between py-0.5">
+                  <div>
+                    <a
+                      [routerLink]="['/movie', m.id]"
+                      class="line-clamp-2 block text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
+                    >
+                      {{ m.title }}
+                    </a>
+                    <p class="mt-1 line-clamp-1 text-xs font-bold leading-5 text-amber-300">
+                      {{ m.genre.split(',')[0] }} · Đang được yêu thích
+                    </p>
+                  </div>
+                  <div class="mt-2 flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-black text-white/80">
+                      {{ m.age || 'Phim chiếu rạp' }}
+                    </span>
+                    <a
+                      [routerLink]="['/showtimes']"
+                      [queryParams]="showtimesQueryParams(m)"
+                      class="rounded-lg bg-[#e50914] px-2.5 py-1 text-[11px] font-black text-white transition hover:bg-red-500"
+                    >
+                      Mua vé
+                    </a>
+                  </div>
                 </div>
-              </a>
+              </div>
             }
           </div>
         </div>
@@ -406,7 +441,7 @@ import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/s
           >
             @for (m of shelfMovies(); track m.id) {
               <article
-                class="group w-[150px] shrink-0 snap-start overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg backdrop-blur sm:w-[170px]"
+                class="group flex w-[160px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg backdrop-blur transition hover:border-amber-400 sm:w-[178px]"
               >
                 <a
                   [routerLink]="['/movie', m.id]"
@@ -423,16 +458,32 @@ import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/s
                     ★ {{ m.rating || 'Mới' }}
                   </span>
                 </a>
-                <h3
-                  class="mt-3 truncate px-1 text-xs font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
+                <a
+                  [routerLink]="['/movie', m.id]"
+                  class="mt-3 block truncate px-1 text-xs font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
                 >
                   {{ m.title }}
-                </h3>
+                </a>
                 <div
-                  class="mt-2 flex items-center justify-between px-1 pb-1 text-[10px] font-bold text-amber-300"
+                  class="mt-1.5 flex items-center justify-between px-1 text-[10px] font-bold text-amber-300"
                 >
-                  <span>{{ m.genre.split(',')[0] }}</span>
-                  <span class="text-white/60">{{ m.country || 'Việt Nam' }}</span>
+                  <span class="truncate">{{ m.genre.split(',')[0] }}</span>
+                  <span class="shrink-0 text-white/60">{{ m.country || 'Việt Nam' }}</span>
+                </div>
+                <div class="mt-2.5 flex items-center gap-1.5 px-1 pb-1">
+                  <a
+                    [routerLink]="['/showtimes']"
+                    [queryParams]="showtimesQueryParams(m)"
+                    class="inline-flex flex-1 items-center justify-center rounded-lg bg-[#e50914] px-2.5 py-1.5 text-[11px] font-black text-white transition hover:bg-red-500"
+                  >
+                    Mua vé
+                  </a>
+                  <a
+                    [routerLink]="['/movie', m.id]"
+                    class="inline-flex items-center justify-center rounded-lg border border-white/25 bg-slate-800 px-2 py-1.5 text-[11px] font-bold text-white/90 transition hover:border-amber-300 hover:text-amber-300"
+                  >
+                    Xem
+                  </a>
                 </div>
               </article>
             }
@@ -712,12 +763,29 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly recommendedMovies = computed(() => this.trendingMovies().slice(0, 3));
 
   readonly shelfMovies = computed(() => {
-    const list = [...this.nowShowingMovies(), ...this.comingSoonMovies()];
+    const bookable = this.nowShowingMovies();
+    const list = bookable.length > 0 ? bookable : [...this.comingSoonMovies()];
     if (this.shelf() === 'trending') {
       return this.trendingMovies().slice(0, 6);
     }
+    if (this.shelf() === 'collection') {
+      const notified = this.store.movies().filter((movie) => this.store.isMovieNotified(movie.id));
+      return (notified.length > 0 ? notified : list).slice(0, 6);
+    }
     return list.slice(0, 6);
   });
+
+  constructor() {
+    effect(() => {
+      this.quickMovies();
+      this.showtimesStore.sessions();
+      this.syncQuickBookingDefaults();
+    });
+  }
+
+  showtimesQueryParams(movie: Movie): Record<string, string> {
+    return buildShowtimesQueryParams(movie);
+  }
 
   readonly displayMovies = computed(() => {
     const tab = this.activeTab();
@@ -797,7 +865,6 @@ export class HomePageComponent implements OnInit, OnDestroy {
     if (
       !movie ||
       !date ||
-      this.store.loading() ||
       this.showtimesStore.loading() ||
       !this.quickDateOptions().some((option) => option.date === date)
     ) {

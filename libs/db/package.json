@@ -11,6 +11,7 @@
     "postinstall": "prisma generate",
     "generate": "prisma generate",
     "validate": "npx dotenv-cli -e ../../.env -- prisma validate",
+    "push": "npx dotenv-cli -e ../../.env -- prisma db push --accept-data-loss",
     "migrate": "npx dotenv-cli -e ../../.env -- prisma migrate dev",
     "migrate:deploy": "npx dotenv-cli -e ../../.env -- prisma migrate deploy",
     "studio": "npx dotenv-cli -e ../../.env -- prisma studio",

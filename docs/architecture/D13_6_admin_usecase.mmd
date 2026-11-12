@@ -1,0 +1,33 @@
+flowchart LR
+    %% CineHub System Administration Use Case Diagram (3.6.6)
+    Actor_Admin["Quản trị viên<br/>(System Admin)"]
+    Actor_Crawler["Galaxy API Service<br/>(External Aggregator)"]
+
+    subgraph Boundary_Admin ["PHÂN HỆ QUẢN TRỊ HỆ THỐNG (ADMINISTRATION)"]
+        UC_AdminAuth(["Xác thực Quản trị viên<br/>(Admin Authentication / RBAC)"])
+        UC_ManageMovies(["Quản lý danh mục phim<br/>(CRUD Phim, Poster, Cast)"])
+        UC_ManageShowtimes(["Quản lý lịch chiếu<br/>(Lập lịch, Xếp phòng)"])
+        UC_ManagePriceRules(["Cấu hình quy tắc giá vé<br/>(Price Rules Matrix)"])
+        UC_ManageVouchers(["Quản lý chiến dịch Voucher<br/>(Tạo mã, Giới hạn sử dụng)"])
+        UC_ViewRevenue(["Báo cáo thống kê doanh thu<br/>(Biểu đồ & Xuất báo cáo)"])
+        UC_TriggerCrawler(["Giám sát & Kích hoạt Crawler<br/>(Manual Sync Data)"])
+    end
+
+    Actor_Admin --> UC_ManageMovies
+    Actor_Admin --> UC_ManageShowtimes
+    Actor_Admin --> UC_ManagePriceRules
+    Actor_Admin --> UC_ManageVouchers
+    Actor_Admin --> UC_ViewRevenue
+    Actor_Admin --> UC_TriggerCrawler
+
+    %% <<include>> bắt buộc xác thực quyền Admin
+    UC_ManageMovies -.->|<<include>>| UC_AdminAuth
+    UC_ManageShowtimes -.->|<<include>>| UC_AdminAuth
+    UC_ManagePriceRules -.->|<<include>>| UC_AdminAuth
+    UC_ManageVouchers -.->|<<include>>| UC_AdminAuth
+    UC_ViewRevenue -.->|<<include>>| UC_AdminAuth
+    UC_TriggerCrawler -.->|<<include>>| UC_AdminAuth
+
+    %% Tương tác Crawler
+    UC_TriggerCrawler <--> Actor_Crawler
+

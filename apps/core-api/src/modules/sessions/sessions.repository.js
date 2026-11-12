@@ -199,6 +199,7 @@ export async function syncLiveShowtimes(sessions, references) {
     }
   };
 
-  await Promise.all(Array.from({ length: Math.min(12, sessions.length) }, () => worker()));
+  // Keep concurrency modest so background Galaxy sync leaves connection headroom for user requests.
+  await Promise.all(Array.from({ length: Math.min(3, sessions.length) }, () => worker()));
   return { saved, skipped, failed };
 }
