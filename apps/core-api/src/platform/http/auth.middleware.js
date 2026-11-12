@@ -60,3 +60,21 @@ export function requireRole(...roles) {
     return next();
   };
 }
+
+/**
+ * Optional Authentication Middleware.
+ * Populates req.user if a valid token is provided, but continues without error if not.
+ */
+export function optionalAuth(req, _res, next) {
+  const match = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    return next();
+  }
+  try {
+    const payload = verifyAccessToken(match[1]);
+    req.user = { id: payload.sub, email: payload.email, role: payload.role };
+  } catch {
+    // Ignore expired or invalid token for optional endpoints
+  }
+  return next();
+}

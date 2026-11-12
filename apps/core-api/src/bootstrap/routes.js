@@ -22,6 +22,7 @@ routes.use('/recommendations', recommendationsRouter);
 routes.use('/movies', moviesRouter);
 routes.use('/sessions', sessionsRouter);
 routes.use('/booking', bookingRouter);
+routes.use('/showtimes', bookingRouter);
 
 routes.use('/payments', paymentRouter); // 2. Mount đường dẫn /payments
 routes.use('/v1/payments', paymentRouter);
