@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { BookingStore, type ShowtimeMetadata } from '@cinehub/web/booking/data-access';
 import { BookingSummaryCardComponent } from '@cinehub/web/booking/ui';
 import { ToastService } from '@cinehub/web/core';
@@ -224,21 +225,50 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly showtimesStore = inject(ShowtimesStore);
-  private holdTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly http = inject(HttpClient);
+
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly showtimeId = input<string>('');
   readonly lastActiveSeat = signal<SeatCell | null>(null);
   readonly pendingUnselectSeat = signal<SeatCell | null>(null);
+  readonly backendSeats = signal<any[]>([]);
+  readonly expiresAt = signal<string | null>(null);
 
   readonly auditoriumLayout = computed(() => layoutForCinema(this.store.cinemaName()));
 
-  readonly seats = computed(() =>
-    generateAuditoriumSeats(
+  readonly seats = computed(() => {
+    const base = generateAuditoriumSeats(
       this.auditoriumLayout(),
       this.store.selectedSeatIds(),
       this.store.showtimeId(),
-    ),
-  );
+    );
+    const backend = this.backendSeats();
+    if (!backend || backend.length === 0) return base;
+
+    const backendMap = new Map<string, any>();
+    for (const b of backend) {
+      if (b.label) backendMap.set(b.label, b);
+      if (b.seatId) backendMap.set(b.seatId, b);
+    }
+
+    return base.map((cell) => {
+      const bs = backendMap.get(cell.id);
+      if (!bs) return cell;
+      const isUnavailable =
+        (bs.status === 'HELD' && !bs.isHeldByMe) ||
+        bs.status === 'SOLD' ||
+        bs.status === 'BLOCKED' ||
+        bs.status === 'BOOKED';
+
+      return {
+        ...cell,
+        sold: isUnavailable,
+        selected: this.store.selectedSeatIds().has(cell.id),
+      };
+    });
+  });
 
   readonly selectedSeatLabels = computed(() => this.store.selectedSeats().map((s) => s.id));
 
@@ -273,11 +303,69 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.holdTimer = setInterval(() => this.store.decrementHold(), 1000);
+    // 1. Tải sơ đồ ghế ban đầu từ backend (KHÔNG gọi giữ ghế ở ngOnInit)
+    this.loadSeatsMap(showtimeId);
+
+    // 2. Tự động thăm dò sơ đồ ghế mỗi 7 giây để đồng bộ ghế người khác vừa giữ/mua
+    this.pollTimer = setInterval(() => {
+      this.loadSeatsMap(this.currentShowtimeId());
+    }, 7000);
+
+    // 3. Đồng hồ đếm ngược theo expiresAt
+    this.countdownTimer = setInterval(() => {
+      const exp = this.expiresAt();
+      if (!exp) return;
+      const diff = Math.floor((new Date(exp).getTime() - Date.now()) / 1000);
+      if (diff <= 0) {
+        this.expiresAt.set(null);
+        this.store.clearSelectedSeats();
+        this.toast.show('Đã hết thời gian giữ ghế. Vui lòng chọn lại!', 'warning');
+        this.loadSeatsMap(this.currentShowtimeId());
+      } else {
+        this.store.setHoldRemainingSeconds(diff);
+      }
+    }, 1000);
   }
 
   ngOnDestroy(): void {
-    if (this.holdTimer) clearInterval(this.holdTimer);
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+    // CẤM gọi API nhả ghế ở ngOnDestroy khi người dùng chuyển sang bắp nước/thanh toán
+  }
+
+  private currentShowtimeId(): string {
+    return (
+      this.showtimeId() ||
+      this.route.snapshot.paramMap.get('showtimeId') ||
+      this.store.showtimeId() ||
+      ''
+    );
+  }
+
+  loadSeatsMap(showtimeId: string): void {
+    if (!showtimeId) return;
+    this.http.get<any>(`/api/v1/showtimes/${showtimeId}/seats`).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.backendSeats.set(res.data);
+        }
+      },
+      error: () => {
+        // Fallback: nếu showtime chưa có trong DB backend, dùng layout local
+      },
+    });
+  }
+
+  findSeatIdForLabel(label: string): string {
+    const backend = this.backendSeats();
+    const found = backend.find((s) => s.label === label || s.seatId === label || s.id === label);
+    return found?.seatId || found?.id || label;
   }
 
   private useSession(showtimeId: string, session: GalaxySession): void {
@@ -301,30 +389,95 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const res = this.store.toggleSeat(seat.id, seat.zone);
-    if (!res.ok && res.reason) {
-      this.toast.show(res.reason, 'warning');
-      return;
-    }
-    const selected = this.store.selectedSeatIds().has(seat.id);
-    this.lastActiveSeat.set(selected ? seat : null);
-    void this.liveAnnouncer.announce(
-      selected ? `Đã chọn ghế ${seat.id} hạng ${seat.zone}` : `Đã bỏ chọn ghế ${seat.id}`,
-    );
+    const showtimeId = this.currentShowtimeId();
+    const targetSeatId = this.findSeatIdForLabel(seat.id);
+
+    // Gọi API giữ ghế thật trên backend
+    this.http
+      .post<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
+        showtimeId,
+        seatIds: [targetSeatId],
+      })
+      .subscribe({
+        next: (res) => {
+          const toggleRes = this.store.toggleSeat(seat.id, seat.zone);
+          if (!toggleRes.ok && toggleRes.reason) {
+            this.toast.show(toggleRes.reason, 'warning');
+            return;
+          }
+          this.lastActiveSeat.set(seat);
+          if (res.data?.expiresAt) {
+            this.expiresAt.set(res.data.expiresAt);
+          }
+          this.toast.show(`Đã giữ ghế ${seat.id}`, 'success');
+          void this.liveAnnouncer.announce(`Đã chọn ghế ${seat.id} hạng ${seat.zone}`);
+        },
+        error: (err) => {
+          if (err.status === 409) {
+            this.toast.show(
+              `Ghế ${seat.id} đã bị người khác nhanh tay giữ mất. Vui lòng chọn ghế khác!`,
+              'warning',
+            );
+            this.loadSeatsMap(showtimeId);
+          } else {
+            this.toast.show(
+              err.error?.message || 'Không thể giữ ghế vào lúc này. Vui lòng thử lại!',
+              'warning',
+            );
+          }
+        },
+      });
   }
 
   confirmUnselectSeat(seat: SeatCell): void {
-    const res = this.store.toggleSeat(seat.id, seat.zone);
-    this.pendingUnselectSeat.set(null);
-    if (!res.ok) {
-      if (res.reason) this.toast.show(res.reason, 'warning');
-      return;
-    }
-    this.lastActiveSeat.set(null);
-    void this.liveAnnouncer.announce(`Đã bỏ chọn ghế ${seat.id}`);
+    const showtimeId = this.currentShowtimeId();
+    const targetSeatId = this.findSeatIdForLabel(seat.id);
+
+    // Gọi API nhả ghế thật trên backend
+    this.http
+      .delete<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
+        body: {
+          showtimeId,
+          seatIds: [targetSeatId],
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.store.toggleSeat(seat.id, seat.zone);
+          this.pendingUnselectSeat.set(null);
+          this.lastActiveSeat.set(null);
+          if (this.store.selectedSeats().length === 0) {
+            this.expiresAt.set(null);
+          }
+          this.loadSeatsMap(showtimeId);
+          this.toast.show(`Đã bỏ chọn ghế ${seat.id}`, 'info');
+          void this.liveAnnouncer.announce(`Đã bỏ chọn ghế ${seat.id}`);
+        },
+        error: () => {
+          // Ngay cả khi backend trả lỗi, vẫn dọn dẹp local
+          this.store.toggleSeat(seat.id, seat.zone);
+          this.pendingUnselectSeat.set(null);
+          this.lastActiveSeat.set(null);
+        },
+      });
   }
 
   goBack(): void {
+    const showtimeId = this.currentShowtimeId();
+    const selected = this.store.selectedSeats();
+    if (selected.length > 0) {
+      const ids = selected.map((s) => this.findSeatIdForLabel(s.id));
+      this.http
+        .delete<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
+          body: {
+            showtimeId,
+            seatIds: ids,
+          },
+        })
+        .subscribe();
+      this.store.clearSelectedSeats();
+      this.expiresAt.set(null);
+    }
     void this.router.navigateByUrl('/showtimes');
   }
 
@@ -333,6 +486,7 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       this.toast.show('Vui lòng chọn ít nhất một ghế trước khi tiếp tục.', 'warning');
       return;
     }
+    // Không nhả ghế khi đi tiếp sang bắp nước và checkout!
     void this.router.navigateByUrl('/concessions');
   }
 }

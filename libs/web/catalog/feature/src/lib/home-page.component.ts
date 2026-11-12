@@ -505,12 +505,12 @@ import { buildShowtimesLink, filterShowtimes, vietnamDate } from '@cinehub/web/s
           </button>
         </div>
 
-        <!-- Studio & Country Filter Pills -->
+        <!-- Thể loại Phim Filter Pills -->
         <div
           class="scrollbar-hide mb-7 flex gap-2 overflow-x-auto pb-2"
-          aria-label="Lọc theo quốc gia hoặc studio"
+          aria-label="Lọc theo thể loại phim"
         >
-          @for (f of filterOptions; track f.key) {
+          @for (f of filterOptions(); track f.key) {
             <button
               type="button"
               (click)="catalogFilter.set(f.key)"
@@ -637,15 +637,10 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly catalogFilter = signal<string>('all');
   readonly shelf = signal<'history' | 'collection' | 'trending'>('history');
 
-  readonly filterOptions = [
+  readonly filterOptions = computed(() => [
     { key: 'all', label: 'Tất cả' },
-    { key: 'ghibli', label: 'Studio Ghibli' },
-    { key: 'conan', label: 'Conan' },
-    { key: 'doraemon', label: 'Doraemon' },
-    { key: 'western', label: 'US / UK' },
-    { key: 'china', label: 'Trung Quốc' },
-    { key: 'korea', label: 'Hàn Quốc' },
-  ];
+    ...this.store.availableGenres().map((genre) => ({ key: genre, label: genre })),
+  ]);
 
   readonly shelfOptions = [
     { key: 'history' as const, label: 'Lịch sử / Xem tiếp', icon: '🕒' },
@@ -726,17 +721,12 @@ export class HomePageComponent implements OnInit, OnDestroy {
 
   readonly displayMovies = computed(() => {
     const tab = this.activeTab();
-    const filter = this.catalogFilter();
+    const filter = this.catalogFilter().toLowerCase().trim();
     const movies = tab === 'now' ? this.nowShowingMovies() : this.comingSoonMovies();
     return movies.filter((m) => {
-      if (filter === 'all') return true;
-      if (filter === 'ghibli') return m.studio === 'Studio Ghibli';
-      if (filter === 'conan') return m.studio === 'Detective Conan';
-      if (filter === 'doraemon') return m.studio === 'Doraemon';
-      if (filter === 'western') return ['Mỹ', 'Anh'].includes(m.country || '');
-      if (filter === 'china') return m.country === 'Trung Quốc';
-      if (filter === 'korea') return m.country === 'Hàn Quốc';
-      return true;
+      if (filter === 'all' || !filter) return true;
+      const genre = (m.genre || '').toLowerCase();
+      return genre.includes(filter);
     });
   });
 

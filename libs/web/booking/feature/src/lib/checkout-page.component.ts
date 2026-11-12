@@ -311,13 +311,15 @@ import { HttpClient } from '@angular/common/http';
               Số tiền: <b class="text-emerald-400">{{ formatCurrency(modal.amount) }}</b>
             </p>
 
-            <div class="my-5 inline-block rounded-2xl bg-white p-3 shadow-lg">
+            <div class="my-5 inline-block rounded-2xl bg-white p-4 shadow-2xl">
               <img
                 [src]="
-                  'https://quickchart.io/qr?text=' + encodeURIComponent(modal.qrData) + '&size=220'
+                  'https://quickchart.io/qr?text=' +
+                  encodeURIComponent(modal.qrData) +
+                  '&size=240&margin=2'
                 "
                 alt="QR Thanh Toán"
-                class="h-52 w-52 object-contain"
+                class="h-[220px] w-[220px] object-contain"
               />
             </div>
 
@@ -385,6 +387,11 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
 
   goToResult(bookingId: string): void {
     this.concessionsStore.clearConcessions();
+    try {
+      sessionStorage.removeItem('cinehub_current_booking_id');
+    } catch {
+      // ignore
+    }
     void this.router.navigate(['/result', bookingId]);
   }
 
@@ -447,12 +454,30 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       const resultCode = params['resultCode']; // MoMo parameter
       const zalopayStatus = params['status']; // ZaloPay parameter
       const vnpResponseCode = params['vnp_ResponseCode']; // VNPay parameter ('00' là thành công)
+      let targetBookingId = params['bookingId'];
+      try {
+        targetBookingId = targetBookingId || sessionStorage.getItem('cinehub_current_booking_id');
+      } catch {
+        // ignore
+      }
 
       if (
         resultCode !== undefined ||
         zalopayStatus !== undefined ||
         vnpResponseCode !== undefined
       ) {
+        if (targetBookingId) {
+          // Tuyệt đối không tự suy ra kết quả từ param URL; chuyển sang trang result để backend đối soát
+          this.concessionsStore.clearConcessions();
+          try {
+            sessionStorage.removeItem('cinehub_current_booking_id');
+          } catch {
+            // ignore
+          }
+          void this.router.navigate(['/result', targetBookingId], { queryParams: params });
+          return;
+        }
+
         const isSuccess =
           Number(resultCode) === 0 || Number(zalopayStatus) === 1 || vnpResponseCode === '00';
 
@@ -501,8 +526,8 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
     const checkoutPayload = {
       showtimeId: this.bookingStore.showtimeId(),
       seatIds: this.bookingStore.selectedSeats().map((s) => s.id),
-      concessions: this.concessionsStore.items().map((c) => ({
-        concessionId: c.concession.id,
+      concessions: this.concessionsStore.selectedItems().map((c) => ({
+        concessionId: c.id,
         quantity: c.quantity,
       })),
     };
@@ -511,6 +536,11 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       next: (checkoutRes) => {
         const booking = checkoutRes.data;
         const bookingId = booking.id;
+        try {
+          sessionStorage.setItem('cinehub_current_booking_id', bookingId);
+        } catch {
+          // ignore
+        }
 
         // 2. Khởi tạo thanh toán với cổng được chọn (MOMO, VNPAY, ZALOPAY)
         this.toast.show(`Đang kết nối cổng thanh toán ${selectedGateway}...`, 'info');

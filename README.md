@@ -400,6 +400,36 @@ The idempotent seeder covers seat types (`STANDARD`, `VIP`, `SWEETBOX`), ticket 
 
 The Angular `booking` store mirrors lease state with a countdown signal and releases the seat on route leave.
 
+## 10.1 Booking, Payment & Verification Flow
+
+### 1. Luồng chặn đăng nhập khi chọn suất chiếu (`returnUrl`)
+
+- Khách vãng lai chưa đăng nhập **vẫn xem được toàn bộ lịch chiếu** tại `/showtimes` và các khung giờ chiếu.
+- Khi người dùng **bấm chọn một suất chiếu cụ thể**, hệ thống kiểm tra trạng thái xác thực:
+  - Nếu chưa đăng nhập: hiển thị toast thông báo _"Vui lòng đăng nhập để tiếp tục đặt vé"_ và điều hướng sang `/auth?returnUrl=/seats/:showtimeId?...`.
+  - Sau khi đăng nhập (hoặc đăng ký / Google Login / Demo Login) thành công, hệ thống tự động đưa người dùng vào thẳng trang chọn ghế của suất chiếu đó.
+  - Các route `/seats/:showtimeId` và `/checkout` được bảo vệ bằng `authGuard` để chống truy cập trực tiếp bằng URL khi chưa đăng nhập.
+
+### 2. Sơ đồ ghế thời gian thực & Cơ chế giữ chỗ
+
+- **Không giữ ghế trống ở ngOnInit**: Chỉ gọi API `POST /api/v1/showtimes/:showtimeId/seat-holds` khi người dùng bấm chọn ghế.
+- **Xử lý xung đột (409 Conflict)**: Khi hai người dùng cùng bấm vào một ghế, server trả về `409 SEAT_TAKEN`, frontend hiển thị thông báo ghế đã có người giữ và tải lại sơ đồ ghế ngay lập tức.
+- **Thăm dò định kỳ (Polling)**: Cứ mỗi 7 giây, giao diện tự động gọi `GET /api/v1/showtimes/:showtimeId/seats` để cập nhật ghế vừa được người khác giữ/mua.
+- **Đồng hồ đếm ngược**: Hiển thị thời gian thực dựa vào `expiresAt` từ server. Khi hết giờ, tự động xóa danh sách ghế đang chọn và làm mới sơ đồ.
+- **Nguyên tắc nhả ghế**:
+  - Không bao giờ nhả ghế trong `ngOnDestroy` khi chuyển tiếp sang bước Chọn bắp nước (`/concessions`) hoặc Thanh toán (`/checkout`).
+  - Chỉ nhả ghế khi người dùng bấm bỏ chọn ghế hoặc bấm nút _"Quay lại lịch chiếu"_.
+
+### 3. Thanh toán Sandbox & 3 Đường báo kết quả
+
+Hỗ trợ 3 cổng thanh toán phổ biến: **MoMo**, **VNPAY**, **ZaloPay** qua 3 đường đối soát:
+
+1. **Đường 1 (Webhook IPN)**: Cổng thanh toán gọi webhook backend (`/api/v1/payments/...`). Backend xác thực chữ ký HMAC và chuyển trạng thái đơn sang `CONFIRMED`.
+2. **Đường 2 (Đối soát chủ động)**: Khi khách quay lại từ cổng thanh toán, frontend gọi `POST /api/v1/booking/:id/payments/refresh` để đối chiếu với gateway/server. Tuyệt đối không tin `resultCode` trên query URL.
+3. **Đường 3 (Dev Simulation)**: Trong môi trường `PAYMENT_ENV=sandbox` và `PAYMENT_SIMULATION=true`, giao diện modal cung cấp nút bấm _"Giả lập thanh toán thành công"_ gọi `POST /api/v1/dev/payments/:paymentId/simulate`.
+
+- **Trang kết quả (`/result/:bookingId`)**: Thăm dò trạng thái mỗi 2.5 giây cho đến khi đơn vé được xác nhận, sau đó hiển thị mã QR vé điện tử (kích thước >= 220px, nền trắng, viền trắng) sẵn sàng để quét check-in tại rạp qua `POST /api/v1/tickets/scan`.
+
 ## 11. Engineering Standards, CI and Governance
 
 Feature Branch Workflow; **direct pushes to `main` are prohibited** (see `docs/GIT_WORKFLOW.md`).

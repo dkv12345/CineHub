@@ -935,7 +935,7 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       const session = await this.authApi.login({ email, password });
       this.authStore.setSession(session.accessToken, session.user);
       this.toast.show(`Xin chào, ${session.user.fullName}!`, 'success');
-      void this.router.navigateByUrl('/');
+      this.navigateAfterAuth();
     } catch (error: unknown) {
       if (extractAuthErrorCode(error) === 'EMAIL_NOT_VERIFIED') {
         this.toast.show('Vui lòng xác thực mã OTP đã gửi qua email.', 'warning');
@@ -1005,6 +1005,15 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       tier: 'Gold VIP',
     });
     this.toast.show('Đã đăng nhập tài khoản Demo VIP!', 'success');
+    this.navigateAfterAuth();
+  }
+
+  private navigateAfterAuth(): void {
+    const raw = this.route.snapshot.queryParams['returnUrl'];
+    if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) {
+      void this.router.navigateByUrl(raw);
+      return;
+    }
     void this.router.navigateByUrl('/');
   }
 
@@ -1014,7 +1023,7 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       const session = await this.authApi.loginWithGoogle(idToken);
       this.authStore.setSession(session.accessToken, session.user);
       this.toast.show(`Xin chào, ${session.user.fullName}!`, 'success');
-      void this.router.navigateByUrl('/');
+      this.navigateAfterAuth();
     } catch (error: unknown) {
       this.errorBanner.set(formatAuthErrorMessage(error));
     } finally {

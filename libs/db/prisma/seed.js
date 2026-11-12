@@ -235,7 +235,7 @@ async function main() {
         update: {
           title: m.title,
           titleNormalized: m.titleNormalized,
-          durationMin: m.durationMin || null,
+          ...(Number(m.durationMin) > 0 ? { durationMin: Number(m.durationMin) } : {}),
           releaseDate: start,
           releaseYear: m.releaseYear || start?.getFullYear() || 2026,
           endDate: end,
@@ -243,10 +243,10 @@ async function main() {
           status: m.status || 'NOW_SHOWING',
           posterUrl: m.posterUrl,
           backdropUrl: m.backdropUrl,
-          trailerUrl: m.trailerUrl,
+          ...(m.trailerUrl ? { trailerUrl: m.trailerUrl } : {}),
           language: m.language,
           country: m.country,
-          synopsis: m.synopsis,
+          ...(m.synopsis ? { synopsis: m.synopsis } : {}),
         },
         create: {
           slug: m.slug,

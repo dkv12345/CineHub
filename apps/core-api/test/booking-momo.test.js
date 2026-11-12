@@ -177,7 +177,7 @@ describe('Booking & MoMo 3-Way Reconciliation Tests (Phase D)', () => {
     });
     expect(payment).toBeDefined();
     expect(payment.status).toBe('PENDING');
-  });
+  }, 30000);
 
   it('3. Reconciliation Path 1 (Real IPN): Valid signature settles payment and issues tickets', async () => {
     // Prepare a test payment

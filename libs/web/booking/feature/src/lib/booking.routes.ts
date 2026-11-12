@@ -18,7 +18,12 @@ export const BOOKING_ROUTES: Routes = [
     title: 'Thanh toán vé | CineHub',
   },
   {
-    path: 'result/:ticketId',
+    path: 'result/:bookingId',
+    component: ResultPageComponent,
+    title: 'Vé điện tử | CineHub',
+  },
+  {
+    path: 'result',
     component: ResultPageComponent,
     title: 'Vé điện tử | CineHub',
   },

@@ -24,6 +24,7 @@ routes.use('/recommendations', recommendationsRouter);
 routes.use('/movies', moviesRouter);
 routes.use('/sessions', sessionsRouter);
 routes.use('/booking', bookingRouter);
+routes.use('/bookings', bookingRouter);
 routes.use('/showtimes', bookingRouter);
 routes.use('/tickets', ticketsRouter);
 

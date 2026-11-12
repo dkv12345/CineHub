@@ -8,7 +8,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { BookingStore } from '@cinehub/web/booking/data-access';
 import { fmt } from '@cinehub/web/shared/util';
@@ -181,11 +181,29 @@ interface BackendBooking {
             <!-- Mã QR Vé Điện Tử -->
             @if (t.qrCodes && t.qrCodes.length > 0) {
               <div class="mt-6 border-t border-white/10 pt-4 text-center">
-                <p class="text-xs font-bold text-slate-300">Mã QR Check-in vào rạp:</p>
-                <div class="mt-2 flex flex-wrap justify-center gap-2">
+                <p class="text-xs font-bold text-amber-300">
+                  Mã QR Check-in vào rạp (xuất trình cho nhân viên soát vé):
+                </p>
+                <div class="mt-4 flex flex-wrap justify-center gap-4">
                   @for (qr of t.qrCodes; track $index) {
-                    <div class="rounded-lg bg-white p-2 text-black">
-                      <code class="block text-[11px] font-black text-slate-800">{{ qr }}</code>
+                    <div
+                      class="flex flex-col items-center rounded-2xl bg-white p-4 shadow-2xl text-black"
+                    >
+                      <img
+                        [src]="
+                          'https://quickchart.io/qr?text=' +
+                          encodeURIComponent(qr) +
+                          '&size=220&margin=2'
+                        "
+                        alt="QR Ticket Code"
+                        class="h-[220px] w-[220px] object-contain"
+                        loading="eager"
+                      />
+                      <span
+                        class="mt-2 font-mono text-xs font-black tracking-widest text-slate-900"
+                      >
+                        {{ qr }}
+                      </span>
                     </div>
                   }
                 </div>
@@ -216,49 +234,59 @@ interface BackendBooking {
 export class ResultPageComponent implements OnInit, OnDestroy {
   private readonly store = inject(BookingStore);
   private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
 
+  readonly bookingId = input<string>('');
   readonly ticketId = input<string>('');
   readonly bookingState = signal<BackendBooking | null>(null);
   readonly isLoading = signal<boolean>(true);
   readonly isFailed = signal<boolean>(false);
 
-  private pollTimer: any = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+  encodeURIComponent(val: string): string {
+    return encodeURIComponent(val || '');
+  }
 
   ngOnInit(): void {
-    const id = this.ticketId();
+    const id =
+      this.bookingId() ||
+      this.ticketId() ||
+      this.route.snapshot.paramMap.get('bookingId') ||
+      this.route.snapshot.paramMap.get('ticketId') ||
+      this.route.snapshot.queryParamMap.get('bookingId') ||
+      '';
+
     if (!id) {
       this.isLoading.set(false);
       return;
     }
 
-    // 1. Actively trigger payment refresh/reconciliation on backend
-    this.http.post<any>(`/api/v1/booking/${id}/payments/refresh`, {}).subscribe({
-      next: (res) => {
-        if (res.data) this.handleBookingUpdate(res.data);
-      },
-      error: () => {
-        // Fallback to direct polling
-      },
-    });
-
-    // 2. Poll every 2.5 seconds
-    this.pollTimer = setInterval(() => {
-      this.http.get<any>(`/api/v1/booking/${id}`).subscribe({
+    // 1. Nếu có param từ cổng thanh toán redirect về (resultCode, vnp_ResponseCode, status, orderId, v.v.):
+    // Luôn gọi API refresh đối chiếu của backend trước, TUYỆT ĐỐI không tin resultCode trên URL để kết luận thành công!
+    const query = this.route.snapshot.queryParams;
+    if (
+      query['resultCode'] !== undefined ||
+      query['vnp_ResponseCode'] !== undefined ||
+      query['status'] !== undefined ||
+      query['apptransid'] !== undefined
+    ) {
+      this.http.post<any>(`/api/v1/booking/${id}/payments/refresh`, {}).subscribe({
         next: (res) => {
           if (res.data) this.handleBookingUpdate(res.data);
         },
         error: () => {
-          // If 404, fallback to local store ticket
-          const localTicket = this.store.findTicketById(id) ?? this.store.issuedTickets()[0];
-          if (localTicket) {
-            this.isLoading.set(false);
-          }
+          // Bỏ qua lỗi và để polling xử lý tiếp
         },
       });
-    }, 2500);
+    }
 
-    // Safety timeout after 30 seconds
-    setTimeout(() => {
+    // 2. Dùng interval(2500) gọi GET /api/v1/booking/${id} (và đối chiếu) cho đến khi status là CONFIRMED, FAILED hoặc EXPIRED
+    this.pollStatus(id);
+
+    // 3. Giới hạn thời gian chờ 30 giây: nếu quá thời gian thì chuyển trạng thái
+    this.timeoutTimer = setTimeout(() => {
       if (this.isLoading()) {
         this.isLoading.set(false);
         if (!this.bookingState() || this.bookingState()?.status !== 'CONFIRMED') {
@@ -270,13 +298,41 @@ export class ResultPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.pollTimer) clearInterval(this.pollTimer);
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+    if (this.timeoutTimer) {
+      clearTimeout(this.timeoutTimer);
+      this.timeoutTimer = null;
+    }
+  }
+
+  private pollStatus(id: string): void {
+    const fetchBooking = () => {
+      this.http.get<any>(`/api/v1/booking/${id}`).subscribe({
+        next: (res) => {
+          if (res.data) this.handleBookingUpdate(res.data);
+        },
+        error: () => {
+          // Nếu 404 hoặc không tìm thấy, fallback về local store ticket nếu có
+          const localTicket = this.store.findTicketById(id) ?? this.store.issuedTickets()[0];
+          if (localTicket) {
+            this.isLoading.set(false);
+          }
+        },
+      });
+    };
+
+    fetchBooking();
+    this.pollTimer = setInterval(fetchBooking, 2500);
   }
 
   private handleBookingUpdate(data: BackendBooking): void {
     this.bookingState.set(data);
     if (data.status === 'CONFIRMED') {
       this.isLoading.set(false);
+      this.isFailed.set(false);
       if (this.pollTimer) {
         clearInterval(this.pollTimer);
         this.pollTimer = null;
@@ -291,30 +347,40 @@ export class ResultPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  formatConfirmedBooking(b: BackendBooking) {
+    return {
+      bookingCode: b.code,
+      email: b.contactEmail,
+      movieTitle: b.showtime?.movie?.title || 'Phim đã đặt',
+      cinemaName: b.showtime?.cinema?.name || 'Rạp CineHub',
+      screenName: b.showtime?.auditorium?.name || 'Phòng chiếu',
+      showTime: b.showtime?.startTime
+        ? new Date(b.showtime.startTime).toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'Suất chiếu',
+      format: b.showtime?.format || '2D',
+      seats: (b.seats || []).map((s) => s.seatLabel),
+      totalPaid: b.totalAmount,
+      qrCodes: (b.tickets || []).map((t) => t.qrCode).filter(Boolean),
+    };
+  }
+
   readonly displayData = computed(() => {
     const b = this.bookingState();
     if (b && b.status === 'CONFIRMED') {
-      return {
-        bookingCode: b.code,
-        email: b.contactEmail,
-        movieTitle: b.showtime?.movie?.title || 'Phim đã đặt',
-        cinemaName: b.showtime?.cinema?.name || 'Rạp CineHub',
-        screenName: b.showtime?.auditorium?.name || 'Phòng chiếu',
-        showTime: b.showtime?.startTime
-          ? new Date(b.showtime.startTime).toLocaleTimeString('vi-VN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : 'Suất chiếu',
-        format: b.showtime?.format || '2D',
-        seats: (b.seats || []).map((s) => s.seatLabel),
-        totalPaid: b.totalAmount,
-        qrCodes: (b.tickets || []).map((t) => t.qrCode).filter(Boolean),
-      };
+      return this.formatConfirmedBooking(b);
     }
 
     // Fallback to local store ticket if available
-    const local = this.store.findTicketById(this.ticketId()) ?? this.store.issuedTickets()[0];
+    const activeId =
+      this.bookingId() ||
+      this.ticketId() ||
+      this.route.snapshot.paramMap.get('bookingId') ||
+      this.route.snapshot.paramMap.get('ticketId') ||
+      '';
+    const local = this.store.findTicketById(activeId) ?? this.store.issuedTickets()[0];
     if (local) {
       return {
         bookingCode: local.bookingCode,

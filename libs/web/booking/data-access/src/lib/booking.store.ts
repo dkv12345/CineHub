@@ -183,6 +183,14 @@ export const BookingStore = signalStore(
       patchState(store, { holdRemainingSeconds: newSec });
     },
 
+    setHoldRemainingSeconds(sec: number): void {
+      patchState(store, { holdRemainingSeconds: Math.max(0, sec) });
+    },
+
+    clearSelectedSeats(): void {
+      patchState(store, { selectedSeats: [] });
+    },
+
     toggleSeat(id: string, zone: 'normal' | 'vip' | 'sweetbox'): { ok: boolean; reason?: string } {
       const current = store.selectedSeats();
       const exists = current.some((s) => s.id === id);

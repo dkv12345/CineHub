@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthStore, ToastService } from '@cinehub/web/core';
 import { AgeBadgeComponent } from '@cinehub/web/shared/ui';
 import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
 import { ShowtimeFilterBarComponent } from '@cinehub/web/showtimes/ui';
@@ -313,9 +314,9 @@ interface MovieGroup {
                                   </span>
                                 </button>
                               } @else {
-                                <a
-                                  [routerLink]="['/seats', session.id]"
-                                  [queryParams]="seatParams(session)"
+                                <button
+                                  type="button"
+                                  (click)="onSelectSession(session)"
                                   class="min-w-[112px] rounded-xl border border-amber-300/35 bg-amber-400/10 px-3 py-2 text-left transition hover:border-amber-300 hover:bg-amber-400 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
                                   [attr.aria-label]="
                                     'Chọn suất ' +
@@ -337,7 +338,7 @@ interface MovieGroup {
                                     {{ session.movieFormat }} ·
                                     {{ session.caption === 'voice' ? 'Lồng tiếng' : 'Phụ đề' }}
                                   </span>
-                                </a>
+                                </button>
                               }
                             }
                           </div>
@@ -446,6 +447,8 @@ export class ShowtimesPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly authStore = inject(AuthStore);
+  private readonly toast = inject(ToastService);
   readonly galleryCinema = signal<GalaxySession['cinema'] | null>(null);
 
   readonly hasMovieFilter = computed(() => {
@@ -603,6 +606,23 @@ export class ShowtimesPageComponent implements OnInit {
       screenName: session.screenName,
       backdrop: session.movie.imageLandscape || session.movie.imagePortrait,
     };
+  }
+
+  onSelectSession(session: GalaxySession): void {
+    const urlTree = this.router.createUrlTree(['/seats', session.id], {
+      queryParams: this.seatParams(session),
+    });
+    const seatsUrl = this.router.serializeUrl(urlTree);
+
+    if (!this.authStore.isAuthenticated()) {
+      this.toast.show('Vui lòng đăng nhập để tiếp tục đặt vé', 'warning');
+      void this.router.navigate(['/auth'], {
+        queryParams: { returnUrl: seatsUrl },
+      });
+      return;
+    }
+
+    void this.router.navigateByUrl(urlTree);
   }
 
   formatFetchedAt(value: string | null): string {

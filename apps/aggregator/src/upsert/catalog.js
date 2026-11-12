@@ -216,18 +216,36 @@ export async function upsertMovie(chain, mv) {
 
   const start = dateOnly(mv.startDate);
   const end = dateOnly(mv.endDate);
+  const durationNumber = Number(mv.duration);
+  const hasValidDuration = Number.isFinite(durationNumber) && durationNumber > 0;
+  const validTrailer = /watch\?v=/.test(mv.trailer ?? '') ? mv.trailer : null;
+
   const data = {
     title: mv.name,
     titleNormalized: normalize(mv.name),
-    durationMin: mv.duration || null,
+    durationMin: hasValidDuration ? durationNumber : null,
     releaseDate: start,
     releaseYear: start?.getUTCFullYear() ?? null,
     endDate: end,
     ageRating: AGE_MAP[mv.age] ?? null,
     status: movieStatus(start, end),
-    posterUrl: mv.imagePortrait,
-    backdropUrl: mv.imageLandscape,
-    trailerUrl: /watch\?v=/.test(mv.trailer ?? '') ? mv.trailer : null,
+    posterUrl: mv.imagePortrait || null,
+    backdropUrl: mv.imageLandscape || null,
+    trailerUrl: validTrailer,
+  };
+
+  const updateData = {
+    title: mv.name,
+    titleNormalized: normalize(mv.name),
+    releaseDate: start,
+    releaseYear: start?.getUTCFullYear() ?? null,
+    endDate: end,
+    status: movieStatus(start, end),
+    ...(AGE_MAP[mv.age] ? { ageRating: AGE_MAP[mv.age] } : {}),
+    ...(mv.imagePortrait ? { posterUrl: mv.imagePortrait } : {}),
+    ...(mv.imageLandscape ? { backdropUrl: mv.imageLandscape } : {}),
+    ...(hasValidDuration ? { durationMin: durationNumber } : {}),
+    ...(validTrailer ? { trailerUrl: validTrailer } : {}),
   };
 
   const sourceData = {
@@ -241,7 +259,7 @@ export async function upsertMovie(chain, mv) {
 
   if (source) {
     await prisma.movieSource.update({ where: { id: source.id }, data: sourceData });
-    const updated = await prisma.movie.update({ where: { id: source.movieId }, data });
+    const updated = await prisma.movie.update({ where: { id: source.movieId }, data: updateData });
     if (!updated.synopsis) {
       await syncMovieDetails(updated.id, mv.id, mv.slug);
     }
