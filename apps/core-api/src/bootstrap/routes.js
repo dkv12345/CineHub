@@ -9,6 +9,7 @@ import { moviesRouter } from '../modules/movies/index.js';
 import { sessionsRouter } from '../modules/sessions/index.js';
 import { bookingRouter } from '../modules/booking/index.js';
 import { paymentRouter } from '../modules/payment/index.js';
+import { simulatePaymentController } from '../modules/payment/payment.controller.js';
 
 export const routes = Router();
 
@@ -26,3 +27,4 @@ routes.use('/showtimes', bookingRouter);
 
 routes.use('/payments', paymentRouter); // 2. Mount đường dẫn /payments
 routes.use('/v1/payments', paymentRouter);
+routes.post('/dev/payments/:paymentId/simulate', simulatePaymentController);

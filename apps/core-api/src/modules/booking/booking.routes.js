@@ -16,7 +16,13 @@ bookingRouter.delete(
   controller.releaseSeats,
 );
 
-// Also alias showtime-specific RESTful endpoints for seat holds
+// Booking & Checkout Flow
+bookingRouter.post('/checkout', requireAuth, controller.checkoutBooking);
+bookingRouter.post('/:id/payments', requireAuth, controller.initiatePayment);
+bookingRouter.post('/:id/payments/refresh', requireAuth, controller.refreshPayment);
+bookingRouter.get('/:id', requireAuth, controller.getBooking);
+
+// Alias showtime-specific endpoints
 bookingRouter.get('/:showtimeId/seats', optionalAuth, controller.getSeats);
 bookingRouter.post('/:showtimeId/seat-holds', requireAuth, controller.holdSeats);
 bookingRouter.delete('/:showtimeId/seat-holds', requireAuth, controller.releaseSeats);

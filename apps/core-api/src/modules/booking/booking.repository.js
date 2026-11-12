@@ -95,3 +95,118 @@ export async function findUnavailableDbSeats(showtimeId, seatIds) {
 
   return records;
 }
+
+/**
+ * Find default ticket type (e.g. ADULT).
+ */
+export async function findDefaultTicketType() {
+  let tt = await prisma.ticketType.findFirst({
+    where: { isActive: true },
+  });
+  if (!tt) {
+    tt = await prisma.ticketType.create({
+      data: { code: 'ADULT', name: 'Adult Standard' },
+    });
+  }
+  return tt;
+}
+
+/**
+ * Find Concessions by IDs.
+ */
+export async function findConcessionsByIds(ids) {
+  if (!ids || ids.length === 0) return [];
+  return prisma.concession.findMany({
+    where: { id: { in: ids } },
+  });
+}
+
+/**
+ * Create a new booking transactionally.
+ */
+export async function createBookingWithSeats({
+  bookingData,
+  seatsData,
+  concessionsData = [],
+  showtimeSeatIds = [],
+}) {
+  return prisma.$transaction(async (tx) => {
+    // 1. Create Booking
+    const booking = await tx.booking.create({
+      data: {
+        ...bookingData,
+        seats: {
+          create: seatsData,
+        },
+        concessions:
+          concessionsData.length > 0
+            ? {
+                create: concessionsData,
+              }
+            : undefined,
+      },
+      include: {
+        seats: {
+          include: {
+            showtimeSeat: {
+              include: {
+                seat: true,
+              },
+            },
+          },
+        },
+        concessions: true,
+      },
+    });
+
+    // 2. Associate showtime seats with booking
+    if (showtimeSeatIds.length > 0) {
+      await tx.showtimeSeat.updateMany({
+        where: { id: { in: showtimeSeatIds } },
+        data: {
+          heldByBookingId: booking.id,
+          heldUntil: booking.expiresAt,
+        },
+      });
+    }
+
+    return booking;
+  });
+}
+
+/**
+ * Find full booking details by ID.
+ */
+export async function findBookingById(id) {
+  return prisma.booking.findUnique({
+    where: { id },
+    include: {
+      showtime: {
+        include: {
+          movie: true,
+          cinema: true,
+          auditorium: true,
+        },
+      },
+      seats: {
+        include: {
+          showtimeSeat: {
+            include: {
+              seat: {
+                include: {
+                  seatType: true,
+                },
+              },
+            },
+          },
+          ticket: true,
+        },
+      },
+      concessions: true,
+      payments: {
+        orderBy: { createdAt: 'desc' },
+      },
+      tickets: true,
+    },
+  });
+}
