@@ -17,6 +17,7 @@ async function ensureCookie() {
         'User-Agent': USER_AGENT,
       },
       redirect: 'manual',
+      signal: AbortSignal.timeout(galaxy.timeoutMs),
     });
     const setCookie = handshake.headers.get('set-cookie');
     if (setCookie) {
@@ -43,7 +44,10 @@ export async function fetchSessions(day) {
   };
   if (cookie) headers['Cookie'] = cookie;
 
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, {
+    headers,
+    signal: AbortSignal.timeout(galaxy.timeoutMs),
+  });
   if (!res.ok) throw new Error(`Galaxy sessions2 lỗi ${res.status}`);
   const json = await res.json();
   await sleep(galaxy.delayMs);

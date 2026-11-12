@@ -13,277 +13,211 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="relative flex min-h-[calc(100vh-73px)] w-full flex-col md:flex-row bg-[var(--color-surface)]"
+      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center bg-gradient-to-b from-[#120826] via-[#090514] to-[#04020a] p-4 sm:p-6 lg:p-10"
     >
-      <!-- Left Column: Information & Form Panel -->
-      <div
-        class="flex flex-1 flex-col justify-center px-6 py-10 sm:px-12 md:w-1/2 lg:px-16 xl:px-24"
-      >
-        <div class="mx-auto w-full max-w-md space-y-6">
-          <!-- Brand Header -->
-          <div class="space-y-3">
-            <div class="flex items-center gap-2.5">
-              <span
-                class="inline-flex h-10 w-10 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-base font-semibold text-white shadow-xs"
-              >
-                CH
-              </span>
-              <div>
-                <span
-                  class="block text-lg font-semibold tracking-tight text-[var(--color-text-primary)]"
-                  >CineHub</span
-                >
-                <span class="block text-xs font-normal text-[var(--color-text-secondary)]"
-                  >Trung tâm bảo mật tài khoản</span
-                >
-              </div>
-            </div>
+      <!-- Background Ambient Glow -->
+      <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div
+          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-purple-600/10 blur-[130px]"
+        ></div>
+      </div>
 
-            <div class="space-y-1">
-              <h1 class="cinema-heading-section">Đặt lại mật khẩu</h1>
-              <p class="cinema-metadata">
-                Nhập mã token từ email và thiết lập mật khẩu bảo mật mới cho tài khoản của bạn.
+      <!-- Centered Card -->
+      <div
+        class="relative z-10 w-full max-w-[460px] overflow-hidden rounded-[24px] border border-white/20 bg-[#0c0818]/90 p-8 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85)] backdrop-blur-2xl"
+      >
+        <!-- Header -->
+        <div class="text-center">
+          <div
+            class="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300"
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <h1 class="mt-4 text-2xl font-bold tracking-tight text-white">Đặt lại mật khẩu</h1>
+          <p class="mt-1.5 text-xs text-white/60">
+            Nhập mã token từ email và thiết lập mật khẩu bảo mật mới cho tài khoản CineHub của bạn.
+          </p>
+        </div>
+
+        <!-- Error Banner -->
+        @if (errorBanner()) {
+          <div
+            role="alert"
+            class="mt-5 flex items-start gap-2.5 rounded-lg border border-red-500/40 bg-red-950/60 p-3 text-xs font-semibold text-red-200"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="mt-0.5 shrink-0"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{{ errorBanner() }}</span>
+          </div>
+        }
+
+        <!-- Success Banner -->
+        @if (resetSuccess()) {
+          <div
+            class="mt-5 flex items-start gap-3 rounded-lg border border-emerald-500/40 bg-emerald-950/50 p-4 text-xs font-semibold text-emerald-200"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="mt-0.5 shrink-0 text-emerald-400"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <path d="m9 11 3 3L22 4" />
+            </svg>
+            <div>
+              <p class="font-bold text-sm">Đặt lại mật khẩu thành công!</p>
+              <p class="mt-1 opacity-80">
+                Hệ thống đang tự động chuyển hướng về trang đăng nhập...
               </p>
             </div>
           </div>
+        }
 
-          <!-- Error Alert Banner -->
-          @if (errorBanner()) {
+        @if (!resetSuccess()) {
+          <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 space-y-4">
+            <!-- Token -->
             <div
-              role="alert"
-              class="flex items-start gap-2.5 rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger-bg)] p-3.5 text-xs font-semibold text-[var(--color-danger)]"
+              class="flex items-center overflow-hidden rounded-lg border border-white/25 bg-black/45 backdrop-blur-md focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/20"
             >
-              <svg
-                class="h-4 w-4 shrink-0 mt-0.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/20 bg-white/5 text-white/80"
               >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span>{{ errorBanner() }}</span>
-            </div>
-          }
-
-          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
-            <!-- Token Field -->
-            <div>
-              <label
-                for="reset-token"
-                class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                >Mã Token khôi phục</label
-              >
-              <div class="relative">
-                <div
-                  class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
                 >
+                  <path
+                    d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1.5-1.5L8 9m-4 4 4.5-4.5a5 5 0 1 1 7.07 7.07L11 16"
+                  />
+                </svg>
+              </div>
+              <input
+                type="text"
+                formControlName="token"
+                placeholder="Dán mã token khôi phục từ email"
+                class="h-11 flex-1 bg-transparent px-3 font-mono text-sm text-white placeholder-white/40 outline-none"
+              />
+            </div>
+
+            <!-- New Password -->
+            <div
+              class="flex items-center overflow-hidden rounded-lg border border-white/25 bg-black/45 backdrop-blur-md focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/20"
+            >
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/20 bg-white/5 text-white/80"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="newPassword"
+                placeholder="Mật khẩu mới (tối thiểu 8 ký tự)"
+                class="h-11 flex-1 bg-transparent px-3 text-sm text-white placeholder-white/40 outline-none"
+              />
+              <button
+                type="button"
+                (click)="toggleShowPassword()"
+                class="px-3 text-white/50 hover:text-white"
+              >
+                @if (showPassword()) {
                   <svg
-                    class="h-4 w-4"
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
                   >
-                    <path
-                      d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1.5-1.5L8 9m-4 4 4.5-4.5a5 5 0 1 1 7.07 7.07L11 16"
-                    />
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                    <line x1="2" x2="22" y1="2" y2="22" />
                   </svg>
-                </div>
-                <input
-                  id="reset-token"
-                  type="text"
-                  formControlName="token"
-                  placeholder="Nhập mã token từ email"
-                  class="cinema-input cinema-input-icon-leading !h-11 w-full text-sm font-mono"
-                />
-              </div>
-            </div>
-
-            <!-- New Password Field with Show/Hide Eye Toggle -->
-            <div>
-              <label
-                for="reset-new-password"
-                class="cinema-label mb-1.5 block text-xs font-medium text-[var(--color-text-primary)]"
-                >Mật khẩu mới (tối thiểu 8 ký tự)</label
-              >
-              <div class="relative">
-                <div
-                  class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-secondary)]"
-                >
+                } @else {
                   <svg
-                    class="h-4 w-4"
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
                   >
-                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
                   </svg>
-                </div>
-                <input
-                  id="reset-new-password"
-                  [type]="showPassword() ? 'text' : 'password'"
-                  formControlName="newPassword"
-                  autocomplete="new-password"
-                  placeholder="••••••••"
-                  class="cinema-input cinema-input-icon-both !h-11 w-full text-sm"
-                />
-                <button
-                  type="button"
-                  (click)="toggleShowPassword()"
-                  class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                  [attr.aria-label]="showPassword() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
-                >
-                  @if (showPassword()) {
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                      <path
-                        d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
-                      />
-                      <path
-                        d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
-                      />
-                      <line x1="2" x2="22" y1="2" y2="22" />
-                    </svg>
-                  } @else {
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  }
-                </button>
-              </div>
+                }
+              </button>
             </div>
 
-            <!-- Submit Button -->
             <button
               type="submit"
               [disabled]="submitting()"
-              class="cinema-btn-primary w-full !h-11 font-semibold text-sm shadow-sm transition-all"
+              class="h-11 w-full rounded-full border border-indigo-400/40 bg-gradient-to-r from-[#2e1065] via-[#4c1d95] to-[#2e1065] text-xs font-bold text-white shadow-[0_0_25px_rgba(99,102,241,0.35)] transition hover:shadow-[0_0_35px_rgba(168,85,247,0.6)] active:scale-95 disabled:opacity-50"
             >
               @if (submitting()) {
-                <span class="inline-flex items-center gap-2">
-                  <svg
-                    class="h-4 w-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
-                    <path d="M12 2a10 10 0 0 1 10 10" />
-                  </svg>
-                  <span>Đang cập nhật...</span>
-                </span>
+                <span>Đang cập nhật...</span>
               } @else {
                 <span>Cập nhật mật khẩu mới</span>
               }
             </button>
           </form>
+        }
 
-          <!-- Bottom Navigation -->
-          <div
-            class="border-t border-[var(--color-border)] pt-4 text-center text-xs text-[var(--color-text-secondary)]"
+        <!-- Back to login -->
+        <div class="mt-6 border-t border-white/10 pt-4 text-center">
+          <a
+            routerLink="/auth"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200 transition"
           >
-            <a
-              routerLink="/auth"
-              class="inline-flex items-center gap-1.5 font-semibold text-[var(--color-brand-primary)] hover:underline"
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
             >
-              <svg
-                class="h-3.5 w-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-              <span>Quay lại trang đăng nhập</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Column: Cinema Visual Key-Art -->
-      <div
-        class="relative hidden md:flex md:w-1/2 flex-col justify-between overflow-hidden bg-[#160f11] p-10 lg:p-14 text-white"
-      >
-        <img
-          src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1600&q=85"
-          alt="CineHub Security"
-          class="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 hover:scale-105"
-        />
-        <div
-          class="absolute inset-0 bg-gradient-to-t from-[#120a0c] via-[#120a0c]/65 to-[#120a0c]/25"
-          aria-hidden="true"
-        ></div>
-
-        <div class="relative z-10">
-          <div
-            class="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-black/30 px-3.5 py-1.5 backdrop-blur-md"
-          >
-            <span
-              class="inline-flex h-6 w-6 items-center justify-center rounded-[4px] bg-[var(--color-brand-primary)] text-xs font-semibold text-white shadow-xs"
-            >
-              CH
-            </span>
-            <span class="text-xs font-semibold tracking-wider uppercase text-white/95">
-              CineHub Security
-            </span>
-          </div>
-        </div>
-
-        <div
-          class="relative z-10 space-y-4 rounded-xl border border-white/15 bg-black/45 p-6 backdrop-blur-md"
-        >
-          <div class="space-y-1.5">
-            <h2 class="text-xl font-semibold leading-tight text-white">
-              Bảo Mật Tài Khoản Tuyệt Đối
-            </h2>
-            <p class="text-xs leading-relaxed text-stone-300">
-              Mật khẩu của bạn được mã hóa một chiều chuẩn công nghệ mới nhất. Vui lòng không chia
-              sẻ mật khẩu cho bất kỳ ai.
-            </p>
-          </div>
-
-          <div class="space-y-2 border-t border-white/15 pt-3.5 text-xs text-stone-200">
-            <div class="flex items-center gap-2">
-              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
-              <span>Mã hóa bảo mật nhiều lớp an toàn</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-[var(--color-brand-accent)] font-semibold">✓</span>
-              <span>Đồng bộ tức thì trên tất cả thiết bị</span>
-            </div>
-          </div>
-
-          <div class="text-[11px] text-stone-400">
-            © 2026 CineHub Cinema Network. Tất cả quyền được bảo lưu.
-          </div>
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            <span>Quay lại trang đăng nhập</span>
+          </a>
         </div>
       </div>
     </div>
@@ -300,12 +234,10 @@ export class ResetPasswordPageComponent implements OnInit {
   readonly submitting = signal(false);
   readonly errorBanner = signal<string | null>(null);
   readonly showPassword = signal(false);
+  readonly resetSuccess = signal(false);
 
   readonly form = this.fb.nonNullable.group(
-    {
-      token: [''],
-      newPassword: [''],
-    },
+    { token: [''], newPassword: [''] },
     { validators: [zodFormGroupValidator(resetPasswordBody)] },
   );
 
@@ -331,8 +263,9 @@ export class ResetPasswordPageComponent implements OnInit {
     this.errorBanner.set(null);
     try {
       await this.authApi.resetPassword(this.form.getRawValue());
+      this.resetSuccess.set(true);
       this.toast.show('Đặt lại mật khẩu thành công! Vui lòng đăng nhập.', 'success');
-      void this.router.navigateByUrl('/auth');
+      setTimeout(() => void this.router.navigateByUrl('/auth'), 2000);
     } catch (error: unknown) {
       this.errorBanner.set(formatAuthErrorMessage(error));
     } finally {

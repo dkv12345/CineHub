@@ -10,6 +10,18 @@ export const AUTH_ROUTES: Routes = [
     title: 'Đăng nhập & Đăng ký | CineHub',
   },
   {
+    path: 'register',
+    component: AuthPageComponent,
+    title: 'Đăng ký tài khoản | CineHub',
+    data: { mode: 'register' },
+  },
+  {
+    path: 'login',
+    component: AuthPageComponent,
+    title: 'Đăng nhập | CineHub',
+    data: { mode: 'login' },
+  },
+  {
     path: 'verify-email',
     component: VerifyEmailPageComponent,
     title: 'Xác thực Email | CineHub',

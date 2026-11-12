@@ -88,6 +88,14 @@ export function mapSession(session, { durationMin = 120 } = {}) {
     tier = 'PREMIUM';
   } else if (version.includes('3d')) {
     format = 'THREE_D';
+  } else if (version.includes('4dx')) {
+    format = 'FOUR_DX';
+  } else if (version.includes('screenx')) {
+    format = 'SCREENX';
+  } else if (version.includes('dolby')) {
+    format = 'DOLBY';
+  } else if (version.includes('led')) {
+    format = 'LED';
   }
 
   if (

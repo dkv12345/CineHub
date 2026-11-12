@@ -11,25 +11,27 @@ import type { ShowtimeFilters } from '@cinehub/web/showtimes/util';
       role="search"
       aria-label="Bộ lọc lịch chiếu"
     >
-      <div>
-        <label
-          for="filter-movie"
-          class="block text-xs font-black uppercase tracking-wider text-amber-300 mb-2"
-        >
-          Phim
-        </label>
-        <select
-          id="filter-movie"
-          [value]="filters().movieId ?? 'all'"
-          (change)="onSelectChange('movieId', $event)"
-          class="w-full appearance-none rounded-xl border border-white/20 bg-slate-950 py-2.5 px-3.5 text-xs font-bold text-white outline-none transition hover:border-white/40 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 [color-scheme:dark]"
-        >
-          <option value="all" class="bg-slate-950 text-white">Tất cả phim</option>
-          @for (movie of movies(); track movie.id) {
-            <option [value]="movie.id" class="bg-slate-950 text-white">{{ movie.name }}</option>
-          }
-        </select>
-      </div>
+      @if (!movieLocked()) {
+        <div>
+          <label
+            for="filter-movie"
+            class="block text-xs font-black uppercase tracking-wider text-amber-300 mb-2"
+          >
+            Phim
+          </label>
+          <select
+            id="filter-movie"
+            [value]="filters().movieId ?? 'all'"
+            (change)="onSelectChange('movieId', $event)"
+            class="w-full appearance-none rounded-xl border border-white/20 bg-slate-950 py-2.5 px-3.5 text-xs font-bold text-white outline-none transition hover:border-white/40 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 [color-scheme:dark]"
+          >
+            <option value="all" class="bg-slate-950 text-white">Tất cả phim</option>
+            @for (movie of movies(); track movie.id) {
+              <option [value]="movie.id" class="bg-slate-950 text-white">{{ movie.name }}</option>
+            }
+          </select>
+        </div>
+      }
 
       <div>
         <label
@@ -105,6 +107,25 @@ import type { ShowtimeFilters } from '@cinehub/web/showtimes/util';
           </div>
         }
       </div>
+
+      @if (!movieLocked() && filters().movieId && filters().movieId !== 'all') {
+        <div class="col-span-full flex flex-wrap items-center gap-2 pt-1 text-xs">
+          <span class="text-slate-400">Đang lọc theo phim:</span>
+          <span
+            class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 font-bold text-amber-300"
+          >
+            <span>{{ selectedMovieName() }}</span>
+            <button
+              type="button"
+              (click)="clearMovieFilter()"
+              aria-label="Bỏ chọn phim"
+              class="ml-1 text-slate-400 transition hover:text-white"
+            >
+              ✕
+            </button>
+          </span>
+        </div>
+      }
     </div>
   `,
 })
@@ -112,7 +133,7 @@ export class ShowtimeFilterBarComponent {
   readonly filters = input.required<ShowtimeFilters>();
   readonly cities = input.required<readonly { id: string; name: string }[]>();
   readonly movies = input<readonly { id: string; name: string }[]>([]);
-
+  readonly movieLocked = input(false);
   readonly filterChanged = output<Partial<ShowtimeFilters>>();
   readonly resetClicked = output<void>();
 
@@ -123,9 +144,19 @@ export class ShowtimeFilterBarComponent {
       (f.cityId && f.cityId !== 'all') ||
       (f.cinemaId && f.cinemaId !== 'all') ||
       (f.format && f.format !== 'all') ||
-      (f.searchQuery && f.searchQuery.trim().length > 0)
+      Boolean(f.searchQuery && f.searchQuery.trim().length > 0)
     );
   });
+
+  readonly selectedMovieName = computed(() => {
+    const movieId = this.filters().movieId;
+    if (!movieId || movieId === 'all') return '';
+    return this.movies().find((m) => m.id === movieId)?.name || movieId;
+  });
+
+  clearMovieFilter(): void {
+    this.filterChanged.emit({ movieId: null });
+  }
 
   onSelectChange(field: keyof ShowtimeFilters, event: Event): void {
     const val = (event.target as HTMLSelectElement | HTMLInputElement).value;

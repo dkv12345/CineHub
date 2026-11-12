@@ -11,12 +11,20 @@ export interface SeatLayout {
 
 export interface SeatCell {
   readonly id: string;
+  readonly showtimeSeatId?: string;
+  readonly seatId?: string;
   readonly row: string;
   readonly rowIndex: number;
   readonly column: number;
+  readonly colSpan?: number;
   readonly zone: SeatZone;
+  readonly price?: number;
+  readonly status?: 'AVAILABLE' | 'HELD' | 'SOLD' | 'BLOCKED';
   readonly sold: boolean;
   readonly selected: boolean;
+  readonly heldByViewer?: boolean;
+  readonly heldByOther?: boolean;
+  readonly heldUntil?: string | null;
 }
 
 export function layoutForCinema(cinema: string): SeatLayout {
@@ -99,4 +107,65 @@ export function generateAuditoriumSeats(
     }
   }
   return cells;
+}
+
+export function hasOrphanSingleSeatGap(
+  seats: readonly SeatCell[],
+  selectedIds: ReadonlySet<string>,
+  aislesAfter: readonly number[] = [7],
+): { hasOrphan: boolean; orphanSeatId?: string } {
+  const byRow = new Map<string, SeatCell[]>();
+  for (const s of seats) {
+    const list = byRow.get(s.row) ?? [];
+    list.push(s);
+    byRow.set(s.row, list);
+  }
+
+  const aisleSet = new Set(aislesAfter);
+
+  for (const [, rowSeats] of byRow.entries()) {
+    if (!rowSeats.some((s) => selectedIds.has(s.id))) continue;
+    const sorted = [...rowSeats].sort((a, b) => a.column - b.column);
+
+    const sections: SeatCell[][] = [];
+    let currentSection: SeatCell[] = [];
+    for (const s of sorted) {
+      currentSection.push(s);
+      if (aisleSet.has(s.column + 1)) {
+        sections.push(currentSection);
+        currentSection = [];
+      }
+    }
+    if (currentSection.length) sections.push(currentSection);
+
+    for (const section of sections) {
+      if (!section.some((s) => selectedIds.has(s.id))) continue;
+      const states = section.map((s) => {
+        if (selectedIds.has(s.id)) return 'SELECTED';
+        if (s.sold || s.heldByOther) return 'OCCUPIED';
+        return 'FREE';
+      });
+      const freeCount = states.filter((st) => st === 'FREE').length;
+      if (freeCount <= 1) continue;
+
+      let i = 0;
+      while (i < states.length) {
+        if (states[i] !== 'FREE') {
+          i++;
+          continue;
+        }
+        let j = i;
+        while (j < states.length && states[j] === 'FREE') j++;
+        if (j - i === 1) {
+          const left = i > 0 ? states[i - 1] : 'WALL';
+          const right = j < states.length ? states[j] : 'WALL';
+          if (left === 'SELECTED' || right === 'SELECTED') {
+            return { hasOrphan: true, orphanSeatId: section[i].id };
+          }
+        }
+        i = j;
+      }
+    }
+  }
+  return { hasOrphan: false };
 }

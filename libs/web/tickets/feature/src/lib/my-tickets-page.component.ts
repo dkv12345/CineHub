@@ -1,6 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { BookingStore, type IssuedTicket } from '@cinehub/web/booking/data-access';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
+import { ToastService } from '@cinehub/web/core';
 import { fmt } from '@cinehub/web/shared/util';
 import { TicketsStore } from '@cinehub/web/tickets/data-access';
 
@@ -18,11 +26,12 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
           </div>
 
           <!-- Status Filter Tabs -->
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             @for (tab of statusTabs; track tab.key) {
               <button
                 type="button"
                 (click)="ticketsStore.setStatusFilter(tab.key)"
+                [attr.aria-pressed]="ticketsStore.statusFilter() === tab.key"
                 class="rounded-xl border-2 px-4 py-2 text-xs font-black transition"
                 [class]="
                   ticketsStore.statusFilter() === tab.key
@@ -72,7 +81,7 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
                         NGÀY & GIỜ
                       </span>
                       <b class="text-xs font-black text-slate-900">
-                        {{ ticket.showTime }}
+                        {{ ticket.showTime }}{{ ticket.showDate ? ' · ' + ticket.showDate : '' }}
                       </b>
                     </div>
                   </div>
@@ -93,16 +102,46 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
                     {{ ticket.bookingCode }}
                   </span>
                 </div>
+                <div class="truncate text-center text-[10px] font-black uppercase text-slate-600">
+                  {{ ticket.cinemaName }}
+                </div>
+                <div
+                  class="pointer-events-none absolute -right-3 top-0 z-10 hidden h-full w-6 md:block"
+                  aria-hidden="true"
+                >
+                  <span
+                    class="absolute -top-3 left-1/2 h-6 w-6 -translate-x-1/2 rounded-full bg-[#020617]"
+                  ></span>
+                  <span
+                    class="absolute -bottom-3 left-1/2 h-6 w-6 -translate-x-1/2 rounded-full bg-[#020617]"
+                  ></span>
+                </div>
               </div>
 
+              <div
+                class="z-10 hidden border-r-2 border-dashed border-white/20 md:block"
+                aria-hidden="true"
+              ></div>
+
               <!-- 2. Thân Vé Dark Luxury Bên Phải -->
-              <div class="relative flex flex-1 flex-col justify-between p-6">
-                <div>
+              <div class="relative flex flex-1 flex-col justify-between overflow-hidden p-6">
+                @if (ticket.movieBackdropUrl) {
+                  <img
+                    [src]="ticket.movieBackdropUrl"
+                    alt=""
+                    class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
+                  />
+                }
+                <div
+                  class="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/50"
+                ></div>
+                <div class="relative z-10">
                   <div class="flex flex-wrap items-center justify-between gap-3">
                     <span
-                      class="rounded-md border border-emerald-400/40 bg-emerald-500/20 px-3 py-1 text-xs font-black text-emerald-400"
+                      class="rounded-md border px-3 py-1 text-xs font-black"
+                      [class]="ticketStatusClasses(ticket.status)"
                     >
-                      {{ ticket.status === 'VALID' ? 'Đã thanh toán' : 'Đã sử dụng' }}
+                      {{ ticketStatusLabel(ticket.status) }}
                     </span>
                     <span class="text-xs font-bold text-white/50">{{ ticket.paymentMethod }}</span>
                   </div>
@@ -114,13 +153,15 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
                     {{ ticket.cinemaName }} · {{ ticket.screenName }}
                   </p>
                   <p class="mt-1 text-xs font-black text-amber-300">
-                    Suất chiếu: {{ ticket.showTime }} ({{ ticket.format }}) · Ghế:
+                    Suất chiếu: {{ ticket.showTime
+                    }}{{ ticket.showDate ? ' · ' + ticket.showDate : '' }} ({{ ticket.format }}) ·
+                    Ghế:
                     {{ ticket.seats.join(', ') }}
                   </p>
                 </div>
 
                 <div
-                  class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4"
+                  class="relative z-10 mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-4"
                 >
                   <div>
                     <span class="text-[11px] font-semibold text-white/60">Tổng thanh toán:</span>
@@ -132,6 +173,7 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
                   <button
                     type="button"
                     (click)="openQrModal(ticket)"
+                    [attr.aria-label]="'Mở mã QR vào rạp cho vé ' + ticket.bookingCode"
                     class="inline-flex items-center gap-2 rounded-xl border-2 border-amber-400/60 bg-amber-400/15 px-4 py-2.5 text-xs font-black text-amber-200 transition hover:bg-amber-400 hover:text-slate-950"
                   >
                     <span>📱</span>
@@ -154,21 +196,29 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
           <div
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
             (click)="closeQrModal()"
+            role="presentation"
           >
             <div
               class="relative w-full max-w-sm rounded-3xl border-2 border-amber-400/50 bg-slate-950 p-6 text-center shadow-2xl"
               (click)="$event.stopPropagation()"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ticket-qr-title"
             >
               <button
                 type="button"
                 (click)="closeQrModal()"
+                aria-label="Đóng mã QR"
                 class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-slate-800 text-white hover:bg-slate-700"
               >
                 ✕
               </button>
 
-              <div class="mt-2 text-xs font-black uppercase tracking-wider text-amber-300">
-                MÃ VÉ ĐIỆN TỬ
+              <div
+                id="ticket-qr-title"
+                class="mt-2 text-xs font-black uppercase tracking-wider text-amber-300"
+              >
+                MÃ VÉ ĐIỆN TỬ (HMAC-SHA256)
               </div>
               <h3 class="mt-1 text-lg font-black text-white">{{ ticket.movieTitle }}</h3>
               <p class="text-xs text-slate-400">
@@ -177,15 +227,29 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
 
               <!-- Simulated High-res QR Grid -->
               <div
-                class="mx-auto my-6 grid h-[200px] w-[200px] place-items-center rounded-2xl bg-white p-3 shadow-2xl"
+                class="mx-auto my-5 grid h-[220px] w-[220px] rounded-2xl bg-white p-3 shadow-2xl"
+                [style.grid-template-columns]="'repeat(25, minmax(0, 1fr))'"
+                role="img"
+                [attr.aria-label]="'Mã QR vé ' + ticket.bookingCode"
               >
-                <div class="flex flex-col items-center justify-center text-slate-950">
-                  <div class="font-mono text-3xl font-black">QR</div>
-                  <div class="font-mono text-xs font-black tracking-widest mt-2">
-                    {{ ticket.bookingCode }}
-                  </div>
-                </div>
+                @for (cell of qrCells(ticket.qrPayload || ticket.bookingCode); track $index) {
+                  <span class="min-h-0 min-w-0" [class.bg-black]="cell"></span>
+                }
               </div>
+
+              <div class="mb-3 rounded-xl border border-white/10 bg-slate-900 p-2">
+                <p class="font-mono text-[10px] text-slate-300 break-all">
+                  {{ ticket.qrPayload || ticket.bookingCode }}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                (click)="copyQr(ticket.qrPayload || ticket.bookingCode)"
+                class="mb-3 w-full rounded-xl bg-amber-400 py-2.5 text-xs font-black text-slate-950 hover:bg-amber-300 transition"
+              >
+                📋 Sao chép mã QR để Soát vé (/staff/checkin)
+              </button>
 
               <p class="text-[11px] font-bold text-slate-400">
                 Đưa mã này cho nhân viên soát vé tại cửa phòng chiếu.
@@ -197,17 +261,18 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
     </main>
   `,
 })
-export class MyTicketsPageComponent {
+export class MyTicketsPageComponent implements OnInit {
   readonly bookingStore = inject(BookingStore);
   readonly ticketsStore = inject(TicketsStore);
   readonly catalogStore = inject(CatalogStore);
+  private readonly toast = inject(ToastService);
 
   readonly activeQrTicket = signal<IssuedTicket | null>(null);
 
   readonly statusTabs = [
     { key: 'ALL' as const, label: 'Tất cả' },
-    { key: 'VALID' as const, label: 'Còn hiệu lực' },
-    { key: 'USED' as const, label: 'Đã sử dụng' },
+    { key: 'VALID' as const, label: 'Sắp tới / Còn hiệu lực' },
+    { key: 'USED' as const, label: 'Đã xem / Đã quét' },
   ];
 
   readonly filteredTickets = computed(() => {
@@ -217,9 +282,69 @@ export class MyTicketsPageComponent {
     return list.filter((t) => t.status === status);
   });
 
-  barcodePattern(_code: string): number[] {
-    const arr = [2, 1, 3, 1, 2, 2, 1, 3, 1, 2, 1, 3, 2, 1, 2, 3, 1, 2, 1, 3, 2, 1];
-    return arr;
+  ngOnInit(): void {
+    void this.bookingStore.loadMyTicketsFromApi();
+  }
+
+  barcodePattern(code: string): number[] {
+    return Array.from({ length: 38 }, (_, index) => {
+      let hash = index * 31;
+      for (const character of code) hash = (hash * 33 + character.charCodeAt(0)) >>> 0;
+      return (hash % 3) + 1;
+    });
+  }
+
+  qrCells(code: string): boolean[] {
+    const size = 25;
+    const finders = [
+      [0, 0],
+      [0, size - 7],
+      [size - 7, 0],
+    ];
+    let seed = 0;
+    for (const character of code) seed = (seed * 31 + character.charCodeAt(0)) >>> 0;
+
+    return Array.from({ length: size * size }, (_, index) => {
+      const row = Math.floor(index / size);
+      const column = index % size;
+      for (const [top, left] of finders) {
+        const rowOffset = row - top;
+        const columnOffset = column - left;
+        if (rowOffset < 0 || columnOffset < 0 || rowOffset >= 7 || columnOffset >= 7) continue;
+        return (
+          rowOffset === 0 ||
+          rowOffset === 6 ||
+          columnOffset === 0 ||
+          columnOffset === 6 ||
+          (rowOffset >= 2 && rowOffset <= 4 && columnOffset >= 2 && columnOffset <= 4)
+        );
+      }
+      return ((seed + index * 17 + (index % size) * 13) >>> 2) % 2 === 0;
+    });
+  }
+
+  ticketStatusLabel(status: IssuedTicket['status']): string {
+    switch (status) {
+      case 'VALID':
+        return 'Đã thanh toán';
+      case 'USED':
+        return 'Đã sử dụng';
+      case 'CANCELLED':
+      case 'VOID':
+        return 'Đã hủy / Hoàn tiền';
+    }
+  }
+
+  ticketStatusClasses(status: IssuedTicket['status']): string {
+    switch (status) {
+      case 'VALID':
+        return 'border-emerald-400/40 bg-emerald-500/20 text-emerald-400';
+      case 'USED':
+        return 'border-slate-400/30 bg-slate-500/20 text-slate-300';
+      case 'CANCELLED':
+      case 'VOID':
+        return 'border-red-400/40 bg-red-500/20 text-red-300';
+    }
   }
 
   openQrModal(ticket: IssuedTicket): void {
@@ -228,6 +353,13 @@ export class MyTicketsPageComponent {
 
   closeQrModal(): void {
     this.activeQrTicket.set(null);
+  }
+
+  copyQr(payload: string): void {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      void navigator.clipboard.writeText(payload);
+    }
+    this.toast.show('Đã sao chép mã QR vé điện tử!', 'success');
   }
 
   formatCurrency(n: number): string {

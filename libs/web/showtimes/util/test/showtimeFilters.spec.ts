@@ -1,5 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { filterShowtimes, type GalaxySession } from '../src/index';
+import { filterShowtimes, getShowtimeCityName, type GalaxySession } from '../src/index';
+
+const seedSessions = (
+  JSON.parse(
+    readFileSync(
+      new URL('../../../../../data/seed/sessions_snapshot.json', import.meta.url),
+      'utf8',
+    ),
+  ) as { result: GalaxySession[] }
+).result;
 
 const makeSession = (
   overrides: Partial<GalaxySession> & Pick<GalaxySession, 'id' | 'showDate' | 'movieFormat'>,
@@ -120,5 +130,83 @@ describe('filterShowtimes', () => {
     expect(filterShowtimes(sessions, { movieId: 'phim-b' }).map((s) => s.id)).toEqual(['2']);
     expect(filterShowtimes(sessions, { movieId: 'Phim B' }).map((s) => s.id)).toEqual(['2']);
     expect(filterShowtimes(sessions, { cinemaId: 'Rạp Hà Nội' }).map((s) => s.id)).toEqual(['2']);
+  });
+
+  it('uses a province name instead of a cinema name when city metadata is missing', () => {
+    const session = makeSession({
+      id: 'province-name',
+      showDate: '2026-10-22',
+      movieFormat: '2D',
+      cinema: {
+        id: 'cinema-1',
+        code: 'CGV-1',
+        name: 'Rạp Trung Tâm',
+        latitude: '',
+        longitude: '',
+        address: '123 Đường Điện Biên Phủ, Quận 1, TP. Hồ Chí Minh',
+        phone: '',
+        cityId: 'HCM',
+        imageLandscape: '',
+        imagePortrait: '',
+        imageUrls: [],
+        order: 0,
+      },
+    });
+
+    expect(getShowtimeCityName(session)).toBe('TP. Hồ Chí Minh');
+  });
+
+  it('prefers the province in the address when a legacy city ID names the old province', () => {
+    const session = makeSession({
+      id: 'merged-province',
+      showDate: '2026-10-22',
+      movieFormat: '2D',
+      cinema: {
+        id: 'cinema-1',
+        code: 'CGV-1',
+        name: 'Rạp Bến Tre',
+        latitude: '',
+        longitude: '',
+        address: '26A Trần Quốc Tuấn, Phường An Hội, Tỉnh Vĩnh Long',
+        phone: '',
+        cityId: '3504c4df-cc0f-4356-a934-260cf5e9ca32',
+        imageLandscape: '',
+        imagePortrait: '',
+        imageUrls: [],
+        order: 0,
+      },
+    });
+
+    expect(getShowtimeCityName(session)).toBe('Vĩnh Long');
+  });
+
+  it('does not expose cinema names as province labels for unknown locations', () => {
+    const session = makeSession({
+      id: 'unknown-province',
+      showDate: '2026-10-22',
+      movieFormat: '2D',
+      cinema: {
+        id: 'cinema-1',
+        code: 'CGV-1',
+        name: 'Rạp Trung Tâm',
+        latitude: '',
+        longitude: '',
+        address: '',
+        phone: '',
+        cityId: 'UNKNOWN',
+        imageLandscape: '',
+        imagePortrait: '',
+        imageUrls: [],
+        order: 0,
+      },
+    });
+
+    expect(getShowtimeCityName(session)).toBe('Tỉnh / Thành phố chưa xác định');
+  });
+
+  it('resolves a province for every cinema in the seeded showtime snapshot', () => {
+    const cityNames = new Set(seedSessions.map(getShowtimeCityName));
+
+    expect(cityNames).not.toContain('Tỉnh / Thành phố chưa xác định');
   });
 });

@@ -1,7 +1,14 @@
-import { HttpClient } from '@angular/common/http';
-import { computed, inject } from '@angular/core';
-import type { ActivatedRouteSnapshot, ResolveFn } from '@angular/router';
-import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { computed, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  patchState,
+  signalStore,
+  withComputed,
+  withHooks,
+  withMethods,
+  withState,
+} from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 import { cinemas as seedCinemas, movies as seedMovies, type Movie } from '@cinehub/web/shared/util';
 
@@ -12,6 +19,8 @@ export interface CatalogState {
   readonly genreFilter: string;
   readonly searchQuery: string;
   readonly loading: boolean;
+  readonly error: string | null;
+  readonly notifiedMovieIds: readonly string[];
 }
 
 const initialState: CatalogState = {
@@ -21,7 +30,11 @@ const initialState: CatalogState = {
   genreFilter: 'all',
   searchQuery: '',
   loading: false,
+  error: null,
+  notifiedMovieIds: [],
 };
+
+const NOTIFIED_MOVIES_STORAGE_KEY = 'cinehub_notified_movies';
 
 export const CatalogStore = signalStore(
   { providedIn: 'root' },
@@ -66,6 +79,7 @@ export const CatalogStore = signalStore(
   })),
   withMethods((store) => {
     const http = inject(HttpClient);
+    const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
     return {
       setStatusFilter(statusFilter: 'now' | 'soon' | 'all'): void {
@@ -82,28 +96,64 @@ export const CatalogStore = signalStore(
 
       findMovieById(id: string | number): Movie | null {
         const target = String(id);
-        return store.movies().find((m) => String(m.id) === target || m.slug === target) ?? null;
+        return (
+          store
+            .movies()
+            .find((m) => String(m.id) === target || m.dbId === target || m.slug === target) ?? null
+        );
+      },
+
+      isMovieNotified(id: string | number): boolean {
+        return store.notifiedMovieIds().includes(String(id));
+      },
+
+      toggleMovieNotification(id: string | number): void {
+        const movieId = String(id);
+        const current = store.notifiedMovieIds();
+        const notifiedMovieIds = current.includes(movieId)
+          ? current.filter((value) => value !== movieId)
+          : [...current, movieId];
+        patchState(store, { notifiedMovieIds });
+        if (isBrowser) {
+          localStorage.setItem(NOTIFIED_MOVIES_STORAGE_KEY, JSON.stringify(notifiedMovieIds));
+        }
       },
 
       async refreshFromApi(): Promise<void> {
-        patchState(store, { loading: true });
+        patchState(store, { loading: true, error: null });
         try {
           const res = await firstValueFrom(http.get<{ data?: Movie[] }>('/api/v1/movies'));
-          if (Array.isArray(res?.data) && res.data.length > 0) {
-            patchState(store, { movies: res.data, loading: false });
-            return;
+          if (!Array.isArray(res?.data)) {
+            throw new Error('API phim trả về dữ liệu không hợp lệ.');
+          }
+          patchState(store, { movies: res.data, loading: false });
+        } catch (error) {
+          const message =
+            error instanceof HttpErrorResponse
+              ? `Không thể cập nhật danh sách phim (HTTP ${error.status}).`
+              : error instanceof Error
+                ? `Không thể cập nhật danh sách phim: ${error.message}`
+                : 'Không thể cập nhật danh sách phim từ máy chủ.';
+          patchState(store, { loading: false, error: message });
+        }
+      },
+    };
+  }),
+  withHooks((store) => {
+    const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+    return {
+      onInit() {
+        if (!isBrowser) return;
+        try {
+          const raw = localStorage.getItem(NOTIFIED_MOVIES_STORAGE_KEY);
+          const parsed: unknown = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(parsed) && parsed.every((value) => typeof value === 'string')) {
+            patchState(store, { notifiedMovieIds: parsed });
           }
         } catch {
-          // Fallback to embedded seed catalog when offline
+          patchState(store, { notifiedMovieIds: [] });
         }
-        patchState(store, { loading: false });
       },
     };
   }),
 );
-
-export const movieDetailResolver: ResolveFn<Movie | null> = (route: ActivatedRouteSnapshot) => {
-  const store = inject(CatalogStore);
-  const id = route.paramMap.get('id') ?? '';
-  return store.findMovieById(id) ?? store.movies()[0] ?? null;
-};

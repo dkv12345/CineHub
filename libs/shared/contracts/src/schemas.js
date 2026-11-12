@@ -53,12 +53,31 @@ export const lockSeatsSchema = z.object({
     .array(z.string().min(1))
     .min(1, 'Vui lòng chọn ít nhất 1 ghế')
     .max(MAX_SEATS_PER_BOOKING, `Chỉ được chọn tối đa ${MAX_SEATS_PER_BOOKING} ghế`),
+  ticketTypes: z.record(z.string(), z.string()).optional(),
+  enforceOrphanRule: z.boolean().optional(),
+  ttlSeconds: z.coerce.number().int().min(10).max(1800).optional(),
+  metadata: z
+    .object({
+      movieId: z.string().optional(),
+      movieTitle: z.string().optional(),
+      cinemaId: z.string().optional(),
+      cinemaCode: z.string().optional(),
+      cinemaName: z.string().optional(),
+      screenName: z.string().optional(),
+      showDate: z.string().optional(),
+      showTime: z.string().optional(),
+      format: z.string().optional(),
+      backdropUrl: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const updateConcessionsSchema = z.object({
   items: z.array(
     z.object({
       concessionId: z.string().min(1),
+      name: z.string().optional(),
+      unitPrice: z.number().int().min(0).optional(),
       quantity: z.number().int().min(0).max(20),
     }),
   ),
@@ -66,6 +85,48 @@ export const updateConcessionsSchema = z.object({
 
 export const applyVoucherSchema = z.object({
   code: z.string().trim().min(1, 'Vui lòng nhập mã giảm giá'),
+  subtotalAmount: z.coerce.number().int().min(0).optional(),
+  bookingId: z.string().optional(),
+});
+
+export const checkoutBookingSchema = z.object({
+  showtimeId: z.string().min(1),
+  bookingId: z.string().optional(),
+  seatIds: z.array(z.string().min(1)).min(1).max(MAX_SEATS_PER_BOOKING).optional(),
+  voucherCode: z.string().trim().nullable().optional(),
+  concessions: z
+    .array(
+      z.object({
+        concessionId: z.string().min(1),
+        name: z.string().optional(),
+        unitPrice: z.number().int().min(0).optional(),
+        quantity: z.number().int().min(1).max(20),
+      }),
+    )
+    .default([]),
+  paymentMethod: z.enum(['VNPAY', 'MOMO', 'ZALOPAY', 'VIETQR']).default('VNPAY'),
+});
+
+export const staffCheckinSchema = z.object({
+  qrPayload: z.string().trim().optional(),
+  bookingCode: z.string().trim().optional(),
+  phone: z.string().trim().optional(),
+});
+
+export const createReviewSchema = z.object({
+  rating: z.coerce.number().int().min(1).max(5),
+  comment: z.string().trim().min(2).max(1000),
+});
+
+export const updateProfileSchema = z.object({
+  fullName: z.string().trim().min(1).max(150),
+  phone: z.string().trim().max(20).optional().nullable(),
+  avatarUrl: z.string().trim().max(500).optional().nullable(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(100),
 });
 
 export const chatMessageBody = z.object({

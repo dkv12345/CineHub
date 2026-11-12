@@ -8,16 +8,30 @@ import { recommendationsRouter } from '../modules/recommendations/index.js';
 import { moviesRouter } from '../modules/movies/index.js';
 import { sessionsRouter } from '../modules/sessions/index.js';
 import { bookingRouter } from '../modules/booking/index.js';
+import { paymentRouter } from '../modules/payment/index.js';
+import { staffRouter } from '../modules/staff/index.js';
+import { adminRouter } from '../modules/admin/index.js';
+import { memberRouter } from '../modules/member/index.js';
 
 export const routes = Router();
 
-routes.use('/health', healthRouter);
-routes.use('/auth', authRouter);
-routes.use('/v1/auth', authRouter);
-routes.use('/cinemas', cinemasRouter);
-routes.use('/concessions', concessionsRouter);
-routes.use('/chatbot', chatbotRouter);
-routes.use('/recommendations', recommendationsRouter);
-routes.use('/movies', moviesRouter);
-routes.use('/sessions', sessionsRouter);
-routes.use('/booking', bookingRouter);
+const mounts = [
+  ['/health', healthRouter],
+  ['/auth', authRouter],
+  ['/cinemas', cinemasRouter],
+  ['/concessions', concessionsRouter],
+  ['/chatbot', chatbotRouter],
+  ['/recommendations', recommendationsRouter],
+  ['/movies', moviesRouter],
+  ['/sessions', sessionsRouter],
+  ['/booking', bookingRouter],
+  ['/payments', paymentRouter],
+  ['/staff', staffRouter],
+  ['/admin', adminRouter],
+  ['/member', memberRouter],
+];
+
+for (const [prefix, router] of mounts) {
+  routes.use(prefix, router);
+  routes.use(`/v1${prefix}`, router);
+}

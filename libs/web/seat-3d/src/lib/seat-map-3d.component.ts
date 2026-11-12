@@ -25,21 +25,29 @@ import type { SeatCell, SeatLayout } from './seat-layout';
           class="relative mx-auto rounded-[45%_45%_18px_18px/12%_12%_18px_18px] border-x border-white/10 bg-transparent px-3 pb-7 pt-2 [transform:rotateX(14deg)] [transform-style:preserve-3d] sm:px-5"
         >
           <div class="space-y-2 [transform-style:preserve-3d]">
-            @for (rowGroup of rowsGrouped(); track rowGroup.row) {
-              <div class="flex items-center justify-center gap-1.5 [transform-style:preserve-3d]">
-                <span class="w-6 text-center text-xs font-black text-white">
-                  {{ rowGroup.row }}
-                </span>
+            @for (rowGroup of rowsGrouped(); track rowGroup.row; let rowIndex = $index) {
+              <div
+                class="grid items-center gap-x-1.5"
+                [style.grid-template-columns]="
+                  '22px repeat(' +
+                  (layout().columns + layout().aislesAfter.length) +
+                  ', minmax(30px, 38px)) 22px'
+                "
+                [style.transform]="
+                  'translateZ(' + (rowIndex - 3) + 'px) scale(' + (1 + rowIndex * 0.006) + ')'
+                "
+                style="transform-origin: center bottom"
+              >
+                <span class="text-center text-xs font-black text-white">{{ rowGroup.row }}</span>
 
                 @for (seat of rowGroup.seats; track seat.id) {
                   <button
                     type="button"
-                    [disabled]="seat.sold"
+                    [disabled]="seat.sold || seat.heldByOther"
                     (click)="seatChosen.emit(seat)"
-                    [attr.aria-label]="
-                      'Ghế ' + seat.id + ' hạng ' + seat.zone + (seat.sold ? ' (Đã bán)' : '')
-                    "
+                    [attr.aria-label]="seatLabel(seat)"
                     [attr.aria-pressed]="seat.selected"
+                    [style.grid-column]="seatTrack(seat) + 2"
                     class="aspect-square min-w-[30px] rounded-t-[9px] rounded-b-[5px] border text-[9px] font-extrabold shadow-[0_4px_6px_rgba(0,0,0,0.5)] transition duration-150 hover:-translate-y-1 hover:shadow-[0_8px_12px_rgba(0,0,0,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
                     [class]="seatClasses(seat)"
                   >
@@ -47,7 +55,10 @@ import type { SeatCell, SeatLayout } from './seat-layout';
                   </button>
                 }
 
-                <span class="w-6 text-center text-xs font-black text-white">
+                <span
+                  class="text-center text-xs font-black text-white"
+                  [style.grid-column]="layout().columns + layout().aislesAfter.length + 2"
+                >
                   {{ rowGroup.row }}
                 </span>
               </div>
@@ -94,6 +105,13 @@ import type { SeatCell, SeatLayout } from './seat-layout';
 
           <span class="inline-flex items-center gap-2">
             <span
+              class="h-4 w-4 rounded-t-[6px] rounded-b-[3px] border border-cyan-300 bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.85)]"
+            ></span>
+            <span class="text-cyan-300 font-bold">Người khác giữ</span>
+          </span>
+
+          <span class="inline-flex items-center gap-2">
+            <span
               class="h-4 w-4 rounded-t-[6px] rounded-b-[3px] border border-slate-700 bg-slate-800/80"
             ></span>
             <span class="text-slate-500">Đã bán</span>
@@ -110,13 +128,34 @@ export class SeatMap3DComponent {
 
   readonly rowsGrouped = computed(() => {
     const map = new Map<string, SeatCell[]>();
-    for (const s of this.seats()) {
-      const list = map.get(s.row) ?? [];
-      list.push(s);
-      map.set(s.row, list);
+    for (const seat of this.seats()) {
+      const list = map.get(seat.row) ?? [];
+      list.push(seat);
+      map.set(seat.row, list);
     }
-    return Array.from(map.entries()).map(([row, seats]) => ({ row, seats }));
+    return Array.from(map.entries()).map(([row, seats]) => ({
+      row,
+      seats: seats.sort((a, b) => a.column - b.column),
+    }));
   });
+
+  seatTrack(seat: SeatCell): number {
+    return (
+      seat.column + 1 + this.layout().aislesAfter.filter((after) => seat.column >= after).length
+    );
+  }
+
+  seatLabel(seat: SeatCell): string {
+    const type = seat.zone === 'vip' ? 'VIP' : seat.zone === 'sweetbox' ? 'Sweetbox' : 'tiêu chuẩn';
+    const status = seat.sold
+      ? 'đã bán'
+      : seat.heldByOther
+        ? 'đang được người khác giữ'
+        : seat.selected
+          ? 'đang chọn'
+          : 'trống';
+    return `Ghế ${seat.id}, ${type}, ${status}`;
+  }
 
   seatClasses(seat: SeatCell): string {
     if (seat.sold) {
@@ -124,6 +163,9 @@ export class SeatMap3DComponent {
     }
     if (seat.selected) {
       return 'border-red-500 bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.8)] scale-[1.05]';
+    }
+    if (seat.heldByOther) {
+      return 'border-cyan-300 bg-cyan-500 font-black text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.85)] animate-pulse cursor-not-allowed';
     }
     switch (seat.zone) {
       case 'sweetbox':

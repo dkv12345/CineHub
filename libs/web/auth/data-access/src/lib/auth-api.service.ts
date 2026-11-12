@@ -43,7 +43,7 @@ export function formatAuthErrorMessage(error: unknown): string {
     return AUTH_ERROR_MESSAGES[code];
   }
   if (error instanceof HttpErrorResponse && error.status === 0) {
-    return 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.';
+    return 'Chưa kết nối được máy chủ Backend. Bạn có thể nhấn nút [⭐ VIP Demo] ở bên dưới để đăng nhập trải nghiệm ngay!';
   }
   return 'Có lỗi xảy ra. Vui lòng thử lại.';
 }
@@ -74,9 +74,12 @@ export class AuthApiService {
     password: string;
     fullName: string;
     phone?: string;
-  }): Promise<{ user: AuthUserDto }> {
+  }): Promise<{ user: AuthUserDto; devOtp?: string }> {
     const res = await firstValueFrom(
-      this.http.post<{ data: { user: AuthUserDto } }>(`${this.baseUrl}/register`, payload),
+      this.http.post<{ data: { user: AuthUserDto; devOtp?: string } }>(
+        `${this.baseUrl}/register`,
+        payload,
+      ),
     );
     return res.data;
   }

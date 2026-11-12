@@ -347,22 +347,27 @@ All concurrent 401s subscribe to the same `refresh$`; one request is made and ev
 
 ## 8. Command Reference
 
-| Command                                               | Description                                |
-| :---------------------------------------------------- | :----------------------------------------- |
-| `npm run dev`                                         | `nx run-many -t serve -p web,core-api`     |
-| `npm run dev:web` / `dev:api`                         | `nx serve web` / `nx serve core-api`       |
-| `npm run build`                                       | `nx run-many -t build` (all projects)      |
-| `npm run build:web`                                   | Production Angular build (SSR)             |
-| `npm run affected:test`                               | `nx affected -t lint test build`           |
-| `npm test`                                            | Unit tests across all projects             |
-| `npm run e2e`                                         | `nx e2e web-e2e` (Playwright)              |
-| `npm run lint` / `format`                             | ESLint (angular-eslint) / Prettier         |
-| `npm run graph`                                       | `nx graph` (dependency visualization)      |
-| `npm run api:spec` / `api:client`                     | Generate OpenAPI spec / Angular API client |
-| `npm run sync:live`                                   | Ingest live Galaxy sessions                |
-| `npm run crawl:galaxy`                                | Run aggregator crawl job                   |
-| `npm run infra:up` / `infra:down`                     | Start / stop MySQL, Redis, MongoDB         |
-| `npm run db:migrate` / `seed` / `studio` / `validate` | Prisma operations (`libs/db`)              |
+| Command                                               | Description                                                   |
+| :---------------------------------------------------- | :------------------------------------------------------------ |
+| `npm run dev`                                         | `nx run-many -t serve -p web,core-api`                        |
+| `npm run dev:web` / `dev:api`                         | `nx serve web` / `nx serve core-api`                          |
+| `npm run build`                                       | `nx run-many -t build` (all projects)                         |
+| `npm run build:web`                                   | Production Angular build (SSR)                                |
+| `npm run affected:test`                               | `nx affected -t lint test build`                              |
+| `npm test`                                            | Unit tests across all projects                                |
+| `npm run e2e`                                         | `nx e2e web-e2e` (Playwright)                                 |
+| `npm run lint` / `format`                             | ESLint (angular-eslint) / Prettier                            |
+| `npm run graph`                                       | `nx graph` (dependency visualization)                         |
+| `npm run api:spec` / `api:client`                     | Generate OpenAPI spec / Angular API client                    |
+| `npm run sync:live`                                   | Regenerate the movie and live-session snapshots               |
+| `npm run crawl:galaxy`                                | Crawl Galaxy and upsert movies, cinemas, rooms, and showtimes |
+| `npm run infra:up` / `infra:down`                     | Start / stop MySQL, Redis, MongoDB                            |
+| `npm run db:migrate` / `seed` / `studio` / `validate` | Prisma operations (`libs/db`)                                 |
+
+To refresh showtimes from Galaxy, configure `.env`, start the required database services, apply
+migrations if needed, then run `npm run crawl:galaxy`. The crawler writes current provider data to
+the database and regenerates the frontend snapshots. If the live sessions API is unavailable, the
+snapshot step fails rather than shifting old seed showtimes to today's date.
 
 ## 9. Data Tier and Migrations
 
@@ -412,7 +417,7 @@ Feature Branch Workflow; **direct pushes to `main` are prohibited** (see `docs/G
 
 | Symptom                                        | Remediation                                                                              |
 | :--------------------------------------------- | :--------------------------------------------------------------------------------------- |
-| Outdated showtimes in UI                       | `npm run sync:live`                                                                      |
+| Outdated showtimes in UI                       | `npm run crawl:galaxy`, then reload the page                                             |
 | `Environment variable not found: DATABASE_URL` | `cp .env.example .env`                                                                   |
 | Port 3306 in use                               | Remap Docker to `3307:3306` and update `DATABASE_URL`, or stop native MySQL              |
 | `@prisma/client did not initialize yet`        | `npm run generate -w @cinehub/db`                                                        |

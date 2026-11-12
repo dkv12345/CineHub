@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { AccountStore } from '@cinehub/web/account/data-access';
 import { AuthStore, ToastService } from '@cinehub/web/core';
 
@@ -17,7 +19,7 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
           Tài khoản thành viên CineHub
         </h1>
         <p class="cinema-metadata text-xs">
-          Quản lý thông tin định danh, điểm tích lũy và sở thích xem phim.
+          Quản lý thông tin định danh, điểm tích lũy, mật khẩu và phiên đăng nhập.
         </p>
       </div>
 
@@ -41,7 +43,7 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               <span
                 class="mt-1.5 inline-block rounded-[3px] border border-[var(--color-brand-primary)] bg-[var(--color-brand-subtle)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--color-brand-primary)]"
               >
-                {{ authStore.user()?.tier ?? 'Gold VIP' }} ·
+                {{ authStore.user()?.role ?? 'CUSTOMER' }} ·
                 {{ authStore.user()?.points ?? 1850 }} điểm thưởng
               </span>
             </div>
@@ -63,33 +65,77 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               }}</strong>
             </div>
           </div>
+
+          <div class="space-y-2 border-t border-[var(--color-border)] pt-4">
+            <button
+              type="button"
+              (click)="logoutAllDevices()"
+              class="w-full rounded-xl border border-rose-400/50 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-300 transition hover:bg-rose-500/20"
+            >
+              Đăng xuất khỏi mọi thiết bị (Revoke Refresh Tokens)
+            </button>
+          </div>
         </div>
 
-        <!-- Update Info Panel -->
-        <div class="cinema-panel p-6 md:col-span-7 space-y-4 shadow-xs">
-          <div>
-            <span class="cinema-eyebrow">Cập nhật hồ sơ</span>
-            <h2 class="cinema-card-title text-[var(--color-text-primary)]">Thông tin liên hệ</h2>
+        <!-- Update Info & Password Panel -->
+        <div class="md:col-span-7 space-y-6">
+          <div class="cinema-panel p-6 space-y-4 shadow-xs">
+            <div>
+              <span class="cinema-eyebrow">Cập nhật hồ sơ</span>
+              <h2 class="cinema-card-title text-[var(--color-text-primary)]">Thông tin liên hệ</h2>
+            </div>
+
+            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="space-y-4">
+              <div>
+                <label for="prof-name" class="cinema-label">Họ và tên</label>
+                <input id="prof-name" type="text" formControlName="fullName" class="cinema-input" />
+              </div>
+
+              <div>
+                <label for="prof-phone" class="cinema-label">Số điện thoại</label>
+                <input id="prof-phone" type="tel" formControlName="phone" class="cinema-input" />
+              </div>
+
+              <div class="flex flex-wrap items-center gap-3 pt-2">
+                <button type="submit" class="cinema-btn-primary font-bold">Lưu thay đổi</button>
+                <a routerLink="/my-tickets" class="cinema-btn-secondary font-semibold">
+                  Lịch sử đặt vé
+                </a>
+                <a routerLink="/staff/checkin" class="cinema-btn-secondary font-semibold">
+                  Cổng soát vé QR
+                </a>
+              </div>
+            </form>
           </div>
 
-          <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="space-y-4">
+          <div class="cinema-panel p-6 space-y-4 shadow-xs">
             <div>
-              <label for="prof-name" class="cinema-label">Họ và tên</label>
-              <input id="prof-name" type="text" formControlName="fullName" class="cinema-input" />
+              <span class="cinema-eyebrow">Bảo mật tài khoản · FR-AUTH-07</span>
+              <h2 class="cinema-card-title text-[var(--color-text-primary)]">Đổi mật khẩu</h2>
             </div>
 
-            <div>
-              <label for="prof-phone" class="cinema-label">Số điện thoại</label>
-              <input id="prof-phone" type="tel" formControlName="phone" class="cinema-input" />
-            </div>
-
-            <div class="flex items-center gap-3 pt-2">
-              <button type="submit" class="cinema-btn-primary font-bold">Lưu thay đổi</button>
-              <a routerLink="/my-tickets" class="cinema-btn-secondary font-semibold">
-                Lịch sử đặt vé
-              </a>
-            </div>
-          </form>
+            <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="space-y-4">
+              <div>
+                <label for="curr-pw" class="cinema-label">Mật khẩu hiện tại</label>
+                <input
+                  id="curr-pw"
+                  type="password"
+                  formControlName="currentPassword"
+                  class="cinema-input"
+                />
+              </div>
+              <div>
+                <label for="new-pw" class="cinema-label">Mật khẩu mới</label>
+                <input
+                  id="new-pw"
+                  type="password"
+                  formControlName="newPassword"
+                  class="cinema-input"
+                />
+              </div>
+              <button type="submit" class="cinema-btn-primary font-bold">Cập nhật mật khẩu</button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -100,10 +146,17 @@ export class ProfilePageComponent {
   readonly accountStore = inject(AccountStore);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly http = inject(HttpClient, { optional: true });
 
   readonly profileForm = this.fb.nonNullable.group({
     fullName: [this.authStore.user()?.fullName ?? 'Đỗ Khánh Vi'],
     phone: [this.authStore.user()?.phone ?? '0909123456'],
+  });
+
+  readonly passwordForm = this.fb.nonNullable.group({
+    currentPassword: [''],
+    newPassword: [''],
   });
 
   saveProfile(): void {
@@ -112,6 +165,48 @@ export class ProfilePageComponent {
       fullName: raw.fullName,
       phone: raw.phone,
     });
+    if (this.http) {
+      void firstValueFrom(
+        this.http.patch('/api/v1/member/profile', {
+          fullName: raw.fullName,
+          phone: raw.phone,
+        }),
+      ).catch(() => null);
+    }
     this.toast.show('Đã lưu thông tin hồ sơ thành công!', 'success');
+  }
+
+  async changePassword(): Promise<void> {
+    const raw = this.passwordForm.getRawValue();
+    if (!raw.currentPassword || !raw.newPassword) {
+      this.toast.show('Vui lòng nhập mật khẩu hiện tại và mật khẩu mới.', 'warning');
+      return;
+    }
+    if (!this.http) return;
+    try {
+      await firstValueFrom(
+        this.http.post('/api/v1/member/change-password', {
+          currentPassword: raw.currentPassword,
+          newPassword: raw.newPassword,
+        }),
+      );
+      this.passwordForm.reset({ currentPassword: '', newPassword: '' });
+      this.toast.show('Đổi mật khẩu thành công!', 'success');
+    } catch (err) {
+      const httpErr = err as HttpErrorResponse;
+      this.toast.show(
+        httpErr?.error?.error?.message || 'Mật khẩu hiện tại không chính xác.',
+        'error',
+      );
+    }
+  }
+
+  async logoutAllDevices(): Promise<void> {
+    if (this.http) {
+      await firstValueFrom(this.http.post('/api/v1/member/logout-all', {})).catch(() => null);
+    }
+    this.authStore.clearSession();
+    this.toast.show('Đã đăng xuất khỏi tất cả thiết bị!', 'info');
+    void this.router.navigateByUrl('/auth?mode=login');
   }
 }

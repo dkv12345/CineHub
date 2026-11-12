@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { Movie } from '@cinehub/web/shared/util';
+import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
 
 @Component({
   selector: 'ch-movie-card',
@@ -54,7 +55,7 @@ import type { Movie } from '@cinehub/web/shared/util';
         >
           <a
             [routerLink]="movie().status === 'now' ? ['/showtimes'] : ['/movie', movie().id]"
-            [queryParams]="movie().status === 'now' ? { movieId: movie().id } : null"
+            [queryParams]="movie().status === 'now' ? buildShowtimesQueryParams(movie()) : null"
             class="inline-flex min-w-36 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-4 py-2.5 text-xs font-black text-white shadow-lg transition hover:brightness-125"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -123,6 +124,10 @@ export class MovieCardComponent {
   readonly favoriteChange = output<boolean>();
 
   readonly isFavorite = signal(false);
+
+  buildShowtimesQueryParams(movie: Movie): Record<string, string> {
+    return buildShowtimesQueryParams(movie);
+  }
 
   toggleFavorite(): void {
     this.isFavorite.update((f) => !f);
