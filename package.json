@@ -30,6 +30,7 @@
     "sync:live": "node tools/sync-data.js",
     "infra:up": "docker compose -f infra/docker/docker-compose.yml --env-file .env up -d",
     "infra:down": "docker compose -f infra/docker/docker-compose.yml --env-file .env down",
+    "db:push": "npm run push -w @cinehub/db",
     "db:migrate": "npm run migrate -w @cinehub/db",
     "db:seed": "npm run seed -w @cinehub/db",
     "db:studio": "npm run studio -w @cinehub/db",

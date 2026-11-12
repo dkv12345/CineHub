@@ -170,7 +170,7 @@ interface MovieGroup {
           />
         </div>
 
-        @if (store.loading()) {
+        @if (store.loading() && store.sessions().length === 0) {
           <div
             role="status"
             class="rounded-2xl border border-white/15 bg-slate-900/80 p-10 text-center text-sm font-bold text-slate-200"
@@ -189,6 +189,11 @@ interface MovieGroup {
             </button>
           </div>
         } @else if (cinemaGroups().length > 0) {
+          @if (store.loading()) {
+            <p role="status" class="mb-4 text-xs font-bold text-amber-300/90">
+              Đang đồng bộ suất chiếu mới nhất…
+            </p>
+          }
           <div class="space-y-5">
             @for (group of cinemaGroups(); track group.id) {
               <section
@@ -532,8 +537,7 @@ export class ShowtimesPageComponent implements OnInit {
         movieId !== previousMovieId &&
         movieId !== 'all' &&
         !date &&
-        this.store.fetchedAt() &&
-        !this.store.loading()
+        this.store.sessions().length > 0
       ) {
         this.selectEarliestDateIfAvailable();
       }

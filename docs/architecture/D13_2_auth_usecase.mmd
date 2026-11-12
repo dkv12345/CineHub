@@ -1,0 +1,36 @@
+flowchart LR
+    %% CineHub Auth & Profile Use Case Diagram (3.6.2)
+    Actor_User["Người dùng<br/>(User / Guest)"]
+    Actor_OAuth["Google Identity<br/>(OAuth 2.0)"]
+    Actor_Mail["Mail Server<br/>(Nodemailer)"]
+
+    subgraph Boundary_Auth ["PHÂN HỆ XÁC THỰC & TÀI KHOẢN (AUTH & PROFILE)"]
+        UC_Register(["Đăng ký tài khoản"])
+        UC_Login(["Đăng nhập hệ thống"])
+        UC_Login_Local(["Đăng nhập bằng Email/Password"])
+        UC_Login_Google(["Đăng nhập bằng Google"])
+        UC_Forgot(["Quên / Đặt lại mật khẩu"])
+        UC_SendOTP(["Gửi mã OTP qua Email"])
+        UC_Profile(["Cập nhật hồ sơ cá nhân"])
+        UC_ChangePass(["Đổi mật khẩu"])
+        UC_Logout(["Đăng xuất"])
+        UC_Validate(["Xác thực tính hợp lệ biểu mẫu"])
+    end
+
+    Actor_User --> UC_Register
+    Actor_User --> UC_Login
+    Actor_User --> UC_Forgot
+    Actor_User --> UC_Profile
+    Actor_User --> UC_ChangePass
+    Actor_User --> UC_Logout
+
+    UC_Login_Local -.->|is-a| UC_Login
+    UC_Login_Google -.->|is-a| UC_Login
+
+    UC_Register -.->|<<include>>| UC_Validate
+    UC_Forgot -.->|<<include>>| UC_SendOTP
+    UC_ChangePass -.->|<<include>>| UC_Login
+
+    UC_Login_Google <--> Actor_OAuth
+    UC_SendOTP --> Actor_Mail
+

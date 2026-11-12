@@ -74,9 +74,12 @@ export class AuthApiService {
     password: string;
     fullName: string;
     phone?: string;
-  }): Promise<{ user: AuthUserDto }> {
+  }): Promise<{ user: AuthUserDto; devOtp?: string }> {
     const res = await firstValueFrom(
-      this.http.post<{ data: { user: AuthUserDto } }>(`${this.baseUrl}/register`, payload),
+      this.http.post<{ data: { user: AuthUserDto; devOtp?: string } }>(
+        `${this.baseUrl}/register`,
+        payload,
+      ),
     );
     return res.data;
   }

@@ -1,0 +1,63 @@
+flowchart TB
+    %% =========================================================================
+    %% ANGULAR NX ARCHITECTURE & DEPENDENCY FLOW
+    %% =========================================================================
+
+    subgraph AppRoot ["apps/web (Application Shell & Bootstrapping)"]
+        Main["main.ts / app.config.ts<br/>(provideHttpClient, provideRouter, provideClientHydration)"]
+        Routes["app.routes.ts<br/>(Lazy-loaded routes with Functional CanMatch / CanActivate Guards)"]
+        Interceptors["Functional HTTP Interceptors<br/>• authInterceptor (Bearer Token Injection)<br/>• errorInterceptor (401 Refresh Single-Flight Queue)"]
+    end
+
+    subgraph LibsLayer ["libs/web (Modular Nx Enterprise Libraries)"]
+
+        subgraph FeatureLibs ["1. Feature Libraries (libs/web/*/feature)"]
+            F_Catalog["catalog/feature<br/>• HomePageComponent<br/>• MovieDetailPageComponent"]
+            F_Showtimes["showtimes/feature<br/>• ShowtimeSelectComponent"]
+            F_Booking["booking/feature<br/>• SeatSelectionComponent (2D/3D)<br/>• CheckoutComponent"]
+            F_Auth["auth/feature<br/>• LoginComponent, RegisterComponent"]
+            F_Tickets["tickets/feature<br/>• TicketDetailComponent, StaffScanComponent"]
+        end
+
+        subgraph DataAccessLibs ["2. Data-Access Libraries (libs/web/*/data-access)"]
+            DA_Catalog["catalog.service.ts / catalog.store.ts"]
+            DA_Showtimes["showtimes.service.ts / showtimes.store.ts"]
+            DA_Booking["booking.service.ts / booking.store.ts<br/>(NgRx SignalStore: holdCountdown, leaseStatus)"]
+            DA_Auth["auth.service.ts / auth.store.ts<br/>(SignalStore: user, accessToken, isAuthenticated)"]
+        end
+
+        subgraph UILibs ["3. Presentational UI Libraries (libs/web/*/ui)"]
+            UI_MovieCard["MovieCardComponent, MovieFilterComponent"]
+            UI_SeatMap["SeatGridComponent, CountdownTimerComponent"]
+            UI_Seat3D["libs/web/seat-3d (Three.js WebGL Canvas)"]
+            UI_Common["BadgeComponent, ModalComponent, SkeletonLoaderComponent"]
+        end
+
+        subgraph UtilLibs ["4. Utility Libraries (libs/web/*/util)"]
+            U_Formatters["currency.pipe.ts, date-time.pipe.ts"]
+            U_Validators["custom-form-validators.ts"]
+            U_Constants["api-endpoints.ts, storage-keys.ts"]
+        end
+    end
+
+    %% Flow connections
+    AppRoot --> FeatureLibs
+    FeatureLibs --> DataAccessLibs
+    FeatureLibs --> UILibs
+    FeatureLibs --> UtilLibs
+    DataAccessLibs --> UtilLibs
+    UILibs --> UtilLibs
+
+    %% Strict Architectural Boundary Rule Callout
+    classDef app fill:#e0f2fe,stroke:#0288d1,stroke-width:2px;
+    classDef feature fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px;
+    classDef data fill:#fef3c7,stroke:#d97706,stroke-width:1.5px;
+    classDef ui fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px;
+    classDef util fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px;
+
+    class AppRoot,Main,Routes,Interceptors app;
+    class F_Catalog,F_Showtimes,F_Booking,F_Auth,F_Tickets feature;
+    class DA_Catalog,DA_Showtimes,DA_Booking,DA_Auth data;
+    class UI_MovieCard,UI_SeatMap,UI_Seat3D,UI_Common ui;
+    class U_Formatters,U_Validators,U_Constants util;
+

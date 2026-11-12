@@ -1,0 +1,34 @@
+flowchart LR
+    %% CineHub Seat Selection & Booking Use Case Diagram (3.6.4)
+    Actor_Cust["Thành viên<br/>(Customer)"]
+    Actor_Redis["Redis Server<br/>(Lock Leases 15m)"]
+
+    subgraph Boundary_Booking ["PHÂN HỆ CHỌN GHẾ & ĐẶT VÉ (BOOKING ENGINE)"]
+        UC_SelectShowtime(["Chọn suất chiếu"])
+        UC_ViewSeatMap(["Xem sơ đồ ghế thời gian thực"])
+        UC_SelectSeats(["Chọn vị trí ghế ngồi"])
+        UC_LockSeats(["Khóa giữ ghế 15 phút<br/>(SET NX EX 900)"])
+        UC_CheckSeatRule(["Kiểm tra ràng buộc ghế đơn"])
+        UC_SelectConcession(["Chọn Combo bắp nước"])
+        UC_Preview3D(["Xem mô phỏng góc nhìn 3D"])
+        UC_ProceedBooking(["Xác nhận đặt vé & Chuyển thanh toán"])
+        UC_Authenticate(["Xác thực tài khoản<br/>(Authentication)"])
+    end
+
+    Actor_Cust --> UC_SelectShowtime
+    Actor_Cust --> UC_ViewSeatMap
+    Actor_Cust --> UC_SelectSeats
+    Actor_Cust --> UC_SelectConcession
+    Actor_Cust --> UC_ProceedBooking
+
+    %% <<include>>
+    UC_SelectSeats -.->|<<include>>| UC_LockSeats
+    UC_SelectSeats -.->|<<include>>| UC_CheckSeatRule
+    UC_ProceedBooking -.->|<<include>>| UC_Authenticate
+
+    %% <<extend>>
+    UC_Preview3D -.->|<<extend>>| UC_SelectSeats
+
+    %% Redis State
+    UC_LockSeats <--> Actor_Redis
+

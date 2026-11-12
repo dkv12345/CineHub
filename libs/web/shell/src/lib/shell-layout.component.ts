@@ -195,6 +195,22 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                     >
                       Vé của tôi
                     </a>
+                    @if (authStore.user()?.role === 'STAFF' || authStore.user()?.role === 'ADMIN') {
+                      <a
+                        routerLink="/staff/checkin"
+                        class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-amber-300 transition hover:bg-white/10"
+                      >
+                        Soát vé QR (Staff)
+                      </a>
+                    }
+                    @if (authStore.user()?.role === 'ADMIN') {
+                      <a
+                        routerLink="/admin"
+                        class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-emerald-300 transition hover:bg-white/10"
+                      >
+                        Quản trị hệ thống (Admin)
+                      </a>
+                    }
                     <button
                       type="button"
                       (click)="logout()"
@@ -256,6 +272,24 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               <a routerLink="/my-tickets" class="py-1.5 text-white/80 hover:text-amber-300"
                 >Vé của tôi</a
               >
+              @if (!authStore.isAuthenticated()) {
+                <div class="mt-2 flex items-center gap-3 border-t border-white/10 pt-3">
+                  <a
+                    [routerLink]="['/auth']"
+                    [queryParams]="{ mode: 'login' }"
+                    class="flex-1 rounded-xl bg-[#e50914] px-4 py-2 text-center text-xs font-black text-white"
+                  >
+                    Đăng nhập
+                  </a>
+                  <a
+                    [routerLink]="['/auth']"
+                    [queryParams]="{ mode: 'register' }"
+                    class="flex-1 rounded-xl border border-white/25 px-4 py-2 text-center text-xs font-black text-white"
+                  >
+                    Đăng ký
+                  </a>
+                </div>
+              }
             </div>
           </nav>
         }

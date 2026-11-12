@@ -1,4 +1,3 @@
-import { A11yModule } from '@angular/cdk/a11y';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -45,13 +44,12 @@ export const AUTH_FEATURED_MOVIES: Movie[] = (() => {
 @Component({
   selector: 'ch-auth-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, A11yModule],
+  imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- Main Canvas: Không gian điện ảnh sống động thay đổi theo thời gian -->
     <div
-      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 select-none overflow-x-hidden bg-[#030712]"
-      cdkTrapFocus
+      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center p-4 pb-20 sm:p-6 sm:pb-24 lg:p-8 overflow-x-hidden bg-[#030712]"
     >
       <!-- ── DYNAMIC FULL-SCREEN MOVIE BACKDROP SLIDESHOW ── -->
       <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -526,7 +524,23 @@ export const AUTH_FEATURED_MOVIES: Movie[] = (() => {
                   [disabled]="submitting()"
                   class="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#e50914] via-[#f43f5e] to-[#e50914] py-2.5 sm:py-3 text-sm font-bold text-white shadow-[0_0_25px_rgba(229,9,20,0.5)] transition-all hover:shadow-[0_0_35px_rgba(229,9,20,0.75)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 border border-red-400/40"
                 >
-                  <span>Đăng ký ngay</span>
+                  @if (submitting()) {
+                    <span class="inline-flex items-center gap-2">
+                      <svg
+                        class="h-4 w-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
+                        <path d="M12 2a10 10 0 0 1 10 10" />
+                      </svg>
+                      <span>Đang tạo tài khoản...</span>
+                    </span>
+                  } @else {
+                    <span>Đăng ký ngay</span>
+                  }
                 </button>
               </div>
             </form>
@@ -661,7 +675,7 @@ export const AUTH_FEATURED_MOVIES: Movie[] = (() => {
             <button
               type="button"
               (click)="signInDemoCustomer()"
-              title="Đăng nhập nhanh tài khoản VIP Demo"
+              title="Đăng nhập nhanh tài khoản Demo Customer A"
               class="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/70 bg-gradient-to-br from-[#2a1b02] via-[#3a2503] to-[#1a1000] text-amber-300 shadow-[0_4px_16px_rgba(245,158,11,0.3)] transition-all hover:scale-110 hover:border-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.7)] active:scale-95"
             >
               <svg
@@ -671,6 +685,49 @@ export const AUTH_FEATURED_MOVIES: Movie[] = (() => {
                 <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.5-6.2 4.5 2.3-7.1-6.1-4.5h7.6z" />
               </svg>
             </button>
+          </div>
+
+          <!-- Tài khoản demo thật từ MySQL (dễ test đa luồng & 2 trình duyệt) -->
+          <div class="mt-4 rounded-xl border border-white/10 bg-black/40 p-2.5">
+            <p
+              class="mb-2 text-center text-[10px] font-bold uppercase tracking-wider text-white/55"
+            >
+              Đăng nhập nhanh tài khoản Demo
+            </p>
+            <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              <button
+                type="button"
+                [disabled]="submitting()"
+                (click)="signInDemoAccount('customer.a@cinehub.vn')"
+                class="rounded-lg border border-amber-400/40 bg-amber-400/10 px-2 py-1.5 text-[11px] font-bold text-amber-200 transition hover:bg-amber-400/20 disabled:opacity-50"
+              >
+                Khách A
+              </button>
+              <button
+                type="button"
+                [disabled]="submitting()"
+                (click)="signInDemoAccount('customer.b@cinehub.vn')"
+                class="rounded-lg border border-sky-400/40 bg-sky-400/10 px-2 py-1.5 text-[11px] font-bold text-sky-200 transition hover:bg-sky-400/20 disabled:opacity-50"
+              >
+                Khách B
+              </button>
+              <button
+                type="button"
+                [disabled]="submitting()"
+                (click)="signInDemoAccount('staff@cinehub.vn')"
+                class="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-2 py-1.5 text-[11px] font-bold text-emerald-200 transition hover:bg-emerald-400/20 disabled:opacity-50"
+              >
+                Nhân viên
+              </button>
+              <button
+                type="button"
+                [disabled]="submitting()"
+                (click)="signInDemoAccount('admin@cinehub.vn')"
+                class="rounded-lg border border-rose-400/40 bg-rose-400/10 px-2 py-1.5 text-[11px] font-bold text-rose-200 transition hover:bg-rose-400/20 disabled:opacity-50"
+              >
+                Admin
+              </button>
+            </div>
           </div>
 
           <!-- ── Dòng chuyển đổi chân trang ── -->
@@ -956,18 +1013,36 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       );
       return;
     }
+    const raw = this.registerForm.getRawValue();
+    const cleanPhone = raw.phone.replace(/[\s.-]+/g, '').trim();
+    if (raw.fullName.trim().length < 2) {
+      this.errorBanner.set('Họ và tên phải có ít nhất 2 ký tự.');
+      return;
+    }
+    if (cleanPhone && !/^(0|\+84)[0-9]{9,10}$/.test(cleanPhone)) {
+      this.errorBanner.set('Số điện thoại không hợp lệ (ví dụ: 0901234567).');
+      return;
+    }
     this.submitting.set(true);
     this.errorBanner.set(null);
-    const raw = this.registerForm.getRawValue();
     try {
-      await this.authApi.register({
-        fullName: raw.fullName,
-        email: raw.email,
+      const result = await this.authApi.register({
+        fullName: raw.fullName.trim(),
+        email: raw.email.trim(),
         password: raw.password,
-        phone: raw.phone || undefined,
+        phone: cleanPhone || undefined,
       });
-      this.toast.show('Đăng ký thành công! Vui lòng nhập mã OTP từ email.', 'success');
-      void this.router.navigate(['/verify-email'], { queryParams: { email: raw.email } });
+      if (result.devOtp) {
+        this.toast.show(`Đăng ký thành công! Mã OTP xác thực: ${result.devOtp}`, 'success');
+      } else {
+        this.toast.show('Đăng ký thành công! Vui lòng nhập mã OTP từ email.', 'success');
+      }
+      void this.router.navigate(['/verify-email'], {
+        queryParams: {
+          email: raw.email.trim(),
+          ...(result.devOtp ? { code: result.devOtp } : {}),
+        },
+      });
     } catch (error: unknown) {
       this.errorBanner.set(formatAuthErrorMessage(error));
     } finally {
@@ -995,17 +1070,31 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   signInDemoCustomer(): void {
-    this.authStore.setSession('demo-jwt-access-token', {
-      id: 'demo-user-01',
-      email: 'khanhvi@cinehub.vn',
-      fullName: 'Đỗ Khánh Vi',
-      phone: '0909123456',
-      role: 'CUSTOMER',
-      points: 1850,
-      tier: 'Gold VIP',
-    });
-    this.toast.show('Đã đăng nhập tài khoản Demo VIP!', 'success');
-    void this.router.navigateByUrl('/');
+    void this.signInDemoAccount('customer.a@cinehub.vn');
+  }
+
+  async signInDemoAccount(email: string): Promise<void> {
+    this.submitting.set(true);
+    this.errorBanner.set(null);
+    try {
+      const session = await this.authApi.login({
+        email,
+        password: 'Password123!',
+      });
+      this.authStore.setSession(session.accessToken, session.user);
+      this.toast.show(`Xin chào, ${session.user.fullName}!`, 'success');
+      const targetUrl =
+        session.user.role === 'STAFF'
+          ? '/staff/checkin'
+          : session.user.role === 'ADMIN'
+            ? '/admin'
+            : '/';
+      void this.router.navigateByUrl(targetUrl);
+    } catch (error: unknown) {
+      this.errorBanner.set(formatAuthErrorMessage(error));
+    } finally {
+      this.submitting.set(false);
+    }
   }
 
   private async handleGoogleCredential(idToken: string): Promise<void> {

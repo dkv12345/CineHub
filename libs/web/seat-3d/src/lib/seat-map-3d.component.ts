@@ -77,7 +77,13 @@ export class SeatMap3DComponent {
 
   seatLabel(seat: SeatCell): string {
     const type = seat.zone === 'vip' ? 'VIP' : seat.zone === 'sweetbox' ? 'Sweetbox' : 'tiêu chuẩn';
-    const status = seat.sold ? 'đã bán' : seat.selected ? 'đang chọn' : 'trống';
+    const status = seat.sold
+      ? 'đã bán'
+      : seat.heldByOther
+        ? 'đang được người khác giữ'
+        : seat.selected
+          ? 'đang chọn'
+          : 'trống';
     return `Ghế ${seat.id}, ${type}, ${status}`;
   }
 
@@ -87,6 +93,9 @@ export class SeatMap3DComponent {
     }
     if (seat.selected) {
       return 'border-red-500 bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.8)]';
+    }
+    if (seat.heldByOther) {
+      return 'border-cyan-300 bg-cyan-500 font-black text-slate-950 shadow-[0_0_12px_rgba(6,182,212,0.85)] animate-pulse';
     }
     switch (seat.zone) {
       case 'sweetbox':

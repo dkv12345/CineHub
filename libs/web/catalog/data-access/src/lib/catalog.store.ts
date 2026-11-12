@@ -96,7 +96,11 @@ export const CatalogStore = signalStore(
 
       findMovieById(id: string | number): Movie | null {
         const target = String(id);
-        return store.movies().find((m) => String(m.id) === target || m.slug === target) ?? null;
+        return (
+          store
+            .movies()
+            .find((m) => String(m.id) === target || m.dbId === target || m.slug === target) ?? null
+        );
       },
 
       isMovieNotified(id: string | number): boolean {

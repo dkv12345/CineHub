@@ -9,12 +9,13 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { applyVoucherSchema } from '@cinehub/contracts';
-import { BookingStore } from '@cinehub/web/booking/data-access';
+import { BookingStore, type IssuedTicket } from '@cinehub/web/booking/data-access';
 import { ConcessionsStore } from '@cinehub/web/concessions/data-access';
 import { ToastService } from '@cinehub/web/core';
 import { fmt, zodFormGroupValidator } from '@cinehub/web/shared/util';
-import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'ch-checkout-page',
@@ -85,7 +86,7 @@ import { HttpClient } from '@angular/common/http';
           </nav>
         </div>
 
-        <!-- Thông báo Trạng thái thanh toán từ MoMo Redirect (Thành công / Hủy) -->
+        <!-- Thông báo Trạng thái thanh toán từ Redirect (Thành công / Hủy) -->
         @if (paymentStatusMessage()) {
           <div
             class="mb-6 rounded-2xl border p-4 backdrop-blur-xl shadow-xl transition"
@@ -108,7 +109,6 @@ import { HttpClient } from '@angular/common/http';
           </div>
         }
 
-        <!-- Bố cục 2 Cột giống nhaky_concession -->
         <div class="grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
           <!-- Cột trái: Thông tin đơn hàng chi tiết -->
           <div class="flex flex-col gap-6">
@@ -132,7 +132,16 @@ import { HttpClient } from '@angular/common/http';
             <section
               class="rounded-3xl border-2 border-slate-700 bg-slate-900/80 p-6 shadow-2xl backdrop-blur-xl"
             >
-              <h2 class="text-lg font-black text-amber-300">Thông tin đơn hàng</h2>
+              <div class="flex items-center justify-between">
+                <h2 class="text-lg font-black text-amber-300">Thông tin đơn hàng</h2>
+                @if (bookingStore.bookingCode()) {
+                  <span
+                    class="rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-1 font-mono text-xs font-black text-amber-300"
+                  >
+                    Mã giữ chỗ: {{ bookingStore.bookingCode() }}
+                  </span>
+                }
+              </div>
 
               <dl class="mt-4 divide-y divide-white/10 text-sm">
                 <div class="flex justify-between gap-6 py-3.5">
@@ -230,7 +239,7 @@ import { HttpClient } from '@angular/common/http';
                 <input
                   type="text"
                   formControlName="code"
-                  placeholder="CINEHUB20"
+                  placeholder="CINEHUB50 / GALAXY30 / VIP2026"
                   class="flex-1 rounded-xl border border-white/20 bg-slate-900 px-3 py-2 text-xs font-bold text-white uppercase placeholder-white/40 focus:border-amber-400 focus:outline-none"
                 />
                 <button
@@ -261,7 +270,7 @@ import { HttpClient } from '@angular/common/http';
               </div>
               @if (bookingStore.discountAmount() > 0) {
                 <div class="flex justify-between text-emerald-400">
-                  <span>Giảm giá:</span>
+                  <span>Giảm giá ({{ bookingStore.voucherCode() }}):</span>
                   <span>− {{ formatCurrency(bookingStore.discountAmount()) }}</span>
                 </div>
               }
@@ -281,10 +290,10 @@ import { HttpClient } from '@angular/common/http';
             <button
               type="button"
               (click)="confirmPayment()"
-              [disabled]="bookingStore.selectedSeats().length === 0"
-              class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 py-4 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+              [disabled]="bookingStore.selectedSeats().length === 0 || submittingPayment()"
+              class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 py-4 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125 disabled:opacity-50"
             >
-              Thanh toán ngay
+              {{ submittingPayment() ? 'Đang xử lý giao dịch...' : 'Thanh toán ngay' }}
             </button>
 
             <button
@@ -313,6 +322,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
   readonly voucherMessage = signal<string | null>(null);
   readonly paymentStatusMessage = signal<string | null>(null);
   readonly isPaymentSuccess = signal<boolean>(false);
+  readonly submittingPayment = signal<boolean>(false);
 
   readonly gateways = [
     {
@@ -336,6 +346,13 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       badge: 'bg-[#a50064]',
       mark: 'M',
     },
+    {
+      code: 'DEMO' as const,
+      name: 'VietQR / Xác nhận nhanh (Demo)',
+      desc: 'Chốt đơn MySQL & phát vé QR tức thì',
+      badge: 'bg-emerald-600',
+      mark: 'QR',
+    },
   ];
 
   readonly voucherForm = this.fb.nonNullable.group(
@@ -353,13 +370,19 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.holdTimer = setInterval(() => this.bookingStore.decrementHold(), 1000);
+    this.holdTimer = setInterval(() => {
+      const tick = this.bookingStore.decrementHold();
+      if (tick.expiredNow) {
+        this.toast.show('Thời gian giữ ghế đã hết hạn. Vui lòng chọn lại ghế.', 'warning');
+        void this.router.navigateByUrl('/showtimes');
+      }
+    }, 1000);
 
-    // Hứng Query Parameters do MoMo, ZaloPay hoặc VNPay gửi ngược về trang /checkout khi Hủy hoặc Thành công
+    // Hứng Query Parameters do MoMo, ZaloPay hoặc VNPay gửi ngược về trang /checkout
     this.route.queryParams.subscribe((params) => {
-      const resultCode = params['resultCode']; // MoMo parameter
-      const zalopayStatus = params['status']; // ZaloPay parameter
-      const vnpResponseCode = params['vnp_ResponseCode']; // VNPay parameter ('00' là thành công)
+      const resultCode = params['resultCode']; // MoMo
+      const zalopayStatus = params['status']; // ZaloPay
+      const vnpResponseCode = params['vnp_ResponseCode']; // VNPay ('00' là thành công)
 
       if (
         resultCode !== undefined ||
@@ -368,23 +391,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       ) {
         const isSuccess =
           Number(resultCode) === 0 || Number(zalopayStatus) === 1 || vnpResponseCode === '00';
-
-        if (isSuccess) {
-          this.isPaymentSuccess.set(true);
-          this.paymentStatusMessage.set('🎉 Thanh toán thành công! Hệ thống đang xử lý đơn vé.');
-
-          const ticket = this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
-          this.concessionsStore.clearConcessions();
-          this.toast.show(`Thanh toán thành công! Mã đơn vé: ${ticket.bookingCode}`, 'success');
-          void this.router.navigate(['/result', ticket.id]);
-        } else {
-          // Giao dịch bị Hủy hoặc Thất bại
-          this.isPaymentSuccess.set(false);
-          this.paymentStatusMessage.set(
-            '⚠️ Giao dịch thanh toán bị hủy hoặc không thành công. Vui lòng thử lại hoặc chọn phương thức khác.',
-          );
-          this.toast.show('Giao dịch thanh toán đã bị hủy.', 'warning');
-        }
+        void this.handleGatewayReturn(params, isSuccess);
       }
     });
   }
@@ -393,113 +400,194 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
     if (this.holdTimer) clearInterval(this.holdTimer);
   }
 
-  applyVoucher(): void {
+  private async handleGatewayReturn(
+    params: Record<string, string | undefined>,
+    isSuccess: boolean,
+  ): Promise<void> {
+    const gateway =
+      params['vnp_ResponseCode'] !== undefined
+        ? 'VNPAY'
+        : params['resultCode'] !== undefined
+          ? 'MOMO'
+          : 'ZALOPAY';
+
+    const orderIdFromGateway =
+      params['vnp_TxnRef'] ||
+      params['orderId'] ||
+      params['apptransid'] ||
+      this.bookingStore.bookingCode() ||
+      this.bookingStore.bookingId();
+
+    try {
+      const verifyRes = await firstValueFrom(
+        this.http.post<{
+          data?: {
+            status: string;
+            ticket?: IssuedTicket;
+          };
+        }>('/api/v1/payments/verify-return', {
+          gateway,
+          bookingId: this.bookingStore.bookingId() || undefined,
+          bookingCode: orderIdFromGateway || this.bookingStore.bookingCode() || undefined,
+          success: isSuccess,
+          amount: this.grandTotal(),
+          gatewayTxId: params['vnp_TransactionNo'] || params['transId'] || undefined,
+          query: params,
+        }),
+      );
+
+      if (isSuccess) {
+        this.isPaymentSuccess.set(true);
+        this.paymentStatusMessage.set('🎉 Thanh toán thành công! Hệ thống đang phát hành vé QR.');
+
+        const serverTicket = verifyRes?.data?.ticket;
+        const ticket =
+          serverTicket ?? this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
+        if (serverTicket) {
+          this.bookingStore.recordServerConfirmedTicket(serverTicket);
+        }
+        this.concessionsStore.clearConcessions();
+        this.toast.show(`Thanh toán thành công! Mã đơn vé: ${ticket.bookingCode}`, 'success');
+        void this.router.navigate(['/result', ticket.id]);
+      } else {
+        this.isPaymentSuccess.set(false);
+        this.paymentStatusMessage.set(
+          '⚠️ Giao dịch thanh toán bị hủy hoặc không thành công. Ghế của bạn vẫn đang được giữ, vui lòng thử lại.',
+        );
+        this.toast.show(
+          'Giao dịch thanh toán đã bị hủy. Bạn có thể chọn thanh toán lại.',
+          'warning',
+        );
+      }
+    } catch {
+      if (isSuccess) {
+        const ticket = this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
+        this.concessionsStore.clearConcessions();
+        this.toast.show(`Thanh toán thành công! Mã đơn vé: ${ticket.bookingCode}`, 'success');
+        void this.router.navigate(['/result', ticket.id]);
+      } else {
+        this.isPaymentSuccess.set(false);
+        this.paymentStatusMessage.set(
+          '⚠️ Giao dịch thanh toán bị hủy hoặc không thành công. Vui lòng thử lại.',
+        );
+        this.toast.show('Giao dịch thanh toán đã bị hủy.', 'warning');
+      }
+    }
+  }
+
+  async applyVoucher(): Promise<void> {
     const raw = this.voucherForm.controls.code.value;
-    const res = this.bookingStore.applyVoucher(raw);
+    const res = await this.bookingStore.validateVoucherOnServer(
+      raw,
+      this.concessionsStore.totalAmount(),
+    );
     this.voucherMessage.set(res.message);
     this.toast.show(res.message, res.ok ? 'success' : 'warning');
   }
 
-  confirmPayment(): void {
+  async confirmPayment(): Promise<void> {
     if (this.bookingStore.selectedSeats().length === 0) {
       this.toast.show('Vui lòng chọn ít nhất một ghế trước khi thanh toán.', 'warning');
       return;
     }
 
+    this.submittingPayment.set(true);
+
+    // Bước 1: Chốt đơn hàng, bắp nước và voucher trên MySQL (WS5)
+    const concessionsPayload = this.concessionsStore.selectedItems().map((c) => ({
+      concessionId: c.id,
+      name: c.name,
+      quantity: c.quantity,
+      unitPrice: c.price,
+    }));
+
+    const checkoutRes = await this.bookingStore.checkoutOnServer(concessionsPayload);
+    if (!checkoutRes.ok) {
+      this.submittingPayment.set(false);
+      this.toast.show(checkoutRes.message || 'Không thể tạo đơn thanh toán.', 'warning');
+      return;
+    }
+
+    const bookingIdOrCode =
+      checkoutRes.bookingCode ||
+      this.bookingStore.bookingCode() ||
+      checkoutRes.bookingId ||
+      this.bookingStore.bookingId() ||
+      `CH${Date.now()}`;
+    const finalAmount = checkoutRes.totalAmount ?? this.grandTotal();
     const selectedGateway = this.bookingStore.paymentMethod();
 
-    // 1. Xử lý thanh toán MoMo
-    if (selectedGateway === 'MOMO') {
-      this.toast.show('Đang kết nối cổng thanh toán MoMo...', 'info');
+    // Bước 2A: Chế độ xác nhận trực tiếp vào MySQL (VietQR / Demo 1-Chạm)
+    if (selectedGateway === 'DEMO') {
+      try {
+        const verifyRes = await firstValueFrom(
+          this.http.post<{
+            data?: {
+              status: string;
+              ticket?: IssuedTicket;
+            };
+          }>('/api/v1/payments/verify-return', {
+            gateway: 'DEMO',
+            bookingId: checkoutRes.bookingId || this.bookingStore.bookingId() || undefined,
+            bookingCode: bookingIdOrCode,
+            success: true,
+            amount: finalAmount,
+          }),
+        );
+        this.submittingPayment.set(false);
+        const serverTicket = verifyRes?.data?.ticket;
+        const ticket =
+          serverTicket ?? this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
+        if (serverTicket) {
+          this.bookingStore.recordServerConfirmedTicket(serverTicket);
+        }
+        this.concessionsStore.clearConcessions();
+        this.toast.show(`Đặt vé thành công! Mã đơn vé: ${ticket.bookingCode}`, 'success');
+        void this.router.navigate(['/result', ticket.id]);
+        return;
+      } catch {
+        this.submittingPayment.set(false);
+        const ticket = this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
+        this.concessionsStore.clearConcessions();
+        this.toast.show(`Đặt vé thành công! Mã đặt vé: ${ticket.bookingCode}`, 'success');
+        void this.router.navigate(['/result', ticket.id]);
+        return;
+      }
+    }
 
-      const bookingCode = `CH${Date.now()}`;
-      const payload = {
-        bookingId: bookingCode,
-        amount: this.grandTotal(),
-      };
+    // Bước 2B: Kết nối cổng thanh toán MoMo / ZaloPay / VNPay
+    const gatewayEndpoint =
+      selectedGateway === 'MOMO'
+        ? '/api/v1/payments/momo/create'
+        : selectedGateway === 'ZALOPAY'
+          ? '/api/v1/payments/zalopay/create'
+          : '/api/v1/payments/vnpay/create';
 
-      this.http.post<{ payUrl: string }>('/api/v1/payments/momo/create', payload).subscribe({
+    this.toast.show(`Đang kết nối cổng thanh toán ${selectedGateway}...`, 'info');
+
+    this.http
+      .post<{ payUrl: string }>(gatewayEndpoint, {
+        bookingId: bookingIdOrCode,
+        bookingCode: bookingIdOrCode,
+        amount: finalAmount,
+      })
+      .subscribe({
         next: (res) => {
+          this.submittingPayment.set(false);
           if (res.payUrl) {
             window.location.href = res.payUrl;
           } else {
-            this.toast.show('Không thể tạo liên kết thanh toán MoMo.', 'warning');
+            this.toast.show(`Không thể tạo liên kết thanh toán ${selectedGateway}.`, 'warning');
           }
         },
         error: (err) => {
-          console.error('[MoMo Error]:', err);
+          this.submittingPayment.set(false);
           this.toast.show(
-            err.error?.message || 'Không thể kết nối MoMo. Vui lòng thử lại!',
+            err.error?.message || `Không thể kết nối ${selectedGateway}. Vui lòng thử lại!`,
             'warning',
           );
         },
       });
-      return;
-    }
-
-    // 2. Xử lý thanh toán ZaloPay
-    if (selectedGateway === 'ZALOPAY') {
-      this.toast.show('Đang kết nối cổng thanh toán ZaloPay...', 'info');
-
-      const bookingCode = `CH${Date.now()}`;
-      const payload = {
-        bookingId: bookingCode,
-        amount: this.grandTotal(),
-      };
-
-      this.http.post<{ payUrl: string }>('/api/v1/payments/zalopay/create', payload).subscribe({
-        next: (res) => {
-          if (res.payUrl) {
-            window.location.href = res.payUrl;
-          } else {
-            this.toast.show('Không thể tạo liên kết thanh toán ZaloPay.', 'warning');
-          }
-        },
-        error: (err) => {
-          console.error('[ZaloPay Error]:', err);
-          this.toast.show(
-            err.error?.message || 'Không thể kết nối ZaloPay. Vui lòng thử lại!',
-            'warning',
-          );
-        },
-      });
-      return;
-    }
-
-    // 3. Xử lý thanh toán VNPay
-    if (selectedGateway === 'VNPAY') {
-      this.toast.show('Đang kết nối cổng thanh toán VNPay...', 'info');
-
-      const bookingCode = `CH${Date.now()}`;
-      const payload = {
-        bookingId: bookingCode,
-        amount: this.grandTotal(),
-      };
-
-      this.http.post<{ payUrl: string }>('/api/v1/payments/vnpay/create', payload).subscribe({
-        next: (res) => {
-          if (res.payUrl) {
-            window.location.href = res.payUrl;
-          } else {
-            this.toast.show('Không thể tạo liên kết thanh toán VNPay.', 'warning');
-          }
-        },
-        error: (err) => {
-          console.error('[VNPay Error]:', err);
-          this.toast.show(
-            err.error?.message || 'Không thể kết nối VNPay. Vui lòng thử lại!',
-            'warning',
-          );
-        },
-      });
-      return;
-    }
-
-    // 4. Xử lý mặc định (Offline/Fallback)
-    const ticket = this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
-    this.concessionsStore.clearConcessions();
-    this.toast.show(`Đặt vé thành công! Mã đặt vé: ${ticket.bookingCode}`, 'success');
-    void this.router.navigate(['/result', ticket.id]);
   }
 
   goBack(): void {

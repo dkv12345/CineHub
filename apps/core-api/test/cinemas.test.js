@@ -16,6 +16,6 @@ describe('GET /api/cinemas', () => {
       .set('X-Request-Id', 'req-test-123');
     expect(res.status).toBe(200);
     expect(res.headers['x-request-id']).toBe('req-test-123');
-    expect(res.body).toMatchObject({ module: 'booking', status: 'planned' });
+    expect(res.body).toMatchObject({ module: 'booking', status: 'active' });
   });
 });

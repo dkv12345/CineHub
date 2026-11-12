@@ -1,4 +1,7 @@
 import * as moviesRepository from './movies.repository.js';
+import { getRedisClient } from '../../platform/cache/redis.js';
+
+const MOVIE_CACHE_TTL_SECONDS = 600;
 
 function formatDuration(min) {
   if (!min) return '1h 45m';
@@ -91,6 +94,14 @@ function getThemeKey(title, genres) {
 
 export async function listMovies(query = {}) {
   const { status, search } = query;
+  const cacheKey = `cache:movies:${status || 'all'}:${search || 'none'}`;
+  try {
+    const cached = await getRedisClient().get(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch {
+    // Fallback to MySQL when Redis is offline
+  }
+
   const where = {
     deletedAt: null,
     ...(status ? { status } : {}),
@@ -106,7 +117,7 @@ export async function listMovies(query = {}) {
 
   const movies = await moviesRepository.findMovies(where);
 
-  return movies.map((m, idx) => {
+  const mapped = movies.map((m, idx) => {
     const genreNames = m.genres.map((g) => g.genre.name);
     const genresStr = genreNames.length > 0 ? genreNames.join(', ') : 'Hành động, Kịch tính';
     const directors = m.credits.filter((c) => c.role === 'DIRECTOR').map((c) => c.person.fullName);
@@ -155,9 +166,25 @@ export async function listMovies(query = {}) {
         'Bộ phim hấp dẫn mang đến những trải nghiệm điện ảnh đặc sắc tại các phòng chiếu hiện đại của CineHub.',
     };
   });
+
+  try {
+    await getRedisClient().set(cacheKey, JSON.stringify(mapped), 'EX', MOVIE_CACHE_TTL_SECONDS);
+  } catch {
+    // Non-blocking cache write
+  }
+
+  return mapped;
 }
 
 export async function getMovieById(id) {
+  const cacheKey = `cache:movie:${id}`;
+  try {
+    const cached = await getRedisClient().get(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch {
+    // Fallback to MySQL
+  }
+
   const movie = await moviesRepository.findMovieByIdOrSlugOrExternalId(id);
 
   if (!movie) return null;
@@ -173,7 +200,7 @@ export async function getMovieById(id) {
   const source = movie.sources?.[0];
   const externalId = source?.externalId || movie.slug || movie.id;
 
-  return {
+  const dto = {
     id: externalId,
     dbId: movie.id,
     title: movie.title,
@@ -201,4 +228,12 @@ export async function getMovieById(id) {
     cast,
     themeKey: getThemeKey(movie.title, genresStr),
   };
+
+  try {
+    await getRedisClient().set(cacheKey, JSON.stringify(dto), 'EX', MOVIE_CACHE_TTL_SECONDS);
+  } catch {
+    // Non-blocking cache write
+  }
+
+  return dto;
 }

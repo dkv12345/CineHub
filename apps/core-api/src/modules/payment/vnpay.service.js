@@ -7,7 +7,6 @@ export function createVNPayPaymentUrl({ bookingId, amount, ipAddr, orderInfo }) 
   const vnpUrl = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
   const returnUrl = process.env.VNP_RETURN_URL || 'http://localhost:4200/checkout';
 
-  // Lấy chính xác thời gian theo múi giờ Việt Nam (GMT+7) chuẩn YYYYMMDDHHmmss
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -31,10 +30,10 @@ export function createVNPayPaymentUrl({ bookingId, amount, ipAddr, orderInfo }) 
     getPart('minute') +
     getPart('second');
 
-  const orderId = `${bookingId}_${now.getTime()}`;
-  const numericAmount = Math.round(Number(amount || 100000)) * 100; // VNPay yêu cầu nhân 100
+  const cleanBookingId = String(bookingId || `CH${Date.now()}`).replace(/[^a-zA-Z0-9-]/g, '');
+  const orderId = `${cleanBookingId}_${now.getTime()}`;
+  const numericAmount = Math.max(10000, Math.round(Number(amount || 100000))) * 100;
 
-  // 1. Khởi tạo danh sách tham số thô (Raw values)
   const vnp_Params = {
     vnp_Version: '2.1.0',
     vnp_Command: 'pay',
@@ -42,7 +41,7 @@ export function createVNPayPaymentUrl({ bookingId, amount, ipAddr, orderInfo }) 
     vnp_Locale: 'vn',
     vnp_CurrCode: 'VND',
     vnp_TxnRef: orderId,
-    vnp_OrderInfo: orderInfo || `Thanh toan ve xem phim CineHub #${bookingId}`,
+    vnp_OrderInfo: orderInfo || `Thanh toan ve xem phim CineHub #${cleanBookingId}`,
     vnp_OrderType: 'billpayment',
     vnp_Amount: numericAmount.toString(),
     vnp_ReturnUrl: returnUrl,
@@ -50,19 +49,13 @@ export function createVNPayPaymentUrl({ bookingId, amount, ipAddr, orderInfo }) 
     vnp_CreateDate: createDate,
   };
 
-  // 2. Sắp xếp các key theo bảng chữ cái A-Z nhưng GIỮ NGUYÊN GIÁ TRỊ THÔ (không encode)
-  const sortedParams = sortObjectRaw(vnp_Params);
-
-  // 3. Tạo chuỗi signData chính xác tuyệt đối theo chuẩn VNPay
+  const sortedParams = sortObject(vnp_Params);
   const signData = querystring.stringify(sortedParams, { encode: false });
-
-  // 4. Tạo SecureHash HMAC-SHA512
   const hmac = crypto.createHmac('sha512', secretKey);
   const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
 
-  // 5. Build URL thanh toán cuối cùng (có encode giá trị khi đưa lên query string)
   sortedParams['vnp_SecureHash'] = signed;
-  const paymentUrl = `${vnpUrl}?${querystring.stringify(sortedParams, { encode: true, indices: false, arrayFormat: 'brackets' })}`;
+  const paymentUrl = `${vnpUrl}?${querystring.stringify(sortedParams, { encode: false })}`;
 
   return {
     payUrl: paymentUrl,
@@ -71,19 +64,31 @@ export function createVNPayPaymentUrl({ bookingId, amount, ipAddr, orderInfo }) 
   };
 }
 
-// Hàm sắp xếp object theo key A-Z giữ nguyên giá trị thô để băm chữ ký
+export function verifyVNPaySignature(vnpParams = {}) {
+  const secretKey = process.env.VNP_HASH_SECRET || 'RAXEFVWWCAJIJILJXYEUJYLJJLNRLJYL';
+  const secureHash = vnpParams.vnp_SecureHash;
+  if (!secureHash) return false;
+
+  const copy = { ...vnpParams };
+  delete copy.vnp_SecureHash;
+  delete copy.vnp_SecureHashType;
+
+  const sortedParams = sortObject(copy);
+  const signData = querystring.stringify(sortedParams, { encode: false });
+  const signed = crypto
+    .createHmac('sha512', secretKey)
+    .update(Buffer.from(signData, 'utf-8'))
+    .digest('hex');
+  return signed.toLowerCase() === String(secureHash).toLowerCase();
+}
+
 function sortObject(obj) {
   const sorted = {};
-  const str = [];
-  let key;
-  for (key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      str.push(key);
+  const keys = Object.keys(obj).sort();
+  for (const k of keys) {
+    if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') {
+      sorted[k] = encodeURIComponent(String(obj[k])).replace(/%20/g, '+');
     }
-  }
-  str.sort();
-  for (key = 0; key < str.length; key++) {
-    sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, '+');
   }
   return sorted;
 }

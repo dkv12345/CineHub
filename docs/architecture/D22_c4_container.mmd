@@ -1,0 +1,77 @@
+flowchart TB
+    %% =========================================================================
+    %% USERS & CLIENTS
+    %% =========================================================================
+    User_Guest["Customer / Guest<br/>[Person]<br/>Browses showtimes, books tickets, and chats with CineBot"]
+    User_Staff["Cinema Staff / Admin<br/>[Person]<br/>Validates QR tickets and manages cinema catalog"]
+
+    %% =========================================================================
+    %% CINEHUB SYSTEM BOUNDARY (Nx Monorepo Containers)
+    %% =========================================================================
+    subgraph CineHub_System ["CineHub Ticketing Platform [System Boundary]"]
+        
+        SPA["Single Page Application<br/>[Container: Angular 19 SPA & SSR]<br/>TypeScript, Signals, TailwindCSS. Delivers public catalog via SSR and interactive 3D seatmaps."]
+        
+        CoreAPI["Core API Service<br/>[Container: Node.js / Express]<br/>Modular Monolith. Handles authentication, booking state machine, payment orchestration, and RAG proxy."]
+        
+        Aggregator["Aggregator Crawler Service<br/>[Container: Node.js Service]<br/>Periodically fetches and normalizes movie showtimes and metadata from partner chains."]
+        
+        Worker["Background Worker Daemon<br/>[Container: Node.js Background Process]<br/>Dispatches transactional outbox events and sweeps expired seat leases."]
+        
+        MySQL_DB[("Primary Relational Database<br/>[Container: MySQL 8.0]<br/>Single Source of Truth. Stores users, catalog, bookings, tickets, payments, and outbox tables.")]
+        
+        Redis_Store[("In-Memory State & Cache<br/>[Container: Redis 7.0]<br/>Sub-millisecond seat lease locks (15m TTL), rate limit counters, and session cache.")]
+        
+        Mongo_DB[("Document & Vector Store<br/>[Container: MongoDB Atlas]<br/>Stores raw crawl payload dumps, CineBot chat sessions, and 768-dim movie embeddings.")]
+    end
+
+    %% =========================================================================
+    %% EXTERNAL PLATFORMS & SERVICES
+    %% =========================================================================
+    subgraph External_Systems ["External Systems & Partners"]
+        Ext_Galaxy["Galaxy Cinema Platform<br/>[External System]<br/>Provides public movie catalog and schedule feeds via mobile API"]
+        Ext_Google["Google Identity Services<br/>[External OAuth Provider]<br/>Authenticates users via OpenID Connect (OIDC)"]
+        Ext_Gateway["Payment Gateways (VNPay / ZaloPay)<br/>[External Financial Gateway]<br/>Processes customer payment transactions and sends IPN webhooks"]
+        Ext_SMTP["SMTP Mail Server (Nodemailer)<br/>[External Messaging Provider]<br/>Delivers account verification OTPs and e-tickets with QR codes"]
+        Ext_Gemini["Google Gemini AI Platform<br/>[External LLM / AI API]<br/>Generates text embeddings (768-dim) and contextual CineBot replies"]
+    end
+
+    %% =========================================================================
+    %% CONNECTIONS & PROTOCOLS
+    %% =========================================================================
+    User_Guest -->|HTTPS / Web Browser| SPA
+    User_Staff -->|HTTPS / QR Scanner Device| SPA
+
+    SPA -->|HTTPS / REST API v1 (JWT Bearer)| CoreAPI
+
+    CoreAPI -->|SQL via Prisma ORM / TCP 3306| MySQL_DB
+    CoreAPI -->|RESP Protocol / TCP 6379| Redis_Store
+    CoreAPI -->|Mongoose / MongoDB Wire Protocol| Mongo_DB
+
+    Aggregator -->|HTTPS GET (Hourly Cron)| Ext_Galaxy
+    Aggregator -->|Store Raw JSON Dumps| Mongo_DB
+    Aggregator -->|Upsert Cleaned Catalog| MySQL_DB
+
+    Worker -->|Poll Outbox Events (SKIP LOCKED)| MySQL_DB
+    Worker -->|SMTP Protocol / TLS 587| Ext_SMTP
+    Worker -->|Release Expired Leases| Redis_Store
+
+    CoreAPI -->|OAuth2 Token Verification| Ext_Google
+    CoreAPI -->|HTTPS Redirect / Checksum Validation| Ext_Gateway
+    Ext_Gateway -->|HTTPS POST Webhook (IPN)| CoreAPI
+
+    CoreAPI -->|HTTPS REST API (gemini-2.5-flash)| Ext_Gemini
+
+    %% =========================================================================
+    %% STYLING
+    %% =========================================================================
+    classDef person fill:#08427b,stroke:#073b6f,color:#ffffff;
+    classDef container fill:#1168bd,stroke:#0e5a9e,color:#ffffff;
+    classDef db fill:#1e293b,stroke:#0f172a,color:#ffffff;
+    classDef external fill:#475569,stroke:#334155,color:#ffffff;
+
+    class User_Guest,User_Staff person;
+    class SPA,CoreAPI,Aggregator,Worker container;
+    class MySQL_DB,Redis_Store,Mongo_DB db;
+    class Ext_Galaxy,Ext_Google,Ext_Gateway,Ext_SMTP,Ext_Gemini external;
+
