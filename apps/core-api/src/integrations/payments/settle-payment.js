@@ -1,6 +1,7 @@
 import { prisma } from '@cinehub/db';
 import { logger } from '../../platform/observability/logger.js';
 import { buildQr } from '../../platform/utils/qr.js';
+import { sendBookingConfirmationEmail } from '../../platform/mail/mailer.js';
 
 /**
  * Idempotently settle a payment and transition booking/seats/tickets.
@@ -145,6 +146,26 @@ export async function settlePayment({
       { txnRef, paymentId: result.payment.id, bookingId: result.booking.id },
       '[settlePayment] Successfully settled payment and issued tickets',
     );
+
+    // Dispatch confirmation email via SMTP/Mailpit asynchronously
+    sendBookingConfirmationEmail({
+      to: existingPayment.booking.contactEmail || 'customer@cinehub.vn',
+      bookingCode: result.booking.code,
+      movieTitle: 'Vé xem phim CineHub',
+      cinemaName: 'CineHub Cinema',
+      auditoriumName: 'Phòng chiếu',
+      showtime: new Date().toLocaleString('vi-VN'),
+      seats: existingPayment.booking.seats.map((s) => s.seatLabel),
+      totalAmount: result.booking.totalAmount,
+      tickets: result.tickets.map((t) => ({
+        ticketId: t.id,
+        seatLabel:
+          existingPayment.booking.seats.find((s) => s.id === t.bookingSeatId)?.seatLabel || '',
+        qrCode: t.qrCode,
+      })),
+    }).catch((err) => {
+      logger.warn({ err: err.message }, '[settlePayment] Failed to send confirmation email');
+    });
 
     return { settled: true, ...result };
   } catch (error) {
