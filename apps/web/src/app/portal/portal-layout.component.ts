@@ -182,8 +182,8 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
 })
 export class PortalLayoutComponent implements OnInit, OnDestroy {
   readonly authStore = inject(AuthStore);
+  readonly toast = inject(ToastService);
   private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
 
   readonly clock = signal<string>('');
   private timer: ReturnType<typeof setInterval> | null = null;
