@@ -148,13 +148,15 @@ export async function createBooking({
   voucherCode: _voucherCode,
   contactEmail,
   contactPhone,
+  metadata = {},
 }) {
   if (!seatIds || seatIds.length === 0) {
     throw new AppError(400, 'BAD_REQUEST', 'Vui lòng chọn ít nhất 1 ghế');
   }
 
   // 1. Fetch ShowtimeSeats from DB (supports canonical seatId, showtimeSeatId, or seat label)
-  const showtimeSeats = await prisma.showtimeSeat.findMany({
+  let effectiveShowtimeId = showtimeId;
+  let showtimeSeats = await prisma.showtimeSeat.findMany({
     where: {
       showtimeId,
       OR: [
@@ -172,16 +174,42 @@ export async function createBooking({
     },
   });
 
+  // If showtimeId is a live/external ID not yet synced to DB, ensure showtime & seats exist
+  if (showtimeSeats.length !== seatIds.length) {
+    const resolved = await resolveOrEnsureShowtime(showtimeId, metadata);
+    if (resolved?.showtime?.id) {
+      effectiveShowtimeId = resolved.showtime.id;
+      const requestedSet = new Set(seatIds.map((id) => String(id).trim()));
+      const matched = (resolved.showtimeSeats || []).filter(
+        (ss) =>
+          requestedSet.has(ss.seatId) ||
+          requestedSet.has(ss.id) ||
+          requestedSet.has(ss.seat?.label),
+      );
+      if (matched.length > 0) {
+        showtimeSeats = matched;
+      }
+    }
+  }
+
   if (showtimeSeats.length !== seatIds.length) {
     throw new AppError(400, 'BAD_REQUEST', 'Một số ghế không tồn tại trong suất chiếu này');
   }
 
   const canonicalSeatIds = showtimeSeats.map((s) => s.seatId);
 
-  // 2. Verify user holds these seats in Redis
-  const activeLeases = await getActiveSeatLeases(showtimeId, canonicalSeatIds);
-  for (const sId of canonicalSeatIds) {
-    const lease = activeLeases.get(sId);
+  // 2. Verify user holds these seats in Redis (checking both canonical DB keys and raw/label keys)
+  const activeLeases = await getActiveSeatLeases(effectiveShowtimeId, canonicalSeatIds);
+  const rawLabelLeases =
+    showtimeId !== effectiveShowtimeId || canonicalSeatIds.some((id, idx) => id !== seatIds[idx])
+      ? await getActiveSeatLeases(showtimeId, seatIds)
+      : new Map();
+
+  for (const stSeat of showtimeSeats) {
+    const lease =
+      activeLeases.get(stSeat.seatId) ||
+      rawLabelLeases.get(stSeat.seat?.label) ||
+      rawLabelLeases.get(stSeat.seatId);
     if (!lease || lease.userId !== userId) {
       throw new AppError(
         409,
@@ -248,7 +276,7 @@ export async function createBooking({
     bookingData: {
       code: generateBookingCode(),
       userId,
-      showtimeId,
+      showtimeId: effectiveShowtimeId,
       status: 'PENDING',
       subtotalAmount,
       discountAmount,

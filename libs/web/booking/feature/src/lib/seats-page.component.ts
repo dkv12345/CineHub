@@ -104,43 +104,11 @@ import {
           </p>
         </div>
 
-        <div class="grid gap-8 lg:grid-cols-12">
+        <div
+          class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_360px]"
+        >
           <!-- 3D Seat Map Column -->
-          <div class="lg:col-span-8 p-2 sm:p-4">
-            <!-- Curved Screen Visual Indicator -->
-            <div class="mb-8 flex flex-col items-center">
-              <span class="text-[11px] font-black uppercase tracking-[.2em] text-amber-300">
-                MÀN HÌNH CHIẾU CHÍNH
-              </span>
-              <div
-                class="mt-2 h-1.5 w-3/4 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_4px_12px_rgba(251,191,36,0.6)]"
-              ></div>
-            </div>
-
-            <!-- Seat Legend -->
-            <div class="mb-6 flex flex-wrap items-center justify-center gap-5 text-xs font-bold">
-              <div class="flex items-center gap-2">
-                <span class="h-4 w-4 rounded border border-white/30 bg-slate-700"></span>
-                <span class="text-slate-300">Ghế tiêu chuẩn</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span
-                  class="h-4 w-4 rounded border border-amber-400 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
-                ></span>
-                <span class="text-amber-300 font-black">Ghế VIP</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span
-                  class="h-4 w-6 rounded border border-pink-400 bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.5)]"
-                ></span>
-                <span class="text-pink-300 font-black">Ghế đôi Sweetbox</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="h-4 w-4 rounded border border-white/10 bg-slate-950 opacity-40"></span>
-                <span class="text-slate-500">Đã bán</span>
-              </div>
-            </div>
-
+          <div class="min-w-0 p-1 sm:p-2">
             <ch-seat-map-3d
               [layout]="auditoriumLayout()"
               [seats]="seats()"
@@ -149,7 +117,7 @@ import {
           </div>
 
           <!-- Right Sidebar: 3D POV Scene + Summary Card -->
-          <div class="space-y-5 lg:col-span-4">
+          <div class="space-y-5">
             <div
               class="overflow-hidden rounded-3xl border-2 border-slate-700 bg-slate-900/90 shadow-2xl"
             >

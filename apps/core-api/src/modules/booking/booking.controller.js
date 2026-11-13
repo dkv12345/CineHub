@@ -143,6 +143,7 @@ export async function checkoutBooking(req, res, next) {
       voucherCode: payload.voucherCode,
       contactEmail: payload.contactEmail || req.user.email,
       contactPhone: payload.contactPhone,
+      metadata: payload.metadata || req.body?.metadata || {},
     });
     res.status(201).json({ data: booking });
   } catch (error) {

@@ -530,6 +530,13 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
         concessionId: c.id,
         quantity: c.quantity,
       })),
+      metadata: {
+        movieTitle: this.bookingStore.movieTitle(),
+        cinemaName: this.bookingStore.cinemaName(),
+        showTime: this.bookingStore.showTime(),
+        format: this.bookingStore.format(),
+        screenName: this.bookingStore.screenName(),
+      },
     };
 
     this.http.post<any>('/api/v1/booking/checkout', checkoutPayload).subscribe({

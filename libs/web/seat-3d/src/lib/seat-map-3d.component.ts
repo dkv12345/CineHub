@@ -6,8 +6,8 @@ import type { SeatCell, SeatLayout } from './seat-layout';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="seat-map-3d overflow-x-auto bg-transparent px-2 py-2 sm:px-4">
-      <div class="mx-auto w-fit min-w-max [perspective:1100px]">
+    <div class="seat-map-3d w-full bg-transparent px-1 py-2 sm:px-2">
+      <div class="mx-auto w-full max-w-[860px] [perspective:1100px]">
         <!-- Screen Curve Indicator -->
         <div class="mx-auto mb-6 max-w-xl text-center">
           <div
@@ -22,23 +22,25 @@ import type { SeatCell, SeatLayout } from './seat-layout';
 
         <!-- 3D Perspective Chamber Floor -->
         <div
-          class="relative mx-auto rounded-[45%_45%_18px_18px/12%_12%_18px_18px] border-x border-white/10 bg-transparent px-3 pb-7 pt-2 [transform:rotateX(14deg)] [transform-style:preserve-3d] sm:px-5"
+          class="relative mx-auto rounded-[45%_45%_18px_18px/12%_12%_18px_18px] border-x border-white/10 bg-transparent px-2 pb-6 pt-2 [transform:rotateX(12deg)] [transform-style:preserve-3d] sm:px-4"
         >
-          <div class="space-y-2 [transform-style:preserve-3d]">
+          <div class="space-y-1.5 [transform-style:preserve-3d]">
             @for (rowGroup of rowsGrouped(); track rowGroup.row; let rowIndex = $index) {
               <div
-                class="grid items-center gap-x-1.5"
+                class="grid items-center gap-x-1"
                 [style.grid-template-columns]="
-                  '22px repeat(' +
+                  '18px repeat(' +
                   (layout().columns + layout().aislesAfter.length) +
-                  ', minmax(30px, 38px)) 22px'
+                  ', minmax(0, 1fr)) 18px'
                 "
                 [style.transform]="
-                  'translateZ(' + (rowIndex - 3) + 'px) scale(' + (1 + rowIndex * 0.006) + ')'
+                  'translateZ(' + (rowIndex - 3) + 'px) scale(' + (1 + rowIndex * 0.0025) + ')'
                 "
                 style="transform-origin: center bottom"
               >
-                <span class="text-center text-xs font-black text-white">{{ rowGroup.row }}</span>
+                <span class="text-center text-[11px] font-black text-white">{{
+                  rowGroup.row
+                }}</span>
 
                 @for (seat of rowGroup.seats; track seat.id) {
                   <button
@@ -47,8 +49,8 @@ import type { SeatCell, SeatLayout } from './seat-layout';
                     (click)="seatChosen.emit(seat)"
                     [attr.aria-label]="seatLabel(seat)"
                     [attr.aria-pressed]="seat.selected"
-                    [style.grid-column]="seatTrack(seat) + 2"
-                    class="aspect-square min-w-[30px] rounded-t-[9px] rounded-b-[5px] border text-[9px] font-extrabold shadow-[0_4px_6px_rgba(0,0,0,0.5)] transition duration-150 enabled:hover:-translate-y-1 enabled:hover:shadow-[0_8px_12px_rgba(0,0,0,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed"
+                    [style.grid-column]="seatTrack(seat) + 1"
+                    class="aspect-square w-full min-w-0 rounded-t-[8px] rounded-b-[4px] border text-[8px] font-extrabold leading-none shadow-[0_4px_6px_rgba(0,0,0,0.5)] transition duration-150 enabled:hover:-translate-y-1 enabled:hover:shadow-[0_8px_12px_rgba(0,0,0,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed sm:text-[9px]"
                     [class]="seatClasses(seat)"
                   >
                     <span class="block -translate-y-px">{{ seat.id }}</span>
@@ -56,7 +58,7 @@ import type { SeatCell, SeatLayout } from './seat-layout';
                 }
 
                 <span
-                  class="text-center text-xs font-black text-white"
+                  class="text-center text-[11px] font-black text-white"
                   [style.grid-column]="layout().columns + layout().aislesAfter.length + 2"
                 >
                   {{ rowGroup.row }}
