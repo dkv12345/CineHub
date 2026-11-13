@@ -6,6 +6,8 @@ import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
 import type { Movie } from '@cinehub/web/shared/util';
 import { HomePageComponent } from './home-page.component';
 import { MovieDetailPageComponent } from './movie-detail-page.component';
+import { CinemaCornerListPageComponent } from './cinema-corner-list-page.component';
+import { CinemaCornerDetailPageComponent } from './cinema-corner-detail-page.component';
 
 const movieDetailResolver: ResolveFn<Movie | null> = (route) => {
   const catalogStore = inject(CatalogStore);
@@ -30,5 +32,15 @@ export const CATALOG_ROUTES: Routes = [
       movie: movieDetailResolver,
     },
     title: 'Chi tiết phim | CineHub',
+  },
+  {
+    path: 'cinema-corner',
+    component: CinemaCornerListPageComponent,
+    title: 'Góc điện ảnh | CineHub',
+  },
+  {
+    path: 'cinema-corner/:slug',
+    component: CinemaCornerDetailPageComponent,
+    title: 'Review phim | Góc điện ảnh | CineHub',
   },
 ];

@@ -95,6 +95,13 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                 {{ activeLang() === 'vi' ? 'Lịch chiếu' : 'Showtimes' }}
               </a>
               <a
+                routerLink="/cinema-corner"
+                routerLinkActive="!text-amber-300"
+                class="text-white/75 transition hover:text-white"
+              >
+                {{ activeLang() === 'vi' ? 'Góc điện ảnh' : 'Cinema Corner' }}
+              </a>
+              <a
                 routerLink="/my-tickets"
                 routerLinkActive="!text-amber-300"
                 class="text-white/75 transition hover:text-white"
@@ -278,6 +285,9 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               <a routerLink="/" class="py-1.5 text-white/80 hover:text-amber-300">Phim</a>
               <a routerLink="/showtimes" class="py-1.5 text-white/80 hover:text-amber-300"
                 >Lịch chiếu</a
+              >
+              <a routerLink="/cinema-corner" class="py-1.5 text-white/80 hover:text-amber-300"
+                >Góc điện ảnh</a
               >
               <a routerLink="/my-tickets" class="py-1.5 text-white/80 hover:text-amber-300"
                 >Vé của tôi</a
