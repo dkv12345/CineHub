@@ -410,7 +410,6 @@ import {
                     : 'border-2 border-white/40 bg-slate-800 font-black text-white shadow-md hover:bg-slate-700 hover:text-amber-300'
                 "
               >
-                <span>{{ item.icon }}</span>
                 <span>{{ item.label }}</span>
               </button>
             }
@@ -694,9 +693,9 @@ export class HomePageComponent implements OnInit, OnDestroy {
   ]);
 
   readonly shelfOptions = [
-    { key: 'history' as const, label: 'Lịch sử / Xem tiếp', icon: '🕒' },
-    { key: 'collection' as const, label: 'Bộ sưu tập', icon: '❤️' },
-    { key: 'trending' as const, label: 'Đang thịnh hành', icon: '✨' },
+    { key: 'history' as const, label: 'Lịch sử / Xem tiếp' },
+    { key: 'collection' as const, label: 'Bộ sưu tập' },
+    { key: 'trending' as const, label: 'Đang thịnh hành' },
   ];
 
   readonly nowShowingMovies = computed(() =>
@@ -908,9 +907,13 @@ export class HomePageComponent implements OnInit, OnDestroy {
   }
 
   private isMovieCurrentlyShowing(movie: Movie): boolean {
-    if (this.showtimesStore.loading()) return movie.status === 'now';
-    if (!this.showtimesStore.fetchedAt() || this.showtimesStore.error()) {
-      return movie.status === 'now';
+    if (movie.status === 'now') return true;
+    if (
+      this.showtimesStore.loading() ||
+      !this.showtimesStore.fetchedAt() ||
+      this.showtimesStore.error()
+    ) {
+      return false;
     }
 
     return this.showtimesStore
@@ -932,19 +935,6 @@ export class HomePageComponent implements OnInit, OnDestroy {
       return movie.status === 'soon';
     }
     if (this.isMovieCurrentlyShowing(movie)) return false;
-    if (!movie.release || movie.release === 'Đang chiếu') return false;
-
-    const releaseDate = movie.startDate?.slice(0, 10);
-    if (releaseDate && /^\d{4}-\d{2}-\d{2}$/.test(releaseDate)) {
-      return releaseDate >= vietnamDate();
-    }
-
-    const [day, month, year] = movie.release.split('/');
-    if (day && month && year) {
-      const normalizedRelease = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-      return normalizedRelease >= vietnamDate();
-    }
-
     return movie.status === 'soon';
   }
 }

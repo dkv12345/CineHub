@@ -32,22 +32,13 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
           >
             <div class="flex items-center gap-3">
               <div
-                class="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 text-white shadow-md shadow-red-950/60"
+                class="relative flex h-10 w-10 items-center justify-center rounded-full bg-white p-0.5 ring-1 ring-white/15 shadow-md"
               >
-                <svg
-                  class="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                  />
-                </svg>
+                <img
+                  src="/images/cinebot-avatar.png"
+                  alt="CineBot"
+                  class="h-full w-full rounded-full object-cover"
+                />
                 <span class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
                   <span
                     class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
@@ -397,22 +388,13 @@ import { AssistantStore, type ChatMovieCard } from '@cinehub/web/assistant/data-
           class="group flex items-center gap-3 rounded-full border border-red-500/40 bg-slate-950/90 px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_35px_rgba(229,9,20,0.4)] backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-red-500 hover:shadow-[0_15px_40px_rgba(229,9,20,0.6)] active:scale-95 ring-1 ring-white/10"
         >
           <span
-            class="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 text-white shadow-md shadow-red-900/50"
+            class="relative flex h-9 w-9 items-center justify-center rounded-full bg-white p-0.5 ring-1 ring-white/15 shadow-md"
           >
-            <svg
-              class="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-              />
-            </svg>
+            <img
+              src="/images/cinebot-avatar.png"
+              alt="CineBot"
+              class="h-full w-full rounded-full object-cover"
+            />
             <span class="absolute -top-0.5 -right-0.5 flex h-2 w-2">
               <span
                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
