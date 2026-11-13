@@ -9,6 +9,7 @@ import {
   releaseSeatLeases,
   forceDeleteSeatLeases,
   getActiveSeatLeases,
+  getAllShowtimeSeatLeases,
 } from '../../platform/cache/seat-lease.js';
 import { momoAdapter } from '../../integrations/payments/momo.adapter.js';
 import { vnpayAdapter } from '../../integrations/payments/vnpay.adapter.js';
@@ -27,7 +28,14 @@ export const BOOKING_MODULE_STATUS = 'ready';
 export async function getShowtimeSeats(showtimeId, userId) {
   const seats = await bookingRepository.findShowtimeSeats(showtimeId);
   if (!seats || seats.length === 0) {
-    return [];
+    const activeLeases = await getAllShowtimeSeatLeases(showtimeId);
+    return Array.from(activeLeases.entries()).map(([seatKey, lease]) => ({
+      id: seatKey,
+      seatId: seatKey,
+      label: seatKey,
+      status: 'HELD',
+      isHeldByMe: Boolean(userId && lease.userId === userId),
+    }));
   }
 
   const seatIds = seats.map((s) => s.seatId);

@@ -256,15 +256,13 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
     return base.map((cell) => {
       const bs = backendMap.get(cell.id);
       if (!bs) return cell;
-      const isUnavailable =
-        (bs.status === 'HELD' && !bs.isHeldByMe) ||
-        bs.status === 'SOLD' ||
-        bs.status === 'BLOCKED' ||
-        bs.status === 'BOOKED';
+      const isHeldByOther = bs.status === 'HELD' && !bs.isHeldByMe;
+      const isSold = bs.status === 'SOLD' || bs.status === 'BLOCKED' || bs.status === 'BOOKED';
 
       return {
         ...cell,
-        sold: isUnavailable,
+        sold: isSold,
+        heldByOther: isHeldByOther,
         selected: this.store.selectedSeatIds().has(cell.id),
       };
     });
@@ -306,10 +304,10 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
     // 1. Tải sơ đồ ghế ban đầu từ backend (KHÔNG gọi giữ ghế ở ngOnInit)
     this.loadSeatsMap(showtimeId);
 
-    // 2. Tự động thăm dò sơ đồ ghế mỗi 7 giây để đồng bộ ghế người khác vừa giữ/mua
+    // 2. Tự động thăm dò sơ đồ ghế mỗi 2 giây để đồng bộ ghế người khác vừa giữ/mua
     this.pollTimer = setInterval(() => {
       this.loadSeatsMap(this.currentShowtimeId());
-    }, 7000);
+    }, 2000);
 
     // 3. Đồng hồ đếm ngược theo expiresAt
     this.countdownTimer = setInterval(() => {

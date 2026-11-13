@@ -223,3 +223,41 @@ export async function getActiveSeatLeases(showtimeId, seatIds) {
     return leaseMap;
   }
 }
+
+/**
+ * List all active Redis/memory seat leases for a showtime (used when DB showtimeSeats are absent, e.g. live external sessions).
+ *
+ * @param {string} showtimeId
+ * @returns {Promise<Map<string, { userId: string, holdToken: string }>>}
+ */
+export async function getAllShowtimeSeatLeases(showtimeId) {
+  const leaseMap = new Map();
+  const prefix = `seat:{${showtimeId}}:`;
+
+  try {
+    const redis = await getConnectedRedis();
+    const keys = await redis.keys(`${prefix}*`);
+    if (!keys || keys.length === 0) return leaseMap;
+
+    const values = await redis.mget(...keys);
+    for (let i = 0; i < keys.length; i++) {
+      const val = values[i];
+      if (val) {
+        const seatKey = keys[i].slice(prefix.length);
+        const [uId, token] = val.split(':');
+        leaseMap.set(seatKey, { userId: uId, holdToken: token });
+      }
+    }
+    return leaseMap;
+  } catch {
+    cleanExpiredMemoryLeases();
+    for (const [key, entry] of memoryLeases.entries()) {
+      if (key.startsWith(prefix)) {
+        const seatKey = key.slice(prefix.length);
+        const [uId, token] = entry.value.split(':');
+        leaseMap.set(seatKey, { userId: uId, holdToken: token });
+      }
+    }
+    return leaseMap;
+  }
+}

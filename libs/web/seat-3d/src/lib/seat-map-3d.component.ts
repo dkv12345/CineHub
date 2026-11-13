@@ -48,7 +48,7 @@ import type { SeatCell, SeatLayout } from './seat-layout';
                     [attr.aria-label]="seatLabel(seat)"
                     [attr.aria-pressed]="seat.selected"
                     [style.grid-column]="seatTrack(seat) + 2"
-                    class="aspect-square min-w-[30px] rounded-t-[9px] rounded-b-[5px] border text-[9px] font-extrabold shadow-[0_4px_6px_rgba(0,0,0,0.5)] transition duration-150 hover:-translate-y-1 hover:shadow-[0_8px_12px_rgba(0,0,0,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
+                    class="aspect-square min-w-[30px] rounded-t-[9px] rounded-b-[5px] border text-[9px] font-extrabold shadow-[0_4px_6px_rgba(0,0,0,0.5)] transition duration-150 enabled:hover:-translate-y-1 enabled:hover:shadow-[0_8px_12px_rgba(0,0,0,0.7)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed"
                     [class]="seatClasses(seat)"
                   >
                     <span class="block -translate-y-px">{{ seat.id }}</span>
@@ -159,7 +159,7 @@ export class SeatMap3DComponent {
 
   seatClasses(seat: SeatCell): string {
     if (seat.sold) {
-      return 'border-slate-700 bg-slate-800/80 text-slate-500 cursor-not-allowed';
+      return 'border-slate-700 bg-slate-800/80 text-slate-500 opacity-40 cursor-not-allowed';
     }
     if (seat.selected) {
       return 'border-red-500 bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.8)] scale-[1.05]';
