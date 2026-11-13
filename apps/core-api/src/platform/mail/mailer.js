@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import QRCode from 'qrcode';
 import { env } from '../config/env.js';
 import { logger } from '../observability/logger.js';
 import { getWelcomeEmail } from './templates/welcomeEmail.js';
@@ -58,7 +59,7 @@ export function getTransporter() {
  * @param {string} [options.text] - Plaintext alternative.
  * @returns {Promise<{ messageId: string }>}
  */
-export async function sendEmail({ to, subject, html, text }) {
+export async function sendEmail({ to, subject, html, text, attachments }) {
   const hasCredentials = Boolean(env.SMTP_USER && env.SMTP_PASS);
 
   if (!hasCredentials) {
@@ -80,6 +81,7 @@ export async function sendEmail({ to, subject, html, text }) {
       subject,
       html,
       text,
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
     });
 
     logger.info(`[Mailer] Email dispatched successfully to ${to} (Message ID: ${info.messageId})`);
@@ -179,34 +181,76 @@ export async function sendResetSuccessNotification({ to, fullName }) {
 }
 
 /**
- * Sends a booking confirmation email with movie, seats, and QR tickets.
+ * Sends a booking confirmation email with payment summary, e-ticket card, and embedded QR PNGs.
  */
 export async function sendBookingConfirmationEmail({
   to,
+  customerName = '',
   bookingCode,
   movieTitle,
   cinemaName,
   auditoriumName,
+  format = '2D Phụ Đề',
   showtime,
-  seats,
+  seats = [],
+  concessions = [],
   totalAmount,
+  paymentMethod = 'ONLINE',
+  txnRef = '',
+  providerTxnNo = null,
+  paidAt = '',
   tickets = [],
 }) {
+  const attachments = [];
+  const ticketsWithQrCid = await Promise.all(
+    tickets.map(async (ticket, index) => {
+      if (!ticket.qrCode) return ticket;
+      try {
+        const cid = `ticket-qr-${index}@cinehub.vn`;
+        const buffer = await QRCode.toBuffer(ticket.qrCode, {
+          width: 240,
+          margin: 1,
+          color: {
+            dark: '#0f172a',
+            light: '#ffffff',
+          },
+        });
+        attachments.push({
+          filename: `cinehub-ticket-${ticket.seatLabel || index + 1}.png`,
+          content: buffer,
+          cid,
+        });
+        return { ...ticket, qrCid: cid };
+      } catch (err) {
+        logger.warn({ err: err.message }, '[Mailer] Failed to generate QR PNG buffer');
+        return ticket;
+      }
+    }),
+  );
+
   const { html, text } = getBookingConfirmationEmail({
     bookingCode,
+    customerName,
     movieTitle,
     cinemaName,
     auditoriumName,
+    format,
     showtime,
     seats,
+    concessions,
     totalAmount,
-    tickets,
+    paymentMethod,
+    txnRef,
+    providerTxnNo,
+    paidAt,
+    tickets: ticketsWithQrCid,
   });
 
   return sendEmail({
     to,
-    subject: `[CineHub] Xác nhận đặt vé thành công #${bookingCode}`,
+    subject: `[CineHub] Xác nhận thanh toán & Vé điện tử #${bookingCode}`,
     html,
     text,
+    attachments,
   });
 }
