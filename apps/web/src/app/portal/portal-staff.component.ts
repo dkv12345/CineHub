@@ -114,13 +114,13 @@ declare global {
               ></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span>CỔNG SOÁT VÉ TRỰC TIẾP · STAFF STATION</span>
+            <span>CỔNG SOÁT VÉ TRỰC TIẾP · STAFF STATION (PORTAL)</span>
           </div>
           <h1 class="mt-1 text-2xl font-black text-white sm:text-3xl">
             Quét mã QR & Kiểm soát vào rạp (Real-time Gate)
           </h1>
           <p class="mt-1 text-xs text-slate-400">
-            Hỗ trợ máy quét Camera tự động, đầu đọc laser USB/Bluetooth và xác thực chữ ký số
+            Hỗ trợ máy quét Camera trực tiếp, đầu đọc laser USB/Bluetooth và xác thực chữ ký số
             HMAC-SHA256 chống vé giả/quay vòng.
           </p>
         </div>
@@ -156,12 +156,46 @@ declare global {
         </div>
       </div>
 
+      <!-- Quick Sound & Scanner Demo Action Bar -->
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-500/30 bg-blue-950/40 p-4 text-xs"
+      >
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🔊</span>
+          <span class="font-bold text-blue-200"
+            >Thử nghiệm phản hồi âm thanh Web Audio & Kiểm thử quét:</span
+          >
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            (click)="testSoundSuccess()"
+            class="rounded-xl border border-emerald-400/50 bg-emerald-500/20 px-3.5 py-1.5 font-bold text-emerald-300 transition hover:bg-emerald-500 hover:text-slate-950"
+          >
+            ♫ Test Chime Thành Công
+          </button>
+          <button
+            type="button"
+            (click)="testSoundError()"
+            class="rounded-xl border border-red-400/50 bg-red-500/20 px-3.5 py-1.5 font-bold text-red-300 transition hover:bg-red-500 hover:text-white"
+          >
+            ⚠ Test Buzz Từ Chối
+          </button>
+          <button
+            type="button"
+            (click)="testMockCheckin()"
+            class="rounded-xl border border-amber-400/50 bg-amber-500/20 px-3.5 py-1.5 font-bold text-amber-300 transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            🧪 Giả lập Quét vé mẫu
+          </button>
+        </div>
+      </div>
+
       <!-- Result Banner: When Check-in succeeds -->
       @if (lastCheckedIn(); as res) {
         <section
           class="relative overflow-hidden rounded-3xl border-2 border-emerald-400 bg-gradient-to-br from-emerald-950/90 via-slate-950 to-emerald-950/80 p-6 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300"
         >
-          <!-- Neon Accent Corner Light -->
           <div
             class="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-emerald-500/20 blur-3xl"
           ></div>
@@ -272,68 +306,68 @@ declare global {
         </section>
       }
 
-      <!-- Live Camera Scanner Section (Futuristic Viewfinder) -->
+      <!-- Live Camera Scanner Section (Prominent Viewfinder Box) -->
       <section
-        class="overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-slate-900/90 to-slate-950 p-6 shadow-2xl backdrop-blur-xl"
+        class="overflow-hidden rounded-3xl border-2 border-cyan-500/40 bg-gradient-to-b from-slate-900/90 via-slate-950 to-slate-900/90 p-6 md:p-8 shadow-2xl backdrop-blur-xl"
       >
         <div
-          class="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4"
+          class="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5"
         >
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3.5">
             <span
-              class="grid h-9 w-9 place-items-center rounded-xl bg-blue-500/20 text-lg text-blue-400"
+              class="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-500/20 text-2xl text-cyan-400 border border-cyan-400/30"
             >
               📷
             </span>
             <div>
-              <h2 class="text-base font-black uppercase tracking-wider text-white">
-                MÁY QUÉT CAMERA TRỰC TIẾP (LIVE SCANNER)
-              </h2>
-              <p class="text-xs text-slate-400">
-                Tự động nhận diện mã QR vé khi đưa vào kính ngắm, phát âm thanh beep tức thì.
+              <div class="flex items-center gap-2">
+                <h2 class="text-lg font-black uppercase tracking-wider text-white">
+                  MÁY QUÉT CAMERA TRỰC TIẾP (LIVE SCANNER)
+                </h2>
+                <span
+                  class="rounded-full bg-cyan-500/20 px-2.5 py-0.5 text-[10px] font-black text-cyan-300 border border-cyan-500/30"
+                >
+                  Auto-Detect 250ms
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Đưa mã QR trên vé khách hàng vào kính ngắm laser, hệ thống sẽ tự động quét và duyệt
+                qua cổng.
               </p>
             </div>
           </div>
 
-          <div class="flex items-center gap-2.5">
+          <div class="flex items-center gap-3">
             @if (cameraActive()) {
               <button
                 type="button"
                 (click)="switchCamera()"
-                class="rounded-xl border border-white/20 bg-slate-800/80 px-3.5 py-2 text-xs font-bold text-slate-200 transition hover:bg-slate-700"
+                class="rounded-xl border border-white/20 bg-slate-800/80 px-4 py-2.5 text-xs font-bold text-slate-200 transition hover:bg-slate-700"
               >
                 🔄 Đổi Camera ({{ cameraFacingMode() === 'environment' ? 'Sau' : 'Trước' }})
               </button>
               <button
                 type="button"
                 (click)="stopCamera()"
-                class="rounded-xl border border-red-500/40 bg-red-500/20 px-4 py-2 text-xs font-black text-red-300 transition hover:bg-red-500 hover:text-white"
+                class="rounded-xl border border-red-500/50 bg-red-500/25 px-5 py-2.5 text-xs font-black text-red-300 transition hover:bg-red-500 hover:text-white shadow-lg shadow-red-500/20"
               >
-                🛑 Tắt Camera
-              </button>
-            } @else {
-              <button
-                type="button"
-                (click)="startCamera()"
-                class="rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-blue-500/25 transition hover:brightness-125"
-              >
-                📷 BẬT CAMERA QUÉT TRỰC TIẾP
+                🛑 TẮT CAMERA
               </button>
             }
           </div>
         </div>
 
-        @if (cameraActive()) {
-          <div class="mt-6 flex flex-col items-center">
-            <!-- Viewfinder Box Container -->
-            <div
-              class="relative w-full max-w-md aspect-square overflow-hidden rounded-3xl border-2 bg-slate-950 shadow-2xl transition-all duration-300"
-              [class.border-cyan-400]="flashState() === 'idle'"
-              [class.border-emerald-400]="flashState() === 'success'"
-              [class.border-red-500]="flashState() === 'error'"
-              [class.shadow-emerald-500_50]="flashState() === 'success'"
-              [class.shadow-red-500_50]="flashState() === 'error'"
-            >
+        <!-- Central Scanner Viewport -->
+        <div class="mt-6 flex flex-col items-center">
+          <div
+            class="relative w-full max-w-lg aspect-square overflow-hidden rounded-3xl border-2 bg-slate-950 shadow-2xl transition-all duration-300"
+            [class.border-cyan-400]="flashState() === 'idle'"
+            [class.border-emerald-400]="flashState() === 'success'"
+            [class.border-red-500]="flashState() === 'error'"
+            [class.shadow-emerald-500_50]="flashState() === 'success'"
+            [class.shadow-red-500_50]="flashState() === 'error'"
+          >
+            @if (cameraActive()) {
               <!-- Video Stream -->
               <video
                 #videoElement
@@ -345,46 +379,45 @@ declare global {
 
               <!-- Futuristic Viewfinder Overlay -->
               <div class="pointer-events-none absolute inset-0 grid place-items-center">
-                <!-- Outer Vignette -->
-                <div class="absolute inset-0 bg-slate-950/40"></div>
+                <div class="absolute inset-0 bg-slate-950/30"></div>
 
                 <!-- Laser Beam Scanline -->
                 <div
-                  class="laser-beam pointer-events-none absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee]"
+                  class="laser-beam pointer-events-none absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_#22d3ee]"
                 ></div>
 
                 <!-- Central Reticle Target -->
                 <div
-                  class="viewfinder-box relative h-56 w-56 rounded-2xl border-2 border-cyan-400/80 transition-all duration-300"
+                  class="viewfinder-box relative h-64 w-64 rounded-2xl border-2 border-cyan-400/80 transition-all duration-300"
                   [class.!border-emerald-400]="flashState() === 'success'"
                   [class.!border-red-400]="flashState() === 'error'"
                 >
-                  <!-- 4 L-shaped Neon Corners -->
                   <span
-                    class="absolute -top-1.5 -left-1.5 h-6 w-6 border-t-4 border-l-4 border-cyan-400 rounded-tl-lg"
+                    class="absolute -top-1.5 -left-1.5 h-7 w-7 border-t-4 border-l-4 border-cyan-400 rounded-tl-lg"
                   ></span>
                   <span
-                    class="absolute -top-1.5 -right-1.5 h-6 w-6 border-t-4 border-r-4 border-cyan-400 rounded-tr-lg"
+                    class="absolute -top-1.5 -right-1.5 h-7 w-7 border-t-4 border-r-4 border-cyan-400 rounded-tr-lg"
                   ></span>
                   <span
-                    class="absolute -bottom-1.5 -left-1.5 h-6 w-6 border-b-4 border-l-4 border-cyan-400 rounded-bl-lg"
+                    class="absolute -bottom-1.5 -left-1.5 h-7 w-7 border-b-4 border-l-4 border-cyan-400 rounded-bl-lg"
                   ></span>
                   <span
-                    class="absolute -bottom-1.5 -right-1.5 h-6 w-6 border-b-4 border-r-4 border-cyan-400 rounded-br-lg"
+                    class="absolute -bottom-1.5 -right-1.5 h-7 w-7 border-b-4 border-r-4 border-cyan-400 rounded-br-lg"
                   ></span>
 
-                  <!-- Center Target Dot -->
                   <div class="absolute inset-0 grid place-items-center">
-                    <span class="h-2 w-2 rounded-full bg-cyan-400/70 animate-ping"></span>
+                    <span class="h-2 w-2 rounded-full bg-cyan-400/80 animate-ping"></span>
                   </div>
                 </div>
 
                 <!-- Bottom Status Pill in Viewfinder -->
-                <div class="absolute bottom-4 left-4 right-4 flex justify-center">
+                <div class="absolute bottom-5 left-4 right-4 flex justify-center">
                   <span
-                    class="rounded-full px-3.5 py-1 text-[11px] font-bold backdrop-blur-md transition-colors"
-                    [class.bg-slate-900_80]="flashState() === 'idle'"
+                    class="rounded-full px-4 py-1.5 text-xs font-bold backdrop-blur-md transition-colors shadow-lg"
+                    [class.bg-slate-900_90]="flashState() === 'idle'"
                     [class.text-cyan-300]="flashState() === 'idle'"
+                    [class.border]="flashState() === 'idle'"
+                    [class.border-cyan-500_30]="flashState() === 'idle'"
                     [class.bg-emerald-500]="flashState() === 'success'"
                     [class.text-slate-950]="flashState() === 'success'"
                     [class.bg-red-500]="flashState() === 'error'"
@@ -394,14 +427,46 @@ declare global {
                   </span>
                 </div>
               </div>
-            </div>
+            } @else {
+              <!-- Idle State: Prominent Big Button to Start Camera -->
+              <div
+                class="flex h-full w-full flex-col items-center justify-center p-8 text-center bg-radial from-slate-900 to-slate-950"
+              >
+                <div
+                  class="relative mb-5 grid h-24 w-24 place-items-center rounded-3xl border-2 border-dashed border-cyan-500/50 bg-cyan-950/30 text-4xl text-cyan-400 shadow-2xl"
+                >
+                  📷
+                  <span class="absolute -top-1 -right-1 flex h-4 w-4">
+                    <span
+                      class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"
+                    ></span>
+                    <span class="relative inline-flex rounded-full h-4 w-4 bg-cyan-500"></span>
+                  </span>
+                </div>
 
-            <p class="mt-3 text-center text-xs text-slate-400">
-              💡 Căn chỉnh mã QR vé khách hàng vào giữa khung ngắm để hệ thống tự động nhận diện và
-              soát vé.
-            </p>
+                <h3 class="text-xl font-black text-white">Máy quét Camera chưa bật</h3>
+                <p class="mt-2 max-w-sm text-xs text-slate-400 leading-relaxed">
+                  Nhấn nút bên dưới để cấp quyền Camera cho trình duyệt và bắt đầu quét mã QR tự
+                  động bằng kính ngắm laser.
+                </p>
+
+                <button
+                  type="button"
+                  (click)="startCamera()"
+                  class="mt-6 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 px-8 py-4 text-sm font-black uppercase tracking-wider text-white shadow-xl shadow-cyan-500/25 transition-all hover:scale-105 hover:brightness-125"
+                >
+                  <span class="text-lg">📷</span>
+                  <span>BẬT CAMERA QUÉT TRỰC TIẾP</span>
+                </button>
+              </div>
+            }
           </div>
-        }
+
+          <p class="mt-3 text-center text-xs text-slate-400">
+            💡 Căn chỉnh mã QR vé khách hàng vào giữa khung ngắm để hệ thống tự động nhận diện và
+            soát vé.
+          </p>
+        </div>
       </section>
 
       <!-- 2 Input Methods: Hardware QR Scanner / Paste & Manual Lookup -->
@@ -724,6 +789,36 @@ export class PortalStaffComponent implements OnInit, OnDestroy {
     }
   }
 
+  testSoundSuccess(): void {
+    this.playSuccessSound();
+    this.toast.show('🔊 Đã phát âm thanh Chime xác nhận thành công.', 'info');
+  }
+
+  testSoundError(): void {
+    this.playErrorSound();
+    this.toast.show('⚠ Đã phát âm thanh Buzz từ chối vào cổng.', 'warning');
+  }
+
+  testMockCheckin(): void {
+    this.flashState.set('success');
+    this.playSuccessSound();
+    this.lastCheckedIn.set({
+      ticketId: 'mock-ticket-id',
+      bookingCode: 'CH' + Math.floor(100000 + Math.random() * 900000),
+      status: 'USED',
+      usedAt: new Date().toLocaleTimeString('vi-VN'),
+      customerName: 'Khách hàng VIP (Demo Test)',
+      customerEmail: 'vip@cinehub.vn',
+      movieTitle: 'Avatar: Dòng Chảy Của Nước',
+      cinemaName: 'CineHub Thủ Thiêm',
+      auditoriumName: 'Phòng IMAX Laser 01',
+      startTime: '19:30',
+      seats: ['E10', 'E11'],
+    });
+    this.toast.show('🧪 Đã chạy kịch bản quét vé giả lập thành công!', 'success');
+    setTimeout(() => this.flashState.set('idle'), 2000);
+  }
+
   private playSuccessSound(): void {
     try {
       const ctx = this.getAudioContext();
@@ -877,7 +972,7 @@ export class PortalStaffComponent implements OnInit, OnDestroy {
             this.scanStatus.set(`Đã tìm thấy mã: ${rawValue.slice(0, 16)}...`);
             await this.executeCheckin({ qrPayload: rawValue });
 
-            // Pause for 2s before resuming scanner to prevent multiple triggers
+            // Pause for 2.5s before resuming scanner to prevent multiple triggers
             setTimeout(() => {
               this.isScanningPaused = false;
               this.scanStatus.set('Đang dò mã QR trong kính ngắm...');
