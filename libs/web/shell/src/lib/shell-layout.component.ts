@@ -102,11 +102,25 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                 {{ activeLang() === 'vi' ? 'Góc điện ảnh' : 'Cinema Corner' }}
               </a>
               <a
+                routerLink="/reviews"
+                routerLinkActive="!text-amber-300"
+                class="text-white/75 transition hover:text-white"
+              >
+                {{ activeLang() === 'vi' ? 'Review' : 'Reviews' }}
+              </a>
+              <a
                 routerLink="/my-tickets"
                 routerLinkActive="!text-amber-300"
                 class="text-white/75 transition hover:text-white"
               >
                 {{ activeLang() === 'vi' ? 'Vé của tôi' : 'My Tickets' }}
+              </a>
+              <a
+                routerLink="/profile"
+                routerLinkActive="!text-amber-300"
+                class="text-white/75 transition hover:text-white"
+              >
+                {{ activeLang() === 'vi' ? 'Hồ sơ' : 'Profile' }}
               </a>
             </nav>
 
@@ -243,6 +257,24 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               } @else {
                 <div class="flex items-center gap-2">
                   <a
+                    routerLink="/profile"
+                    aria-label="Hồ sơ người dùng"
+                    title="Hồ sơ người dùng"
+                    class="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-amber-400 hover:text-amber-300"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M20 21a8 8 0 0 0-16 0" />
+                    </svg>
+                  </a>
+                  <a
                     [routerLink]="['/auth']"
                     [queryParams]="{ mode: 'register' }"
                     class="hidden rounded-xl px-4 py-2 text-xs font-black text-white/80 transition hover:text-white md:block"
@@ -289,8 +321,12 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               <a routerLink="/cinema-corner" class="py-1.5 text-white/80 hover:text-amber-300"
                 >Góc điện ảnh</a
               >
+              <a routerLink="/reviews" class="py-1.5 text-white/80 hover:text-amber-300">Review</a>
               <a routerLink="/my-tickets" class="py-1.5 text-white/80 hover:text-amber-300"
                 >Vé của tôi</a
+              >
+              <a routerLink="/profile" class="py-1.5 text-white/80 hover:text-amber-300"
+                >Hồ sơ cá nhân</a
               >
               @if (!authStore.isAuthenticated()) {
                 <div class="mt-2 flex items-center gap-3 border-t border-white/10 pt-3">
