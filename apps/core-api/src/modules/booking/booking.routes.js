@@ -14,6 +14,9 @@ bookingRouter.get('/status', controller.status);
 bookingRouter.get('/showtimes/:showtimeId/seats', optionalAuth, controller.getSeats);
 bookingRouter.get('/seats/:showtimeId', optionalAuth, controller.getSeats);
 bookingRouter.get('/stream/:showtimeId', optionalAuth, controller.streamShowtimeSeats);
+bookingRouter.get('/events/:showtimeId', optionalAuth, controller.streamShowtimeSeats);
+bookingRouter.get('/:showtimeId/events', optionalAuth, controller.streamShowtimeSeats);
+bookingRouter.get('/:showtimeId/stream', optionalAuth, controller.streamShowtimeSeats);
 bookingRouter.get('/holds/current', requireAuth, controller.getCurrentHold);
 bookingRouter.post('/holds', requireAuth, validate(holdSeatsRequestSchema), controller.holdSeats);
 bookingRouter.delete(

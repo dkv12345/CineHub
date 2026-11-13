@@ -8,4 +8,12 @@ describe('CineHub Angular Web App', () => {
     expect(Array.isArray(appRoutes)).toBe(true);
     expect(appRoutes.length).toBeGreaterThan(0);
   });
+
+  it('ensures no route combines redirectTo with canMatch (NG04014 violation)', () => {
+    for (const route of appRoutes) {
+      if (route.redirectTo !== undefined) {
+        expect(route.canMatch).toBeUndefined();
+      }
+    }
+  });
 });

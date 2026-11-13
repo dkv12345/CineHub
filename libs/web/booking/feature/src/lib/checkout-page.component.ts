@@ -300,48 +300,58 @@ import { HttpClient } from '@angular/common/http';
 
       <!-- Modal Quét Mã QR Thanh Toán -->
       @if (paymentModalData(); as modal) {
-        <div class="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4 backdrop-blur-md">
+        <div class="fixed inset-0 z-50 grid place-items-center bg-black/85 p-4 backdrop-blur-md">
           <div
-            class="w-full max-w-md rounded-3xl border border-amber-400/30 bg-slate-900 p-6 text-center shadow-2xl"
+            class="w-full max-w-md rounded-3xl border border-amber-400/40 bg-slate-900/95 p-6 text-center shadow-2xl backdrop-blur-2xl"
           >
-            <h3 class="text-xl font-black text-amber-300">
-              Quét mã thanh toán {{ modal.provider }}
-            </h3>
-            <p class="mt-1 text-xs text-slate-400">
-              Số tiền: <b class="text-emerald-400">{{ formatCurrency(modal.amount) }}</b>
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+              <span
+                class="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-black text-amber-300"
+              >
+                Mô phỏng thanh toán Sandbox
+              </span>
+              <button
+                type="button"
+                (click)="paymentModalData.set(null)"
+                class="text-xs font-black text-white/60 hover:text-white"
+              >
+                ✕ Đóng
+              </button>
+            </div>
+
+            <h3 class="mt-4 text-xl font-black text-white">Cổng thanh toán {{ modal.provider }}</h3>
+            <p class="mt-1 text-xs text-slate-300">
+              Tổng số tiền:
+              <b class="text-base text-amber-300">{{ formatCurrency(modal.amount) }}</b>
             </p>
 
-            <div class="my-5 inline-block rounded-2xl bg-white p-4 shadow-2xl">
+            <div class="my-4 inline-block rounded-2xl bg-white p-3 shadow-2xl">
               <img
                 [src]="
+                  modal.qrCodeUrl ||
                   'https://quickchart.io/qr?text=' +
-                  encodeURIComponent(modal.qrData) +
-                  '&size=240&margin=2'
+                    encodeURIComponent(modal.qrData) +
+                    '&size=240&margin=2'
                 "
                 alt="QR Thanh Toán"
-                class="h-[220px] w-[220px] object-contain"
+                class="h-[210px] w-[210px] object-contain rounded-xl"
               />
             </div>
 
-            <p class="text-[11px] text-slate-400">
-              Mở ứng dụng {{ modal.provider }} để quét mã, hoặc mở cổng thanh toán:
-            </p>
+            <div
+              class="rounded-2xl border border-emerald-500/30 bg-emerald-950/40 p-3 text-[12px] font-semibold text-emerald-300"
+            >
+              ⚡ Hệ thống đang chạy ở môi trường thử nghiệm (Sandbox). Bạn không cần quét bằng tài
+              khoản thật. Vui lòng bấm nút xác nhận bên dưới để hoàn tất đơn đặt vé ngay.
+            </div>
 
-            <div class="mt-4 flex flex-col gap-2.5">
-              <a
-                [href]="modal.payUrl"
-                target="_blank"
-                class="inline-block rounded-xl bg-amber-400 py-3 text-xs font-black text-black hover:bg-amber-300"
-              >
-                Mở trang thanh toán {{ modal.provider }} ↗
-              </a>
-
+            <div class="mt-5 flex flex-col gap-2.5">
               <button
                 type="button"
                 (click)="simulatePaymentSuccess(modal.paymentId, modal.bookingId)"
-                class="rounded-xl border border-emerald-400/50 bg-emerald-500/20 py-2.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30"
+                class="w-full rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 py-3.5 text-sm font-black text-white shadow-xl shadow-emerald-950/50 transition hover:brightness-125"
               >
-                ⚡ Giả lập thanh toán thành công (Sandbox)
+                ✓ Xác nhận đã thanh toán thành công
               </button>
 
               <button
@@ -349,7 +359,7 @@ import { HttpClient } from '@angular/common/http';
                 (click)="goToResult(modal.bookingId)"
                 class="rounded-xl bg-white/10 py-2.5 text-xs font-bold text-slate-300 hover:bg-white/20"
               >
-                Tôi đã hoàn tất chuyển khoản
+                Kiểm tra trạng thái đơn vé
               </button>
             </div>
           </div>

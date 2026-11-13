@@ -147,10 +147,18 @@ export async function lazyInitShowtimeSeats(showtimeId) {
  * @returns {Promise<any[]>}
  */
 export async function findShowtimeSeats(showtimeId) {
-  await lazyInitShowtimeSeats(showtimeId);
+  let targetId = showtimeId;
+  const st = await prisma.showtime.findFirst({
+    where: { OR: [{ id: showtimeId }, { externalId: showtimeId }] },
+    select: { id: true },
+  });
+  if (st) {
+    targetId = st.id;
+  }
+  await lazyInitShowtimeSeats(targetId);
 
   return prisma.showtimeSeat.findMany({
-    where: { showtimeId },
+    where: { showtimeId: targetId },
     include: {
       seat: {
         include: {

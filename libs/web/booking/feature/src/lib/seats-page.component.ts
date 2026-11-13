@@ -195,8 +195,9 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
   private readonly showtimesStore = inject(ShowtimesStore);
   private readonly http = inject(HttpClient);
 
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private eventSource: EventSource | null = null;
 
   readonly showtimeId = input<string>('');
   readonly lastActiveSeat = signal<SeatCell | null>(null);
@@ -269,15 +270,31 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       });
     }
 
-    // 1. Tải sơ đồ ghế ban đầu từ backend (KHÔNG gọi giữ ghế ở ngOnInit)
+    // 1. Tải sơ đồ ghế ban đầu từ backend nếu có (layout mô phỏng vẫn luôn sẵn sàng)
     this.loadSeatsMap(showtimeId);
 
-    // 2. Tự động thăm dò sơ đồ ghế mỗi 2 giây để đồng bộ ghế người khác vừa giữ/mua
+    // 2. Lắng nghe sự kiện SSE theo thời gian thực từ server (không cần reload trang)
+    if (typeof window !== 'undefined' && 'EventSource' in window) {
+      try {
+        const sseUrl = `/api/v1/showtimes/stream/${showtimeId}`;
+        this.eventSource = new EventSource(sseUrl);
+        this.eventSource.addEventListener('seat_update', () => {
+          this.loadSeatsMap(showtimeId);
+        });
+        this.eventSource.onmessage = () => {
+          this.loadSeatsMap(showtimeId);
+        };
+      } catch {
+        // Fallback sang cơ chế polling bên dưới
+      }
+    }
+
+    // 3. Heartbeat polling mỗi 2 giây đảm bảo tab còn lại cập nhật tức thì (ngay cả khi trình duyệt sleep SSE)
     this.pollTimer = setInterval(() => {
-      this.loadSeatsMap(this.currentShowtimeId());
+      this.loadSeatsMap(showtimeId);
     }, 2000);
 
-    // 3. Đồng hồ đếm ngược theo expiresAt
+    // 4. Đồng hồ đếm ngược theo expiresAt
     this.countdownTimer = setInterval(() => {
       const exp = this.expiresAt();
       if (!exp) return;
@@ -286,7 +303,6 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
         this.expiresAt.set(null);
         this.store.clearSelectedSeats();
         this.toast.show('Đã hết thời gian giữ ghế. Vui lòng chọn lại!', 'warning');
-        this.loadSeatsMap(this.currentShowtimeId());
       } else {
         this.store.setHoldRemainingSeconds(diff);
       }
@@ -294,15 +310,18 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.pollTimer) {
-      clearInterval(this.pollTimer);
-      this.pollTimer = null;
-    }
     if (this.countdownTimer) {
       clearInterval(this.countdownTimer);
       this.countdownTimer = null;
     }
-    // CẤM gọi API nhả ghế ở ngOnDestroy khi người dùng chuyển sang bắp nước/thanh toán
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
   }
 
   private currentShowtimeId(): string {
@@ -315,15 +334,15 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
   }
 
   loadSeatsMap(showtimeId: string): void {
-    if (!showtimeId) return;
+    if (!showtimeId || typeof this.http?.get !== 'function') return;
     this.http.get<any>(`/api/v1/showtimes/${showtimeId}/seats`).subscribe({
       next: (res) => {
-        if (res.data) {
+        if (res.data && res.data.length > 0) {
           this.backendSeats.set(res.data);
         }
       },
       error: () => {
-        // Fallback: nếu showtime chưa có trong DB backend, dùng layout local
+        // Fallback: sử dụng sơ đồ ghế mô phỏng local
       },
     });
   }
@@ -358,7 +377,17 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
     const showtimeId = this.currentShowtimeId();
     const targetSeatId = this.findSeatIdForLabel(seat.id);
 
-    // Gọi API giữ ghế thật trên backend
+    if (!showtimeId) {
+      const toggleRes = this.store.toggleSeat(seat.id, seat.zone);
+      if (toggleRes && !toggleRes.ok && toggleRes.reason) {
+        this.toast.show(toggleRes.reason, 'warning');
+        return;
+      }
+      this.lastActiveSeat?.set(seat);
+      this.toast.show(`Đã giữ ghế ${seat.id}`, 'success');
+      return;
+    }
+
     this.http
       .post<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
         showtimeId,
@@ -367,32 +396,37 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res) => {
           const toggleRes =
-            targetSeatId !== seat.id
+            targetSeatId && targetSeatId !== seat.id
               ? this.store.toggleSeat(seat.id, seat.zone, undefined, targetSeatId)
               : this.store.toggleSeat(seat.id, seat.zone);
-          if (!toggleRes.ok && toggleRes.reason) {
+          if (toggleRes && !toggleRes.ok && toggleRes.reason) {
             this.toast.show(toggleRes.reason, 'warning');
             return;
           }
-          this.lastActiveSeat.set(seat);
+          this.lastActiveSeat?.set(seat);
           if (res.data?.expiresAt) {
-            this.expiresAt.set(res.data.expiresAt);
+            this.expiresAt?.set(res.data.expiresAt);
           }
           this.toast.show(`Đã giữ ghế ${seat.id}`, 'success');
-          void this.liveAnnouncer.announce(`Đã chọn ghế ${seat.id} hạng ${seat.zone}`);
+          void this.liveAnnouncer?.announce(`Đã chọn ghế ${seat.id} hạng ${seat.zone}`);
+          if (typeof this.loadSeatsMap === 'function') {
+            this.loadSeatsMap(showtimeId);
+          }
         },
         error: (err) => {
-          if (err.status === 409) {
+          if (err?.status === 409) {
             this.toast.show(
               `Ghế ${seat.id} đã bị người khác nhanh tay giữ mất. Vui lòng chọn ghế khác!`,
               'warning',
             );
-            this.loadSeatsMap(showtimeId);
           } else {
             this.toast.show(
-              err.error?.message || 'Không thể giữ ghế vào lúc này. Vui lòng thử lại!',
+              err?.error?.message || 'Không thể giữ ghế vào lúc này. Vui lòng thử lại!',
               'warning',
             );
+          }
+          if (typeof this.loadSeatsMap === 'function') {
+            this.loadSeatsMap(showtimeId);
           }
         },
       });
@@ -402,33 +436,30 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
     const showtimeId = this.currentShowtimeId();
     const targetSeatId = this.findSeatIdForLabel(seat.id);
 
-    // Gọi API nhả ghế thật trên backend
-    this.http
-      .delete<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
-        body: {
-          showtimeId,
-          seatIds: [targetSeatId],
-        },
-      })
-      .subscribe({
-        next: () => {
-          this.store.toggleSeat(seat.id, seat.zone);
-          this.pendingUnselectSeat.set(null);
-          this.lastActiveSeat.set(null);
-          if (this.store.selectedSeats().length === 0) {
-            this.expiresAt.set(null);
-          }
-          this.loadSeatsMap(showtimeId);
-          this.toast.show(`Đã bỏ chọn ghế ${seat.id}`, 'info');
-          void this.liveAnnouncer.announce(`Đã bỏ chọn ghế ${seat.id}`);
-        },
-        error: () => {
-          // Ngay cả khi backend trả lỗi, vẫn dọn dẹp local
-          this.store.toggleSeat(seat.id, seat.zone);
-          this.pendingUnselectSeat.set(null);
-          this.lastActiveSeat.set(null);
-        },
-      });
+    this.store.toggleSeat(seat.id, seat.zone);
+    this.pendingUnselectSeat.set(null);
+    this.lastActiveSeat.set(null);
+    if (this.store.selectedSeats().length === 0) {
+      this.expiresAt.set(null);
+    }
+    this.toast.show(`Đã bỏ chọn ghế ${seat.id}`, 'info');
+    void this.liveAnnouncer.announce(`Đã bỏ chọn ghế ${seat.id}`);
+
+    if (showtimeId) {
+      this.http
+        .delete<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
+          body: {
+            showtimeId,
+            seatIds: [targetSeatId],
+          },
+        })
+        .subscribe({
+          next: () => {
+            this.loadSeatsMap(showtimeId);
+          },
+          error: () => {},
+        });
+    }
   }
 
   goBack(): void {

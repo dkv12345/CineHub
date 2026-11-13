@@ -16,6 +16,8 @@
     "dev:all": "npm run dev",
     "dev:api": "npx nx serve core-api",
     "dev:web": "npx nx serve web",
+    "dev:portal": "npm run dev:portal -w @cinehub/web",
+    "dev:both": "concurrently -n \"API,WEB-CUST,STAFF-ADMIN\" -c \"green,cyan,amber\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:portal\"",
     "build": "npx nx run-many -t build",
     "build:web": "npx nx build web",
     "test": "npx nx run-many -t test",

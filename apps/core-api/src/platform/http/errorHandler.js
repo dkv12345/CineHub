@@ -11,6 +11,22 @@ export function notFound(req, res) {
 }
 
 export function errorHandler(err, req, res, _next) {
+  if (req.log) {
+    req.log.warn(
+      {
+        err: {
+          message: err.message,
+          code: err.code,
+          status: err.status,
+          details: err.details,
+          stack: err.stack,
+        },
+        body: req.body,
+      },
+      'Request error occurred',
+    );
+  }
+
   if (err instanceof ZodError) {
     return res.status(400).json({
       error: {

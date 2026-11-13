@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "ng serve web",
+    "dev:portal": "ng serve web --port 4300",
     "build": "ng build web",
     "test": "vitest run"
   },

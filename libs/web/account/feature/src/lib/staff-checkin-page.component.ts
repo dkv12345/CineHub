@@ -65,6 +65,23 @@ interface StaffStats {
           </div>
         </div>
 
+        <!-- Quick Staff Login Shortcut -->
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/30 bg-slate-900/80 px-4 py-3 text-xs"
+        >
+          <span class="text-slate-300">
+            💡 Hệ thống cho phép soát vé trực tiếp với mọi tài khoản đăng nhập hoặc chuyển nhanh
+            sang Nhân viên soát vé chính thức.
+          </span>
+          <button
+            type="button"
+            (click)="quickLoginStaff()"
+            class="rounded-xl border border-amber-400 bg-amber-400/20 px-3.5 py-1.5 font-bold text-amber-300 transition hover:bg-amber-400 hover:text-black"
+          >
+            ⚡ Đăng nhập tài khoản Staff (staff@cinehub.vn)
+          </button>
+        </div>
+
         <div class="grid gap-6 md:grid-cols-2">
           <!-- Form 1: Quét / Dán mã QR ký số -->
           <section class="rounded-3xl border-2 border-slate-700 bg-slate-900/90 p-6 shadow-2xl">
@@ -253,6 +270,21 @@ export class StaffCheckinPageComponent implements OnInit {
     void this.loadStats();
   }
 
+  async quickLoginStaff(): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post<any>('/api/v1/auth/login', {
+          email: 'staff@cinehub.vn',
+          password: 'Password123!',
+        }),
+      );
+      this.toast.show('Đã đăng nhập vai trò Nhân viên soát vé (Staff)!', 'success');
+      void this.loadStats();
+    } catch {
+      this.toast.show('Không thể đăng nhập tự động. Vui lòng thử lại.', 'warning');
+    }
+  }
+
   async loadStats(): Promise<void> {
     try {
       const res = await firstValueFrom(this.http.get<{ data?: StaffStats }>('/api/v1/staff/stats'));
@@ -298,15 +330,25 @@ export class StaffCheckinPageComponent implements OnInit {
     try {
       const res = await firstValueFrom(
         this.http.post<{
-          data?: {
-            message: string;
-            ticket: CheckinTicketResult;
-          };
+          data?: any;
         }>('/api/v1/staff/checkin', payload),
       );
       this.loading.set(false);
-      if (res?.data?.ticket) {
-        this.lastCheckedIn.set(res.data.ticket);
+      if (res?.data) {
+        const ticketData: CheckinTicketResult = res.data.ticket || {
+          ticketId: res.data.ticketId || '',
+          status: res.data.status || 'USED',
+          usedAt: res.data.usedAt || new Date().toLocaleTimeString('vi-VN'),
+          bookingCode: res.data.bookingCode || '',
+          customerName: res.data.customerName || 'Khách hàng',
+          customerEmail: res.data.customerEmail || '',
+          movieTitle: res.data.movieTitle || 'Phim CineHub',
+          cinemaName: res.data.cinemaName || '',
+          auditoriumName: res.data.auditoriumName || '',
+          startTime: res.data.startTime || 'Suất chiếu',
+          seats: res.data.seats || (res.data.seatLabel ? [res.data.seatLabel] : []),
+        };
+        this.lastCheckedIn.set(ticketData);
         this.toast.show(res.data.message || 'Check-in vé thành công!', 'success');
         void this.loadStats();
       }

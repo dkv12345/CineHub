@@ -68,6 +68,7 @@ export interface IssuedTicket {
   readonly totalPaid: number;
   readonly paymentMethod: 'VNPAY' | 'MOMO' | 'ZALOPAY' | 'DEMO';
   readonly qrPayload?: string;
+  readonly qrDataUrl?: string;
   readonly qrVersion?: number;
   readonly usedAt?: string | null;
   readonly createdAt: string;

@@ -225,21 +225,28 @@ import { TicketsStore } from '@cinehub/web/tickets/data-access';
                 {{ ticket.cinemaName }} · Ghế {{ ticket.seats.join(', ') }}
               </p>
 
-              <!-- Simulated High-res QR Grid -->
-              <div
-                class="mx-auto my-5 grid h-[220px] w-[220px] rounded-2xl bg-white p-3 shadow-2xl"
-                [style.grid-template-columns]="'repeat(25, minmax(0, 1fr))'"
-                role="img"
-                [attr.aria-label]="'Mã QR vé ' + ticket.bookingCode"
-              >
-                @for (cell of qrCells(ticket.qrPayload || ticket.bookingCode); track $index) {
-                  <span class="min-h-0 min-w-0" [class.bg-black]="cell"></span>
-                }
+              <!-- Real Sharp QR Code Image Matching Result Page -->
+              <div class="mx-auto my-5 flex justify-center">
+                <div class="rounded-3xl bg-white p-4 shadow-2xl">
+                  <img
+                    [src]="
+                      ticket.qrDataUrl ||
+                      'https://quickchart.io/qr?text=' +
+                        encodeURIComponent(ticket.qrPayload || ticket.bookingCode) +
+                        '&size=240&margin=2'
+                    "
+                    alt="Mã QR vé"
+                    class="h-[210px] w-[210px] object-contain rounded-xl"
+                  />
+                </div>
               </div>
 
-              <div class="mb-3 rounded-xl border border-white/10 bg-slate-900 p-2">
-                <p class="font-mono text-[10px] text-slate-300 break-all">
+              <div class="mb-3 rounded-2xl border border-white/10 bg-slate-900/90 p-3">
+                <p class="font-mono text-xs font-black text-amber-300 break-all">
                   {{ ticket.qrPayload || ticket.bookingCode }}
+                </p>
+                <p class="mt-1.5 text-xs font-bold text-slate-300">
+                  Áp dụng cho toàn bộ {{ ticket.seats.length }} ghế: {{ ticket.seats.join(', ') }}
                 </p>
               </div>
 
@@ -284,6 +291,10 @@ export class MyTicketsPageComponent implements OnInit {
 
   ngOnInit(): void {
     void this.bookingStore.loadMyTicketsFromApi();
+  }
+
+  encodeURIComponent(val: string): string {
+    return encodeURIComponent(val || '');
   }
 
   barcodePattern(code: string): number[] {

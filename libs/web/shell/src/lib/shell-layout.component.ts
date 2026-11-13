@@ -216,18 +216,18 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                         authStore.user()?.role === 'STAFF' || authStore.user()?.role === 'ADMIN'
                       ) {
                         <a
-                          routerLink="/staff/checkin"
+                          routerLink="/portal/staff"
                           class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-amber-300 transition hover:bg-white/10"
                         >
-                          Soát vé QR (Staff)
+                          Cổng Soát Vé (Staff Gate) ↗
                         </a>
                       }
                       @if (authStore.user()?.role === 'ADMIN') {
                         <a
-                          routerLink="/admin"
+                          routerLink="/portal/admin"
                           class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-emerald-300 transition hover:bg-white/10"
                         >
-                          Quản trị hệ thống (Admin)
+                          Trung Tâm Quản Trị (Admin Portal) ↗
                         </a>
                       }
                       <button
