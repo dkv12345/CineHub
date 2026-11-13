@@ -20,6 +20,7 @@ export interface ShowtimeMetadata {
 
 export interface SelectedSeatItem {
   readonly id: string;
+  readonly seatId?: string;
   readonly zone: 'normal' | 'vip' | 'sweetbox';
   readonly price: number;
 }
@@ -503,6 +504,7 @@ export const BookingStore = signalStore(
         id: string,
         zone: 'normal' | 'vip' | 'sweetbox',
         customPrice?: number,
+        seatId?: string,
       ): { ok: boolean; reason?: string } {
         const current = store.selectedSeats();
         const exists = current.some((s) => s.id === id);
@@ -517,7 +519,15 @@ export const BookingStore = signalStore(
               reason: `Chỉ được chọn tối đa ${MAX_SEATS_PER_BOOKING} ghế mỗi giao dịch.`,
             };
           }
-          updatedSeats = [...current, { id, zone, price: customPrice ?? seatPriceForZone(zone) }];
+          updatedSeats = [
+            ...current,
+            {
+              id,
+              ...(seatId ? { seatId } : {}),
+              zone,
+              price: customPrice ?? seatPriceForZone(zone),
+            },
+          ];
         }
 
         patchState(store, { selectedSeats: updatedSeats });
