@@ -400,7 +400,10 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (res) => {
-          const toggleRes = this.store.toggleSeat(seat.id, seat.zone);
+          const toggleRes =
+            targetSeatId !== seat.id
+              ? this.store.toggleSeat(seat.id, seat.zone, undefined, targetSeatId)
+              : this.store.toggleSeat(seat.id, seat.zone);
           if (!toggleRes.ok && toggleRes.reason) {
             this.toast.show(toggleRes.reason, 'warning');
             return;

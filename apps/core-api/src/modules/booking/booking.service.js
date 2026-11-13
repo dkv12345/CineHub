@@ -145,24 +145,15 @@ export async function createBooking({
     throw new AppError(400, 'BAD_REQUEST', 'Vui lòng chọn ít nhất 1 ghế');
   }
 
-  // 1. Verify user holds these seats in Redis
-  const activeLeases = await getActiveSeatLeases(showtimeId, seatIds);
-  for (const sId of seatIds) {
-    const lease = activeLeases.get(sId);
-    if (!lease || lease.userId !== userId) {
-      throw new AppError(
-        409,
-        'SEAT_HOLD_EXPIRED',
-        'Phiên giữ chỗ của bạn đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại ghế.',
-      );
-    }
-  }
-
-  // 2. Fetch ShowtimeSeats from DB
+  // 1. Fetch ShowtimeSeats from DB (supports canonical seatId, showtimeSeatId, or seat label)
   const showtimeSeats = await prisma.showtimeSeat.findMany({
     where: {
       showtimeId,
-      seatId: { in: seatIds },
+      OR: [
+        { seatId: { in: seatIds } },
+        { id: { in: seatIds } },
+        { seat: { label: { in: seatIds } } },
+      ],
     },
     include: {
       seat: {
@@ -175,6 +166,21 @@ export async function createBooking({
 
   if (showtimeSeats.length !== seatIds.length) {
     throw new AppError(400, 'BAD_REQUEST', 'Một số ghế không tồn tại trong suất chiếu này');
+  }
+
+  const canonicalSeatIds = showtimeSeats.map((s) => s.seatId);
+
+  // 2. Verify user holds these seats in Redis
+  const activeLeases = await getActiveSeatLeases(showtimeId, canonicalSeatIds);
+  for (const sId of canonicalSeatIds) {
+    const lease = activeLeases.get(sId);
+    if (!lease || lease.userId !== userId) {
+      throw new AppError(
+        409,
+        'SEAT_HOLD_EXPIRED',
+        'Phiên giữ chỗ của bạn đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại ghế.',
+      );
+    }
   }
 
   const defaultTicketType = await bookingRepository.findDefaultTicketType();

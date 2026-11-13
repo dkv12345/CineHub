@@ -30,6 +30,20 @@ export async function settlePayment({
     include: {
       booking: {
         include: {
+          user: {
+            select: {
+              email: true,
+              fullName: true,
+            },
+          },
+          showtime: {
+            include: {
+              movie: true,
+              cinema: true,
+              auditorium: true,
+            },
+          },
+          concessions: true,
           seats: {
             include: {
               showtimeSeat: true,
@@ -147,16 +161,46 @@ export async function settlePayment({
       '[settlePayment] Successfully settled payment and issued tickets',
     );
 
-    // Dispatch confirmation email via SMTP/Mailpit asynchronously
+    const showtimeRecord = existingPayment.booking.showtime;
+    const formattedShowtime = showtimeRecord?.startTime
+      ? new Date(showtimeRecord.startTime).toLocaleString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'Asia/Ho_Chi_Minh',
+        })
+      : new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+    const recipientEmail =
+      existingPayment.booking.contactEmail ||
+      existingPayment.booking.user?.email ||
+      'customer@cinehub.vn';
+
+    // Dispatch confirmation email via SMTP/Mailtrap asynchronously
     sendBookingConfirmationEmail({
-      to: existingPayment.booking.contactEmail || 'customer@cinehub.vn',
+      to: recipientEmail,
+      customerName: existingPayment.booking.user?.fullName || '',
       bookingCode: result.booking.code,
-      movieTitle: 'Vé xem phim CineHub',
-      cinemaName: 'CineHub Cinema',
-      auditoriumName: 'Phòng chiếu',
-      showtime: new Date().toLocaleString('vi-VN'),
+      movieTitle: showtimeRecord?.movie?.title || 'Vé xem phim CineHub',
+      cinemaName: showtimeRecord?.cinema?.name || 'CineHub Cinema',
+      auditoriumName: showtimeRecord?.auditorium?.name || 'Phòng chiếu',
+      format: showtimeRecord?.formatRaw || showtimeRecord?.format || '2D Phụ Đề',
+      showtime: formattedShowtime,
       seats: existingPayment.booking.seats.map((s) => s.seatLabel),
+      concessions: (existingPayment.booking.concessions || []).map((c) => ({
+        name: c.nameSnapshot,
+        quantity: c.quantity,
+        unitPrice: c.unitPrice,
+      })),
       totalAmount: result.booking.totalAmount,
+      paymentMethod: provider || existingPayment.provider || 'ONLINE',
+      txnRef: existingPayment.txnRef,
+      providerTxnNo: result.payment.providerTxnNo || providerTxnNo || null,
+      paidAt: (result.payment.paidAt || new Date()).toLocaleString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+      }),
       tickets: result.tickets.map((t) => ({
         ticketId: t.id,
         seatLabel:

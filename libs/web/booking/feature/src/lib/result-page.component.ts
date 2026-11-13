@@ -315,10 +315,17 @@ export class ResultPageComponent implements OnInit, OnDestroy {
           if (res.data) this.handleBookingUpdate(res.data);
         },
         error: () => {
-          // Nếu 404 hoặc không tìm thấy, fallback về local store ticket nếu có
+          // Nếu 404 hoặc không tìm thấy, dừng polling để tránh lặp lỗi và fallback về local store nếu có
+          if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+          }
           const localTicket = this.store.findTicketById(id) ?? this.store.issuedTickets()[0];
           if (localTicket) {
             this.isLoading.set(false);
+          } else {
+            this.isLoading.set(false);
+            this.isFailed.set(true);
           }
         },
       });

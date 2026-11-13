@@ -525,7 +525,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
 
     const checkoutPayload = {
       showtimeId: this.bookingStore.showtimeId(),
-      seatIds: this.bookingStore.selectedSeats().map((s) => s.id),
+      seatIds: this.bookingStore.selectedSeats().map((s) => s.seatId || s.id),
       concessions: this.concessionsStore.selectedItems().map((c) => ({
         concessionId: c.id,
         quantity: c.quantity,
@@ -571,11 +571,10 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       },
       error: (checkoutErr) => {
         console.error('[Checkout Error]:', checkoutErr);
-        // Fallback: nếu lỗi (vd mock session không có trong DB backend), dùng fallback local store
-        const ticket = this.bookingStore.completeCheckout(this.concessionsStore.totalAmount());
-        this.concessionsStore.clearConcessions();
-        this.toast.show(`Đặt vé: ${ticket.bookingCode}`, 'success');
-        void this.router.navigate(['/result', ticket.id]);
+        const message =
+          checkoutErr?.error?.message ||
+          'Không thể tạo đơn đặt vé. Vui lòng chọn lại ghế và thử lại!';
+        this.toast.show(message, 'warning');
       },
     });
   }
