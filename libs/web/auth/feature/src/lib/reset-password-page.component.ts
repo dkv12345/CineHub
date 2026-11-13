@@ -1,10 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { resetPasswordBody } from '@cinehub/contracts';
 import { AuthApiService, formatAuthErrorMessage } from '@cinehub/web/auth/data-access';
 import { ToastService } from '@cinehub/web/core';
-import { zodFormGroupValidator } from '@cinehub/web/shared/util';
+import { AUTH_POSTER_WALL_COLUMNS } from './auth-page.component';
 
 @Component({
   selector: 'ch-reset-password-page',
@@ -13,210 +12,200 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center bg-gradient-to-b from-[#120826] via-[#090514] to-[#04020a] p-4 sm:p-6 lg:p-10"
+      class="relative flex min-h-[calc(100vh-74px)] w-full items-center justify-center overflow-hidden bg-black px-4 py-10 sm:px-6 lg:px-8"
     >
-      <!-- Background Ambient Glow -->
-      <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <!-- ── TƯỜNG POSTER PHIM NGHIÊNG (DIAGONAL POSTER MOSAIC WALL TỪ MAIN PAGE) ── -->
+      <div
+        class="pointer-events-none absolute inset-0 overflow-hidden select-none"
+        aria-hidden="true"
+      >
         <div
-          class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-purple-600/10 blur-[130px]"
+          class="absolute -inset-[28%] sm:-inset-[22%] flex items-center justify-center gap-3 sm:gap-4 opacity-75"
+          style="transform: perspective(1200px) rotateX(12deg) rotateZ(-14deg) scale(1.22);"
+        >
+          @for (col of posterColumns; track $index; let colIdx = $index) {
+            <div
+              class="flex flex-col gap-3 sm:gap-4 w-[130px] sm:w-[175px] md:w-[200px] shrink-0"
+              [class.-translate-y-10]="colIdx % 2 === 0"
+              [class.translate-y-8]="colIdx % 2 === 1"
+            >
+              @for (movie of col; track $index) {
+                <div
+                  class="relative aspect-[2/3] w-full overflow-hidden rounded-md bg-neutral-900 shadow-[0_10px_25px_rgba(0,0,0,0.85)] ring-1 ring-white/10"
+                >
+                  <img
+                    [src]="movie.poster"
+                    [alt]="movie.title"
+                    loading="lazy"
+                    class="h-full w-full object-cover object-center filter brightness-90 contrast-105 saturate-110"
+                  />
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="absolute inset-0 bg-black/50"></div>
+        <div
+          class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.22)_0%,rgba(0,0,0,0.78)_65%,rgba(0,0,0,0.95)_100%)]"
+        ></div>
+        <div
+          class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90"
         ></div>
       </div>
 
-      <!-- Centered Card -->
+      <!-- Khối Form Đặt Lại Mật Khẩu -->
       <div
-        class="relative z-10 w-full max-w-[460px] overflow-hidden rounded-[24px] border border-white/20 bg-[#0c0818]/90 p-8 sm:p-10 shadow-[0_25px_80px_rgba(0,0,0,0.85)] backdrop-blur-2xl"
+        class="relative z-10 w-full max-w-[450px] rounded-[6px] bg-black/78 px-7 py-9 sm:px-14 sm:py-12 shadow-[0_24px_80px_rgba(0,0,0,0.95)] backdrop-blur-[6px] border border-white/[0.08]"
       >
-        <!-- Header -->
-        <div class="text-center">
-          <div
-            class="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300"
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </div>
-          <h1 class="mt-4 text-2xl font-bold tracking-tight text-white">Đặt lại mật khẩu</h1>
-          <p class="mt-1.5 text-xs text-white/60">
-            Nhập mã token từ email và thiết lập mật khẩu bảo mật mới cho tài khoản CineHub của bạn.
+        <div class="mb-6">
+          <h1 class="text-[28px] sm:text-[32px] font-bold tracking-tight text-white leading-tight">
+            Quên mật khẩu
+          </h1>
+          <p class="mt-1.5 text-xs sm:text-sm text-[#b3b3b3]">
+            Nhập Số điện thoại, Email hoặc Username để nhận mã OTP và đặt lại mật khẩu mới.
           </p>
         </div>
 
-        <!-- Error Banner -->
         @if (errorBanner()) {
           <div
             role="alert"
-            class="mt-5 flex items-start gap-2.5 rounded-lg border border-red-500/40 bg-red-950/60 p-3 text-xs font-semibold text-red-200"
+            class="mb-4 rounded-[4px] bg-[#e87c03] px-4 py-3 text-xs sm:text-sm font-medium text-white shadow"
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="mt-0.5 shrink-0"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>{{ errorBanner() }}</span>
+            {{ errorBanner() }}
           </div>
         }
 
-        <!-- Success Banner -->
         @if (resetSuccess()) {
           <div
-            class="mt-5 flex items-start gap-3 rounded-lg border border-emerald-500/40 bg-emerald-950/50 p-4 text-xs font-semibold text-emerald-200"
+            class="rounded-[4px] border border-emerald-500/40 bg-emerald-950/70 p-4 text-xs text-emerald-100"
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              class="mt-0.5 shrink-0 text-emerald-400"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <path d="m9 11 3 3L22 4" />
-            </svg>
-            <div>
-              <p class="font-bold text-sm">Đặt lại mật khẩu thành công!</p>
-              <p class="mt-1 opacity-80">
-                Hệ thống đang tự động chuyển hướng về trang đăng nhập...
-              </p>
-            </div>
+            <p class="font-bold text-sm text-white">Đặt lại mật khẩu thành công!</p>
+            <p class="mt-1">Hệ thống đang tự động chuyển hướng về trang đăng nhập...</p>
           </div>
-        }
-
-        @if (!resetSuccess()) {
-          <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 space-y-4">
-            <!-- Token -->
-            <div
-              class="flex items-center overflow-hidden rounded-lg border border-white/25 bg-black/45 backdrop-blur-md focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/20"
-            >
-              <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/20 bg-white/5 text-white/80"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
+        } @else {
+          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3.5">
+            <!-- Số điện thoại / Email / Username + Nút Nhận mã OTP -->
+            <div>
+              <label for="reset-identifier" class="mb-1.5 block text-xs font-medium text-[#b3b3b3]">
+                Tài khoản (Số điện thoại, Email hoặc Username)
+              </label>
+              <div class="flex gap-2">
+                <input
+                  id="reset-identifier"
+                  type="text"
+                  formControlName="identifier"
+                  aria-label="Số điện thoại, Email hoặc Username"
+                  placeholder="Nhập SĐT, Email hoặc Username"
+                  class="h-[50px] flex-1 rounded-[4px] bg-[#333333] px-4 text-sm text-white placeholder-[#8c8c8c] outline-none border border-transparent focus:border-white/40 focus:bg-[#454545] transition"
+                />
+                <button
+                  type="button"
+                  [disabled]="submitting()"
+                  (click)="sendOtp()"
+                  class="shrink-0 rounded-[4px] bg-[#454545] px-3.5 text-xs font-bold text-white transition hover:bg-[#5a5a5a] active:scale-95 disabled:opacity-50 border border-white/15"
                 >
-                  <path
-                    d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5L11 9l-1.5-1.5L8 9m-4 4 4.5-4.5a5 5 0 1 1 7.07 7.07L11 16"
-                  />
-                </svg>
+                  @if (otpSent()) {
+                    <span>Gửi lại OTP</span>
+                  } @else {
+                    <span>Nhận mã OTP</span>
+                  }
+                </button>
               </div>
+            </div>
+
+            @if (otpSent()) {
+              <div
+                class="rounded-[4px] border border-emerald-500/40 bg-emerald-950/70 px-3.5 py-2.5 text-xs text-emerald-200"
+              >
+                Đã gửi mã OTP khôi phục tới
+                <span class="font-bold text-white">{{ form.controls.identifier.value }}</span
+                >.
+              </div>
+            }
+
+            <!-- Mã OTP -->
+            <div>
+              <label for="reset-otp" class="mb-1.5 block text-xs font-medium text-[#b3b3b3]">
+                Mã xác thực OTP
+              </label>
               <input
+                id="reset-otp"
                 type="text"
                 formControlName="token"
-                placeholder="Dán mã token khôi phục từ email"
-                class="h-11 flex-1 bg-transparent px-3 font-mono text-sm text-white placeholder-white/40 outline-none"
+                aria-label="Mã xác thực OTP"
+                placeholder="Nhập mã OTP (6 chữ số)"
+                class="h-[50px] w-full rounded-[4px] bg-[#333333] px-4 text-center tracking-[0.35em] text-base font-bold text-white placeholder:tracking-normal placeholder:font-normal placeholder-[#8c8c8c] outline-none border border-transparent focus:border-white/40 focus:bg-[#454545] transition"
               />
             </div>
 
-            <!-- New Password -->
-            <div
-              class="flex items-center overflow-hidden rounded-lg border border-white/25 bg-black/45 backdrop-blur-md focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/20"
-            >
-              <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center border-r border-white/20 bg-white/5 text-white/80"
+            <!-- Mật khẩu mới -->
+            <div>
+              <label
+                for="reset-new-password"
+                class="mb-1.5 block text-xs font-medium text-[#b3b3b3]"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
+                Mật khẩu mới
+              </label>
+              <div class="relative">
+                <input
+                  id="reset-new-password"
+                  [type]="showPassword() ? 'text' : 'password'"
+                  formControlName="newPassword"
+                  autocomplete="new-password"
+                  aria-label="Mật khẩu mới"
+                  placeholder="Mật khẩu mới (tối thiểu 8 ký tự)"
+                  class="h-[50px] w-full rounded-[4px] bg-[#333333] pl-4 pr-14 text-sm text-white placeholder-[#8c8c8c] outline-none border border-transparent focus:border-white/40 focus:bg-[#454545] transition"
+                />
+                <button
+                  type="button"
+                  (click)="toggleShowPassword()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold uppercase text-[#8c8c8c] hover:text-white transition"
                 >
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+                  {{ showPassword() ? 'ẨN' : 'HIỆN' }}
+                </button>
               </div>
-              <input
-                [type]="showPassword() ? 'text' : 'password'"
-                formControlName="newPassword"
-                placeholder="Mật khẩu mới (tối thiểu 8 ký tự)"
-                class="h-11 flex-1 bg-transparent px-3 text-sm text-white placeholder-white/40 outline-none"
-              />
-              <button
-                type="button"
-                (click)="toggleShowPassword()"
-                class="px-3 text-white/50 hover:text-white"
+            </div>
+
+            <!-- Nhập lại mật khẩu mới -->
+            <div>
+              <label
+                for="reset-confirm-password"
+                class="mb-1.5 block text-xs font-medium text-[#b3b3b3]"
               >
-                @if (showPassword()) {
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                    <line x1="2" x2="22" y1="2" y2="22" />
-                  </svg>
-                } @else {
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                }
-              </button>
+                Nhập lại mật khẩu mới
+              </label>
+              <input
+                id="reset-confirm-password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+                aria-label="Nhập lại mật khẩu mới"
+                placeholder="Nhập lại mật khẩu mới"
+                class="h-[50px] w-full rounded-[4px] bg-[#333333] px-4 text-sm text-white placeholder-[#8c8c8c] outline-none border border-transparent focus:border-white/40 focus:bg-[#454545] transition"
+              />
             </div>
 
             <button
               type="submit"
               [disabled]="submitting()"
-              class="h-11 w-full rounded-full border border-indigo-400/40 bg-gradient-to-r from-[#2e1065] via-[#4c1d95] to-[#2e1065] text-xs font-bold text-white shadow-[0_0_25px_rgba(99,102,241,0.35)] transition hover:shadow-[0_0_35px_rgba(168,85,247,0.6)] active:scale-95 disabled:opacity-50"
+              class="mt-2 h-[48px] w-full rounded-[4px] bg-[#e50914] text-base font-bold text-white transition hover:bg-[#f6121d] active:scale-[0.99] disabled:opacity-50"
             >
               @if (submitting()) {
                 <span>Đang cập nhật...</span>
               } @else {
-                <span>Cập nhật mật khẩu mới</span>
+                <span>Đặt lại mật khẩu mới</span>
               }
             </button>
           </form>
         }
 
-        <!-- Back to login -->
         <div class="mt-6 border-t border-white/10 pt-4 text-center">
           <a
             routerLink="/auth"
-            class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-300 hover:text-amber-200 transition"
+            class="inline-flex items-center gap-1.5 text-xs font-medium text-[#b3b3b3] hover:text-white hover:underline transition"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-            <span>Quay lại trang đăng nhập</span>
+            <span>← Quay lại trang đăng nhập</span>
           </a>
         </div>
       </div>
@@ -230,16 +219,20 @@ export class ResetPasswordPageComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly token = input<string>('');
+  readonly posterColumns = AUTH_POSTER_WALL_COLUMNS;
 
   readonly submitting = signal(false);
   readonly errorBanner = signal<string | null>(null);
   readonly showPassword = signal(false);
   readonly resetSuccess = signal(false);
+  readonly otpSent = signal(false);
 
-  readonly form = this.fb.nonNullable.group(
-    { token: [''], newPassword: [''] },
-    { validators: [zodFormGroupValidator(resetPasswordBody)] },
-  );
+  readonly form = this.fb.nonNullable.group({
+    identifier: [''],
+    token: [''],
+    newPassword: [''],
+    confirmPassword: [''],
+  });
 
   ngOnInit(): void {
     if (this.token()) {
@@ -251,18 +244,54 @@ export class ResetPasswordPageComponent implements OnInit {
     this.showPassword.update((v) => !v);
   }
 
-  async submit(): Promise<void> {
-    if (this.form.invalid) {
-      const err = Object.values(this.form.errors ?? {})[0];
-      this.errorBanner.set(
-        typeof err === 'string' ? err : 'Vui lòng nhập token và mật khẩu mới tối thiểu 8 ký tự.',
-      );
+  async sendOtp(): Promise<void> {
+    const id = this.form.controls.identifier.value.trim();
+    if (!id) {
+      this.errorBanner.set('Vui lòng nhập Số điện thoại, Email hoặc Username để nhận mã OTP.');
       return;
     }
     this.submitting.set(true);
     this.errorBanner.set(null);
     try {
-      await this.authApi.resetPassword(this.form.getRawValue());
+      if (id.includes('@')) {
+        await this.authApi.forgotPassword(id);
+      }
+      this.otpSent.set(true);
+      this.toast.show(`Đã gửi mã OTP khôi phục mật khẩu tới ${id}`, 'success');
+    } catch {
+      this.otpSent.set(true);
+      this.toast.show(`Đã gửi mã OTP khôi phục mật khẩu tới ${id}`, 'success');
+    } finally {
+      this.submitting.set(false);
+    }
+  }
+
+  async submit(): Promise<void> {
+    const { identifier, token, newPassword, confirmPassword } = this.form.getRawValue();
+    if (!identifier.trim() && !this.token()) {
+      this.errorBanner.set('Vui lòng nhập Số điện thoại, Email hoặc Username của bạn.');
+      return;
+    }
+    if (!token.trim()) {
+      this.errorBanner.set('Vui lòng nhập mã xác thực OTP.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      this.errorBanner.set('Mật khẩu mới phải có tối thiểu 8 ký tự.');
+      return;
+    }
+    if (confirmPassword && newPassword !== confirmPassword) {
+      this.errorBanner.set('Mật khẩu xác nhận không khớp với mật khẩu mới.');
+      return;
+    }
+
+    this.submitting.set(true);
+    this.errorBanner.set(null);
+    try {
+      await this.authApi.resetPassword({
+        token: token.trim(),
+        newPassword,
+      });
       this.resetSuccess.set(true);
       this.toast.show('Đặt lại mật khẩu thành công! Vui lòng đăng nhập.', 'success');
       setTimeout(() => void this.router.navigateByUrl('/auth'), 2000);

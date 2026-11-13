@@ -28,7 +28,7 @@ import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
 
           @if (movie().studio) {
             <span
-              class="absolute left-3 top-3 max-w-[72%] truncate rounded-full border border-white/40 bg-slate-950/90 px-2.5 py-1 text-[9px] font-black text-white backdrop-blur"
+              class="absolute left-3 top-3 max-w-[65%] truncate rounded-full border border-white/40 bg-slate-950/90 px-2.5 py-1 text-[9px] font-black text-white backdrop-blur"
             >
               {{ movie().studio }}
             </span>
@@ -66,6 +66,32 @@ import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
             {{ movie().status === 'now' ? 'Mua vé' : 'Xem phim' }}
           </a>
 
+          @if (movie().status !== 'now') {
+            <button
+              type="button"
+              (click)="onBellClick($event)"
+              class="inline-flex min-w-36 items-center justify-center gap-2 rounded-xl border-2 px-4 py-2 text-xs font-black backdrop-blur transition"
+              [class]="
+                notified()
+                  ? 'border-amber-300 bg-amber-400 text-slate-950 shadow-[0_0_16px_rgba(251,191,36,0.75)]'
+                  : 'border-amber-400 bg-slate-900/90 text-amber-300 hover:bg-amber-400 hover:text-slate-950'
+              "
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                [attr.fill]="notified() ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {{ notified() ? 'Xem thông báo' : 'Nhận thông báo' }}
+            </button>
+          }
+
           <a
             [routerLink]="['/movie', movie().id]"
             [queryParams]="{ trailer: '1' }"
@@ -78,29 +104,58 @@ import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
           </a>
         </div>
 
-        <!-- Favorite Heart Button -->
-        <button
-          type="button"
-          (click)="toggleFavorite()"
-          [attr.aria-label]="
-            isFavorite() ? 'Bỏ yêu thích ' + movie().title : 'Yêu thích ' + movie().title
-          "
-          class="absolute right-3 top-3 z-20 grid h-8 w-8 place-items-center rounded-full border-2 bg-slate-950/90 backdrop-blur transition hover:scale-105"
-          [class]="isFavorite() ? 'border-red-500 text-red-500' : 'border-white text-white'"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            [attr.fill]="isFavorite() ? 'currentColor' : 'none'"
-            stroke="currentColor"
-            stroke-width="2"
+        <!-- Top-Right Action Buttons: Bell (cho phim Sắp chiếu) + Favorite Heart -->
+        <div class="absolute right-2.5 top-2.5 z-20 flex items-center gap-1.5">
+          @if (movie().status !== 'now') {
+            <button
+              type="button"
+              (click)="onBellClick($event)"
+              [attr.aria-label]="'Nhận email thông báo lịch chiếu ' + movie().title"
+              title="Nhận thông báo email khi phim sắp khởi chiếu hoặc có suất chiếu sớm"
+              class="grid h-8 w-8 place-items-center rounded-full border-2 backdrop-blur transition hover:scale-110 active:scale-95"
+              [class]="
+                notified()
+                  ? 'border-amber-300 bg-amber-400 text-slate-950 shadow-[0_0_16px_rgba(251,191,36,0.85)]'
+                  : 'border-amber-400/90 bg-slate-950/90 text-amber-300 hover:bg-amber-400 hover:text-slate-950'
+              "
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                [attr.fill]="notified() ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </button>
+          }
+
+          <button
+            type="button"
+            (click)="toggleFavorite()"
+            [attr.aria-label]="
+              isFavorite() ? 'Bỏ yêu thích ' + movie().title : 'Yêu thích ' + movie().title
+            "
+            class="grid h-8 w-8 place-items-center rounded-full border-2 bg-slate-950/90 backdrop-blur transition hover:scale-105"
+            [class]="isFavorite() ? 'border-red-500 text-red-500' : 'border-white text-white'"
           >
-            <path
-              d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            />
-          </svg>
-        </button>
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              [attr.fill]="isFavorite() ? 'currentColor' : 'none'"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div class="pt-3">
@@ -112,7 +167,34 @@ import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
         </a>
         <p class="mt-1 truncate text-[11px] font-bold text-amber-300">{{ movie().genre }}</p>
         @if (movie().status !== 'now') {
-          <p class="mt-1.5 text-[10px] font-black text-amber-400">{{ movie().release }}</p>
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="text-[10px] font-black text-amber-400">
+              Khởi chiếu: {{ movie().release }}
+            </span>
+            <button
+              type="button"
+              (click)="onBellClick($event)"
+              class="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-black transition"
+              [class]="
+                notified()
+                  ? 'border-amber-300 bg-amber-400/20 text-amber-300'
+                  : 'border-white/25 bg-slate-800 text-white/90 hover:border-amber-400 hover:text-amber-300'
+              "
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="11"
+                height="11"
+                [attr.fill]="notified() ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="2.2"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span>{{ notified() ? 'Đã hẹn lịch' : 'Nhắc lịch' }}</span>
+            </button>
+          </div>
         }
       </div>
     </article>
@@ -121,7 +203,9 @@ import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
 export class MovieCardComponent {
   readonly movie = input.required<Movie>();
   readonly favorite = input<boolean>(false);
+  readonly notified = input<boolean>(false);
   readonly favoriteChange = output<boolean>();
+  readonly notifyClick = output<Movie>();
 
   readonly isFavorite = signal(false);
 
@@ -132,5 +216,11 @@ export class MovieCardComponent {
   toggleFavorite(): void {
     this.isFavorite.update((f) => !f);
     this.favoriteChange.emit(this.isFavorite());
+  }
+
+  onBellClick(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.notifyClick.emit(this.movie());
   }
 }

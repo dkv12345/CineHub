@@ -6,6 +6,7 @@ import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
 import type { Movie } from '@cinehub/web/shared/util';
 import { HomePageComponent } from './home-page.component';
 import { MovieDetailPageComponent } from './movie-detail-page.component';
+import { ReviewsPageComponent } from './reviews-page.component';
 
 const movieDetailResolver: ResolveFn<Movie | null> = (route) => {
   const catalogStore = inject(CatalogStore);
@@ -22,6 +23,11 @@ export const CATALOG_ROUTES: Routes = [
     path: '',
     component: HomePageComponent,
     title: 'CineHub – Đặt vé xem phim & Chọn ghế 3D POV',
+  },
+  {
+    path: 'reviews',
+    component: ReviewsPageComponent,
+    title: 'Review Phim Chiếu Rạp | CineHub',
   },
   {
     path: 'movie/:id',

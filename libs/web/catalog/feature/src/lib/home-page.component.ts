@@ -403,14 +403,13 @@ import {
               <button
                 type="button"
                 (click)="shelf.set(item.key)"
-                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition"
+                class="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm transition"
                 [class]="
                   shelf() === item.key
                     ? 'border-2 border-amber-400 bg-amber-400/20 font-black text-amber-300 shadow-md'
                     : 'border-2 border-white/40 bg-slate-800 font-black text-white shadow-md hover:bg-slate-700 hover:text-amber-300'
                 "
               >
-                <span>{{ item.icon }}</span>
                 <span>{{ item.label }}</span>
               </button>
             }
@@ -580,7 +579,11 @@ import {
         <!-- Movie Cards Grid -->
         <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           @for (m of displayMovies(); track m.id) {
-            <ch-movie-card [movie]="m" />
+            <ch-movie-card
+              [movie]="m"
+              [notified]="store.isMovieNotified(m.id)"
+              (notifyClick)="onMovieBellClick($event)"
+            />
           } @empty {
             <div
               class="col-span-full rounded-2xl border-2 border-slate-700 bg-slate-900 p-12 text-center text-sm font-bold text-white/60"
@@ -614,6 +617,332 @@ import {
           </a>
         </div>
       </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           8. MODAL MOCKUP EMAIL THÔNG BÁO PHIM SẮP CHIẾU / SUẤT CHIẾU SỚM
+      ══════════════════════════════════════════════════════════ -->
+      @if (notificationPreviewMovie(); as notifyMovie) {
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6 backdrop-blur-md overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          [attr.aria-label]="'Mẫu email thông báo phim ' + notifyMovie.title"
+          (click)="closeNotificationPreview()"
+        >
+          <div
+            class="relative my-auto w-full max-w-[680px] overflow-hidden rounded-2xl border-2 border-amber-400/50 bg-[#0b0f19] text-white shadow-[0_25px_90px_rgba(0,0,0,0.95)]"
+            (click)="$event.stopPropagation()"
+          >
+            <!-- Thanh công cụ phía trên Modal: Trạng thái đăng ký chuông & Tùy chỉnh tên khách hàng -->
+            <div
+              class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-5 py-3.5"
+            >
+              <div class="flex items-center gap-2.5">
+                <span
+                  class="grid h-8 w-8 place-items-center rounded-full bg-amber-400 text-slate-950 shadow-[0_0_12px_rgba(251,191,36,0.8)]"
+                >
+                  🔔
+                </span>
+                <div>
+                  <p class="text-xs font-black uppercase tracking-wider text-amber-300">
+                    Đã bật thông báo nhắc lịch phim
+                  </p>
+                  <p class="text-[11px] text-slate-400">
+                    Mockup Email tự động gửi khi phim có suất chiếu sớm hoặc gần tới ngày khởi chiếu
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="toggleNotifyFromModal(notifyMovie)"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-bold transition"
+                  [class]="
+                    store.isMovieNotified(notifyMovie.id)
+                      ? 'border-amber-400/60 bg-amber-400/15 text-amber-300 hover:bg-amber-400/25'
+                      : 'border-slate-700 bg-slate-800 text-slate-300 hover:text-white'
+                  "
+                >
+                  {{
+                    store.isMovieNotified(notifyMovie.id)
+                      ? '✓ Đang nhận thông báo (Bấm để tắt)'
+                      : 'Bật lại thông báo'
+                  }}
+                </button>
+                <button
+                  type="button"
+                  (click)="closeNotificationPreview()"
+                  aria-label="Đóng cửa sổ"
+                  class="grid h-8 w-8 place-items-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:border-white hover:text-white transition"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- Thanh nhập thử Tên khách hàng & Loại thông báo -->
+            <div
+              class="grid gap-3 border-b border-slate-800 bg-slate-900/80 px-5 py-3 sm:grid-cols-[1fr_1fr_auto] sm:items-center"
+            >
+              <label class="flex items-center gap-2 text-xs text-slate-300">
+                <span class="shrink-0 font-bold text-amber-300">Khách hàng:</span>
+                <input
+                  type="text"
+                  [value]="previewCustomerName()"
+                  (input)="onCustomerNameInput($event)"
+                  placeholder="VD: Ngân"
+                  class="h-8 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 text-xs font-bold text-white outline-none focus:border-amber-400"
+                />
+              </label>
+
+              <label class="flex items-center gap-2 text-xs text-slate-300">
+                <span class="shrink-0 font-bold text-amber-300">Email:</span>
+                <input
+                  type="email"
+                  [value]="previewCustomerEmail()"
+                  (input)="onCustomerEmailInput($event)"
+                  placeholder="ngan.nguyen@gmail.com"
+                  class="h-8 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 text-xs text-white outline-none focus:border-amber-400"
+                />
+              </label>
+
+              <div class="flex rounded-lg border border-slate-700 bg-slate-950 p-0.5 text-[11px]">
+                <button
+                  type="button"
+                  (click)="notificationScenario.set('early')"
+                  class="rounded-md px-2.5 py-1 font-bold transition"
+                  [class]="
+                    notificationScenario() === 'early'
+                      ? 'bg-[#e50914] text-white'
+                      : 'text-slate-400 hover:text-white'
+                  "
+                >
+                  Suất chiếu sớm
+                </button>
+                <button
+                  type="button"
+                  (click)="notificationScenario.set('release')"
+                  class="rounded-md px-2.5 py-1 font-bold transition"
+                  [class]="
+                    notificationScenario() === 'release'
+                      ? 'bg-[#e50914] text-white'
+                      : 'text-slate-400 hover:text-white'
+                  "
+                >
+                  Sắp khởi chiếu
+                </button>
+              </div>
+            </div>
+
+            <!-- ── KHUNG MOCKUP EMAIL CHUẨN THEME DỰ ÁN CINEHUB ── -->
+            <div class="max-h-[75vh] overflow-y-auto p-4 sm:p-6 bg-[#0b0f19]">
+              <!-- Metadata Hộp thư đến -->
+              <div
+                class="mb-4 rounded-xl border border-slate-800 bg-slate-900/90 px-4 py-3 text-xs text-slate-300 space-y-1"
+              >
+                <div class="flex flex-wrap justify-between gap-2">
+                  <span>
+                    <strong class="text-slate-400">Từ:</strong> CineHub Cinema
+                    &lt;no-reply&#64;cinehub.vn&gt;
+                  </span>
+                  <span class="text-amber-300 font-bold">🔔 Tự động gửi từ lịch hẹn của bạn</span>
+                </div>
+                <div>
+                  <strong class="text-slate-400">Đến:</strong> {{ previewCustomerName() }} &lt;{{
+                    previewCustomerEmail()
+                  }}&gt;
+                </div>
+                <div>
+                  <strong class="text-slate-400">Chủ đề:</strong>
+                  <span class="font-bold text-white ml-1">
+                    @if (notificationScenario() === 'early') {
+                      🎬 [CineHub] Mở bán Suất Chiếu Sớm (Sneak Show) phim "{{
+                        notifyMovie.title
+                      }}"!
+                    } @else {
+                      🎬 [CineHub] Chỉ còn ít ngày nữa "{{ notifyMovie.title }}" chính thức khởi
+                      chiếu!
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <!-- Thân Email được bọc theo đúng chuẩn layout.js của CineHub -->
+              <div
+                class="overflow-hidden rounded-xl border border-slate-800 bg-[#111827] shadow-2xl"
+              >
+                <!-- Email Brand Header -->
+                <div
+                  class="border-b-2 border-[#e50914] bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 px-6 py-6 text-center"
+                >
+                  <div class="text-2xl font-black tracking-[0.12em] text-white">
+                    CINE<span class="text-[#e50914]">HUB</span>
+                  </div>
+                  <p
+                    class="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300/90"
+                  >
+                    Thông báo lịch chiếu &amp; suất chiếu sớm dành riêng cho bạn
+                  </p>
+                </div>
+
+                <!-- Email Content Body -->
+                <div class="p-6 sm:p-8 space-y-5">
+                  <!-- Badge trạng thái -->
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-300"
+                    >
+                      @if (notificationScenario() === 'early') {
+                        ✨ Đã mở bán vé Suất Chiếu Sớm (Sneak Show)
+                      } @else {
+                        📅 Sắp tới ngày khởi chiếu chính thức ({{ notifyMovie.release }})
+                      }
+                    </span>
+                    <span class="text-xs font-bold text-slate-400">
+                      Mã phim: #{{ notifyMovie.slug || notifyMovie.id }}
+                    </span>
+                  </div>
+
+                  <!-- Lời chào cá nhân hóa ("Ngân thân mến, ...") -->
+                  <div class="space-y-2.5">
+                    <h3 class="text-xl font-black text-white">
+                      {{ previewCustomerName() }} thân mến,
+                    </h3>
+                    @if (notificationScenario() === 'early') {
+                      <p class="text-sm leading-relaxed text-slate-300">
+                        Cảm ơn bạn đã nhấn chuông theo dõi bộ phim
+                        <strong class="text-amber-300">{{ notifyMovie.title }}</strong> trên hệ
+                        thống <strong class="text-white">CineHub</strong>. Chúng tôi rất vui được
+                        thông báo bộ phim bạn mong đợi vừa chính thức mở lịch
+                        <strong class="text-red-400">Suất Chiếu Sớm (Sneak Show)</strong> trước ngày
+                        khởi chiếu chính thức (<strong class="text-white">{{
+                          notifyMovie.release
+                        }}</strong
+                        >)!
+                      </p>
+                    } @else {
+                      <p class="text-sm leading-relaxed text-slate-300">
+                        Chỉ còn ít ngày nữa, bộ phim
+                        <strong class="text-amber-300">{{ notifyMovie.title }}</strong> mà bạn đã
+                        đặt lời nhắc trên <strong class="text-white">CineHub</strong> sẽ chính thức
+                        ra mắt khán giả toàn quốc vào ngày
+                        <strong class="text-white">{{ notifyMovie.release }}</strong
+                        >. Hiện các rạp đã mở đặt trước những vị trí ghế đẹp nhất!
+                      </p>
+                    }
+                  </div>
+
+                  <!-- Card Thông Tin Chi Tiết Bộ Phim trong Email -->
+                  <div
+                    class="relative overflow-hidden rounded-xl border border-slate-700 border-l-4 border-l-[#e50914] bg-slate-950/90 p-4 sm:p-5 shadow-inner"
+                  >
+                    <div class="flex flex-col gap-4 sm:flex-row">
+                      <img
+                        [src]="notifyMovie.poster"
+                        [alt]="notifyMovie.title"
+                        class="h-48 w-32 shrink-0 rounded-lg object-cover shadow-lg ring-1 ring-white/20 mx-auto sm:mx-0"
+                      />
+
+                      <div class="flex-1 space-y-2 text-xs">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span
+                            class="rounded bg-[#e50914] px-2 py-0.5 text-[10px] font-black text-white"
+                          >
+                            {{ notifyMovie.age || 'P' }}
+                          </span>
+                          @if (notifyMovie.rating > 0) {
+                            <span
+                              class="rounded border border-amber-400/50 bg-amber-400/15 px-2 py-0.5 text-[10px] font-black text-amber-300"
+                            >
+                              ★ {{ notifyMovie.rating }}/10
+                            </span>
+                          }
+                          <span class="font-bold text-amber-300">
+                            Khởi chiếu: {{ notifyMovie.release }}
+                          </span>
+                        </div>
+
+                        <h4 class="text-lg font-black text-white">{{ notifyMovie.title }}</h4>
+
+                        <div class="grid grid-cols-1 gap-1 text-slate-300 sm:grid-cols-2">
+                          <p>
+                            <span class="font-bold text-slate-400">Thể loại:</span>
+                            {{ notifyMovie.genre }}
+                          </p>
+                          <p>
+                            <span class="font-bold text-slate-400">Thời lượng:</span>
+                            {{ notifyMovie.duration || '1h 45m' }}
+                          </p>
+                          <p>
+                            <span class="font-bold text-slate-400">Đạo diễn:</span>
+                            {{ notifyMovie.director || 'Đang cập nhật' }}
+                          </p>
+                          <p>
+                            <span class="font-bold text-slate-400">Quốc gia:</span>
+                            {{ notifyMovie.country || 'Quốc tế' }}
+                          </p>
+                        </div>
+
+                        <p class="text-slate-300">
+                          <span class="font-bold text-slate-400">Diễn viên:</span>
+                          {{ notifyMovie.cast || 'Đang cập nhật' }}
+                        </p>
+
+                        <p class="line-clamp-3 pt-1 leading-relaxed text-slate-400">
+                          {{ notifyMovie.synopsis }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Khối ưu đãi & Trải nghiệm 3D POV -->
+                  <div
+                    class="rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200"
+                  >
+                    🎁
+                    <strong class="text-amber-300">Đặc quyền khách hàng đặt chuông sớm:</strong>
+                    Trải nghiệm chọn ghế góc nhìn <strong>3D Point-of-View</strong> thực tế và nhập
+                    mã <strong class="text-white">CINEHUB20</strong> để giảm ngay 20.000₫ khi đặt vé
+                    sớm.
+                  </div>
+
+                  <!-- Nút Hành Động (CTA) trong Email -->
+                  <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <a
+                      [routerLink]="['/movie', notifyMovie.id]"
+                      (click)="closeNotificationPreview()"
+                      class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-[#e50914] to-amber-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-900/50 transition hover:brightness-115"
+                    >
+                      <span>🎟️ Đặt Vé Suất Chiếu Sớm Ngay</span>
+                    </a>
+                    <a
+                      [routerLink]="['/movie', notifyMovie.id]"
+                      [queryParams]="{ trailer: '1' }"
+                      (click)="closeNotificationPreview()"
+                      class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-slate-800 px-5 py-3 text-xs font-black text-white transition hover:border-amber-300 hover:text-amber-300"
+                    >
+                      <span>▶ Xem Trailer Chính Thức</span>
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Email Footer -->
+                <div
+                  class="border-t border-slate-800 bg-[#0d131f] px-6 py-4 text-center text-[11px] text-slate-400 space-y-1"
+                >
+                  <p>
+                    Bạn nhận được email này vì đã nhấn biểu tượng chuông 🔔 đăng ký nhận thông báo
+                    cho phim <strong class="text-slate-300">{{ notifyMovie.title }}</strong> trên
+                    CineHub.
+                  </p>
+                  <p>© 2026 CineHub Enterprise. Mọi quyền được bảo lưu.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
     </main>
   `,
 })
@@ -622,6 +951,29 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly showtimesStore = inject(ShowtimesStore);
   readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
+
+  // State cho Chuông thông báo & Mockup Email Template
+  readonly notificationPreviewMovie = signal<Movie | null>(null);
+  readonly notificationScenario = signal<'early' | 'release'>('early');
+  readonly customRecipientName = signal<string>('');
+  readonly customRecipientEmail = signal<string>('');
+
+  readonly previewCustomerName = computed(() => {
+    const custom = this.customRecipientName().trim();
+    if (custom) return custom;
+    if (this.authStore.isAuthenticated() && this.authStore.displayName()) {
+      return this.authStore.displayName();
+    }
+    return 'Ngân';
+  });
+
+  readonly previewCustomerEmail = computed(() => {
+    const custom = this.customRecipientEmail().trim();
+    if (custom) return custom;
+    const userEmail = this.authStore.user()?.email;
+    if (userEmail) return userEmail;
+    return 'ngan.nguyen@gmail.com';
+  });
 
   readonly banners = [
     {
@@ -699,9 +1051,9 @@ export class HomePageComponent implements OnInit, OnDestroy {
   ];
 
   readonly shelfOptions = [
-    { key: 'history' as const, label: 'Lịch sử / Xem tiếp', icon: '🕒' },
-    { key: 'collection' as const, label: 'Bộ sưu tập', icon: '❤️' },
-    { key: 'trending' as const, label: 'Đang thịnh hành', icon: '✨' },
+    { key: 'history' as const, label: 'Lịch sử / Xem tiếp' },
+    { key: 'collection' as const, label: 'Bộ sưu tập' },
+    { key: 'trending' as const, label: 'Đang thịnh hành' },
   ];
 
   readonly nowShowingMovies = computed(() =>
@@ -915,6 +1267,29 @@ export class HomePageComponent implements OnInit, OnDestroy {
     const currentDate = this.quickShowtimeDate();
     if (this.quickDateOptions().some((option) => option.date === currentDate)) return;
     this.quickShowtimeDate.set(this.quickDateOptions()[0]?.date ?? '');
+  }
+
+  onMovieBellClick(movie: Movie): void {
+    if (!this.store.isMovieNotified(movie.id)) {
+      this.store.toggleMovieNotification(movie.id);
+    }
+    this.notificationPreviewMovie.set(movie);
+  }
+
+  toggleNotifyFromModal(movie: Movie): void {
+    this.store.toggleMovieNotification(movie.id);
+  }
+
+  closeNotificationPreview(): void {
+    this.notificationPreviewMovie.set(null);
+  }
+
+  onCustomerNameInput(event: Event): void {
+    this.customRecipientName.set((event.target as HTMLInputElement).value);
+  }
+
+  onCustomerEmailInput(event: Event): void {
+    this.customRecipientEmail.set((event.target as HTMLInputElement).value);
   }
 
   private isMovieCurrentlyShowing(movie: Movie): boolean {
