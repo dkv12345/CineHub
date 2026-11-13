@@ -900,6 +900,10 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       } else if (targetMode === 'login') {
         this.mode.set('login');
       }
+      const prefillEmail = params['email'];
+      if (typeof prefillEmail === 'string' && prefillEmail.trim()) {
+        this.loginForm.controls.email.setValue(prefillEmail.trim());
+      }
     });
 
     this.route.data.subscribe((data) => {

@@ -3,7 +3,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { verifyEmailBody } from '@cinehub/contracts';
 import { AuthApiService, formatAuthErrorMessage } from '@cinehub/web/auth/data-access';
-import { AuthStore, ToastService } from '@cinehub/web/core';
+import { ToastService } from '@cinehub/web/core';
 import { zodFormGroupValidator } from '@cinehub/web/shared/util';
 
 @Component({
@@ -172,7 +172,6 @@ import { zodFormGroupValidator } from '@cinehub/web/shared/util';
 export class VerifyEmailPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authApi = inject(AuthApiService);
-  private readonly authStore = inject(AuthStore);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -204,10 +203,11 @@ export class VerifyEmailPageComponent implements OnInit {
     this.errorBanner.set(null);
     const { email, code } = this.form.getRawValue();
     try {
-      const session = await this.authApi.verifyEmail({ email, code });
-      this.authStore.setSession(session.accessToken, session.user);
-      this.toast.show('Xác thực email thành công!', 'success');
-      void this.router.navigateByUrl('/');
+      await this.authApi.verifyEmail({ email, code });
+      this.toast.show('Xác thực email thành công! Vui lòng đăng nhập.', 'success');
+      void this.router.navigate(['/auth'], {
+        queryParams: { mode: 'login', email },
+      });
     } catch (error: unknown) {
       this.errorBanner.set(formatAuthErrorMessage(error));
     } finally {
