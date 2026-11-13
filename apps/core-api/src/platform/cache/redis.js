@@ -34,7 +34,15 @@ export function getRedisClient() {
 
 export async function closeRedis() {
   if (redisClient) {
-    await redisClient.quit();
+    try {
+      if (redisClient.status === 'ready' || redisClient.status === 'connect') {
+        await redisClient.quit();
+      } else {
+        redisClient.disconnect();
+      }
+    } catch {
+      redisClient.disconnect();
+    }
     redisClient = null;
   }
 }

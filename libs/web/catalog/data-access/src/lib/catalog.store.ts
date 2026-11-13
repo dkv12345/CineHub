@@ -9,7 +9,7 @@ import {
   withMethods,
   withState,
 } from '@ngrx/signals';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { cinemas as seedCinemas, movies as seedMovies, type Movie } from '@cinehub/web/shared/util';
 
 export interface CatalogState {
@@ -44,14 +44,19 @@ export const CatalogStore = signalStore(
       () => store.movies().find((m) => m.status === 'now') ?? store.movies()[0] ?? null,
     ),
     availableGenres: computed(() => {
-      const set = new Set<string>();
+      const counts = new Map<string, number>();
       for (const m of store.movies()) {
-        for (const g of m.genre.split(',')) {
+        for (const g of (m.genre || '').split(',')) {
           const trimmed = g.trim();
-          if (trimmed) set.add(trimmed);
+          if (trimmed) {
+            counts.set(trimmed, (counts.get(trimmed) ?? 0) + 1);
+          }
         }
       }
-      return Array.from(set).slice(0, 10);
+      return Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([genre]) => genre)
+        .slice(0, 12);
     }),
     filteredMovies: computed(() => {
       const status = store.statusFilter();
@@ -122,7 +127,9 @@ export const CatalogStore = signalStore(
       async refreshFromApi(): Promise<void> {
         patchState(store, { loading: true, error: null });
         try {
-          const res = await firstValueFrom(http.get<{ data?: Movie[] }>('/api/v1/movies'));
+          const res = await firstValueFrom(
+            http.get<{ data?: Movie[] }>('/api/v1/movies').pipe(timeout(6000)),
+          );
           if (!Array.isArray(res?.data)) {
             throw new Error('API phim trả về dữ liệu không hợp lệ.');
           }

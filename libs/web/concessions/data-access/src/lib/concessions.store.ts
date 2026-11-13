@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 export const MAX_CONCESSION_QUANTITY = 10;
 
@@ -94,7 +94,9 @@ export const ConcessionsStore = signalStore(
           const params: Record<string, string> = { seats: String(seats) };
           if (cinemaId) params['cinemaId'] = cinemaId;
           const res = await firstValueFrom(
-            http.get<{ data?: ConcessionItem[] }>('/api/v1/concessions', { params }),
+            http
+              .get<{ data?: ConcessionItem[] }>('/api/v1/concessions', { params })
+              .pipe(timeout(6000)),
           );
           if (!Array.isArray(res?.data)) {
             throw new Error('Dữ liệu bắp nước từ máy chủ không hợp lệ.');

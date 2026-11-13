@@ -1,11 +1,12 @@
 import crypto from 'crypto';
 import querystring from 'qs';
+import { env } from '../../platform/config/env.js';
 
 export function createVNPayPaymentUrl({ bookingId, amount, ipAddr, orderInfo }) {
-  const tmnCode = process.env.VNP_TMN_CODE || 'DEMOV210';
-  const secretKey = process.env.VNP_HASH_SECRET || 'RAXEFVWWCAJIJILJXYEUJYLJJLNRLJYL';
-  const vnpUrl = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
-  const returnUrl = process.env.VNP_RETURN_URL || 'http://localhost:4200/checkout';
+  const tmnCode = env.VNP_TMN_CODE;
+  const secretKey = env.VNP_HASH_SECRET;
+  const vnpUrl = env.VNP_URL;
+  const returnUrl = env.VNP_RETURN_URL;
 
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-GB', {
@@ -49,7 +50,10 @@ export function createVNPayPaymentUrl({ bookingId, amount, ipAddr, orderInfo }) 
     vnp_CreateDate: createDate,
   };
 
+  // 2. Sắp xếp các key theo bảng chữ cái A-Z nhưng GIỮ NGUYÊN GIÁ TRỊ THÔ (không encode)
   const sortedParams = sortObject(vnp_Params);
+
+  // 3. Tạo chuỗi signData chính xác tuyệt đối theo chuẩn VNPay
   const signData = querystring.stringify(sortedParams, { encode: false });
   const hmac = crypto.createHmac('sha512', secretKey);
   const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');

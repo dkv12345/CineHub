@@ -6,17 +6,17 @@ export function status(_req, res) {
   res.json({
     module: 'booking',
     status: bookingService.BOOKING_MODULE_STATUS,
+    message: 'Booking module ready',
   });
 }
 
 export async function getSeats(req, res, next) {
   try {
     const { showtimeId } = req.params;
-    const viewerUserId = req.user?.id || req.query.userId || null;
-    const data = await bookingService.getSeatMap(showtimeId, viewerUserId, req.query);
-    res.status(200).json({ data });
-  } catch (err) {
-    next(err);
+    const seats = await bookingService.getShowtimeSeats(showtimeId, req.user?.id);
+    res.status(200).json({ data: seats });
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -79,43 +79,29 @@ export async function getCurrentHold(req, res, next) {
 
 export async function holdSeats(req, res, next) {
   try {
+    const payload = req.valid?.body || req.body;
     const result = await bookingService.createSeatHold({
-      ...req.body,
-      userId: req.user?.id,
-      userEmail: req.user?.email,
+      showtimeId: payload.showtimeId || req.params.showtimeId,
+      seatIds: payload.seatIds,
+      userId: req.user.id,
     });
     res.status(201).json({ data: result });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 }
 
-export async function releaseHold(req, res, next) {
+export async function releaseSeats(req, res, next) {
   try {
-    const { showtimeId } = req.params;
-    const seatId = req.query.seatId || req.body?.seatId || null;
+    const payload = req.valid?.body || req.body;
     const result = await bookingService.releaseSeatHold({
-      showtimeId,
-      userId: req.user?.id,
-      seatId,
+      showtimeId: payload.showtimeId || req.params.showtimeId,
+      seatIds: payload.seatIds,
+      userId: req.user.id,
     });
     res.status(200).json({ data: result });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function releaseSingleSeat(req, res, next) {
-  try {
-    const { showtimeId, seatId } = req.params;
-    const result = await bookingService.releaseSeatHold({
-      showtimeId,
-      userId: req.user?.id,
-      seatId,
-    });
-    res.status(200).json({ data: result });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -146,16 +132,64 @@ export async function updateConcessions(req, res, next) {
   }
 }
 
-export async function checkout(req, res, next) {
+export async function checkoutBooking(req, res, next) {
   try {
-    const result = await bookingService.checkoutBooking({
-      ...req.body,
+    const payload = req.valid?.body || req.body;
+    const booking = await bookingService.createBooking({
       userId: req.user.id,
-      userEmail: req.user.email,
+      showtimeId: payload.showtimeId,
+      seatIds: payload.seatIds,
+      concessions: payload.concessions || [],
+      voucherCode: payload.voucherCode,
+      contactEmail: payload.contactEmail || req.user.email,
+      contactPhone: payload.contactPhone,
     });
-    res.status(200).json({ data: result });
-  } catch (err) {
-    next(err);
+    res.status(201).json({ data: booking });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function initiatePayment(req, res, next) {
+  try {
+    const { id: bookingId } = req.params;
+    const { provider = 'MOMO' } = req.body || {};
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+    const paymentResult = await bookingService.initiatePayment({
+      bookingId,
+      provider,
+      userId: req.user.id,
+      clientIp,
+    });
+
+    res.status(200).json({ data: paymentResult });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function refreshPayment(req, res, next) {
+  try {
+    const { id: bookingId } = req.params;
+    const booking = await bookingService.refreshBookingPayment({
+      bookingId,
+      userId: req.user.id,
+    });
+
+    res.status(200).json({ data: booking });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getBooking(req, res, next) {
+  try {
+    const { id: bookingId } = req.params;
+    const booking = await bookingService.getBookingDetails(bookingId, req.user.id);
+    res.status(200).json({ data: booking });
+  } catch (error) {
+    next(error);
   }
 }
 

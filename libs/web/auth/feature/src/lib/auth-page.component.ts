@@ -992,7 +992,7 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       const session = await this.authApi.login({ email, password });
       this.authStore.setSession(session.accessToken, session.user);
       this.toast.show(`Xin chào, ${session.user.fullName}!`, 'success');
-      void this.router.navigateByUrl('/');
+      this.navigateAfterAuth();
     } catch (error: unknown) {
       if (extractAuthErrorCode(error) === 'EMAIL_NOT_VERIFIED') {
         this.toast.show('Vui lòng xác thực mã OTP đã gửi qua email.', 'warning');
@@ -1073,6 +1073,15 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
     void this.signInDemoAccount('customer.a@cinehub.vn');
   }
 
+  private navigateAfterAuth(): void {
+    const raw = this.route.snapshot.queryParams['returnUrl'];
+    if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) {
+      void this.router.navigateByUrl(raw);
+      return;
+    }
+    void this.router.navigateByUrl('/');
+  }
+
   async signInDemoAccount(email: string): Promise<void> {
     this.submitting.set(true);
     this.errorBanner.set(null);
@@ -1083,13 +1092,13 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       });
       this.authStore.setSession(session.accessToken, session.user);
       this.toast.show(`Xin chào, ${session.user.fullName}!`, 'success');
-      const targetUrl =
-        session.user.role === 'STAFF'
-          ? '/staff/checkin'
-          : session.user.role === 'ADMIN'
-            ? '/admin'
-            : '/';
-      void this.router.navigateByUrl(targetUrl);
+      if (session.user.role === 'STAFF') {
+        void this.router.navigateByUrl('/staff/checkin');
+      } else if (session.user.role === 'ADMIN') {
+        void this.router.navigateByUrl('/admin');
+      } else {
+        this.navigateAfterAuth();
+      }
     } catch (error: unknown) {
       this.errorBanner.set(formatAuthErrorMessage(error));
     } finally {
@@ -1103,7 +1112,7 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       const session = await this.authApi.loginWithGoogle(idToken);
       this.authStore.setSession(session.accessToken, session.user);
       this.toast.show(`Xin chào, ${session.user.fullName}!`, 'success');
-      void this.router.navigateByUrl('/');
+      this.navigateAfterAuth();
     } catch (error: unknown) {
       this.errorBanner.set(formatAuthErrorMessage(error));
     } finally {

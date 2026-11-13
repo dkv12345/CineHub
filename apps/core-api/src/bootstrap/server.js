@@ -3,25 +3,22 @@ import { env } from '../platform/config/env.js';
 import { createApp } from './app.js';
 import { logger } from '../platform/observability/logger.js';
 import { closeMongo } from '../modules/chatbot/index.js';
-import { sweepExpiredBookings } from '../modules/booking/booking.service.js';
-import { processPendingOutboxEvents } from '../modules/booking/outbox.worker.js';
+import { cleanExpiredBookingsAndHolds } from '../jobs/cleanup-expired.js';
 
 const server = createApp().listen(env.PORT, () => {
   logger.info(`core-api chạy tại http://localhost:${env.PORT}`);
 });
 
-const expiryTimer = setInterval(() => {
-  void sweepExpiredBookings();
-}, env.EXPIRY_SWEEP_INTERVAL_MS || 5000);
-
-const outboxTimer = setInterval(() => {
-  void processPendingOutboxEvents();
-}, 10000);
+// Run expired bookings & holds cleanup job every 60 seconds
+const cleanupInterval = setInterval(() => {
+  cleanExpiredBookingsAndHolds().catch((err) => {
+    logger.warn({ err: err.message }, '[Cleanup Timer] Recurring cleanup failed');
+  });
+}, 60000);
 
 function shutdown(signal) {
   logger.info(`${signal}: đang tắt server`);
-  clearInterval(expiryTimer);
-  clearInterval(outboxTimer);
+  if (cleanupInterval) clearInterval(cleanupInterval);
   server.close(async () => {
     await Promise.all([prisma.$disconnect(), closeMongo()]);
     process.exit(0);

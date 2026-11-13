@@ -6,7 +6,8 @@ describe('BOOKING_ROUTES', () => {
     expect(BOOKING_ROUTES.map((r) => r.path)).toEqual([
       'seats/:showtimeId',
       'checkout',
-      'result/:ticketId',
+      'result/:bookingId',
+      'result',
     ]);
   });
 });

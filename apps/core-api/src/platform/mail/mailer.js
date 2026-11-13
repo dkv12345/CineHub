@@ -5,6 +5,7 @@ import { getWelcomeEmail } from './templates/welcomeEmail.js';
 import { getResetPasswordEmail } from './templates/resetPasswordEmail.js';
 import { getVerifyEmail } from './templates/verifyEmail.js';
 import { getResetSuccessEmail } from './templates/resetSuccessEmail.js';
+import { getBookingConfirmationEmail } from './templates/bookingConfirmationEmail.js';
 
 let transporterInstance = null;
 
@@ -172,6 +173,39 @@ export async function sendResetSuccessNotification({ to, fullName }) {
   return sendEmail({
     to,
     subject: '[CineHub] Mật khẩu của bạn đã được đặt lại',
+    html,
+    text,
+  });
+}
+
+/**
+ * Sends a booking confirmation email with movie, seats, and QR tickets.
+ */
+export async function sendBookingConfirmationEmail({
+  to,
+  bookingCode,
+  movieTitle,
+  cinemaName,
+  auditoriumName,
+  showtime,
+  seats,
+  totalAmount,
+  tickets = [],
+}) {
+  const { html, text } = getBookingConfirmationEmail({
+    bookingCode,
+    movieTitle,
+    cinemaName,
+    auditoriumName,
+    showtime,
+    seats,
+    totalAmount,
+    tickets,
+  });
+
+  return sendEmail({
+    to,
+    subject: `[CineHub] Xác nhận đặt vé thành công #${bookingCode}`,
     html,
     text,
   });

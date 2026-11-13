@@ -33,6 +33,28 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default('CineHub <no-reply@cinehub.vn>'),
+  PAYMENT_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  PAYMENT_SIMULATION: z
+    .preprocess((val) => val === 'true' || val === true, z.boolean())
+    .default(false),
+  MOMO_PARTNER_CODE: z.string().default('MOMO'),
+  MOMO_ACCESS_KEY: z.string().default('F8BBA842ECF85'),
+  MOMO_SECRET_KEY: z.string().default('K951B6PE1waDMi640xX08PD3vg6EkVlz'),
+  MOMO_ENDPOINT: z.string().default('https://test-payment.momo.vn/v2/gateway/api/create'),
+  MOMO_REDIRECT_URL: z.string().default('http://localhost:4200/checkout'),
+  MOMO_IPN_URL: z.string().default('http://localhost:4000/api/v1/payments/momo-ipn'),
+  VNP_TMN_CODE: z.string().default('DEMOV210'),
+  VNP_HASH_SECRET: z.string().default('RAXEFVWWCAJIJILJXYEUJYLJJLNRLJYL'),
+  VNP_URL: z.string().default('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
+  VNP_RETURN_URL: z.string().default('http://localhost:4200/checkout'),
+  ZALOPAY_APP_ID: z.coerce.number().default(2554),
+  ZALOPAY_KEY1: z.string().default('sdngD8w4FiMuCoyFSeamless'),
+  ZALOPAY_KEY2: z.string().default('tr9rEbcMoSpeMfBkmSt2jap8'),
+  ZALOPAY_ENDPOINT: z.string().default('https://sb-openapi.zalopay.vn/v2/create'),
+  ZALOPAY_REDIRECT_URL: z.string().default('http://localhost:4200/checkout'),
+  ZALOPAY_CALLBACK_URL: z
+    .string()
+    .default('http://localhost:4000/api/v1/payments/zalopay-callback'),
 });
 
 export const env = schema.parse(process.env);

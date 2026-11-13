@@ -4,13 +4,42 @@ import {
   computed,
   inject,
   input,
+  OnDestroy,
   OnInit,
   signal,
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { BookingStore } from '@cinehub/web/booking/data-access';
-import { ToastService } from '@cinehub/web/core';
 import { fmt } from '@cinehub/web/shared/util';
+
+interface BackendBooking {
+  id: string;
+  code: string;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+  totalAmount: number;
+  contactEmail: string;
+  showtime?: {
+    movie?: { title: string };
+    cinema?: { name: string };
+    auditorium?: { name: string };
+    startTime?: string;
+    format?: string;
+  };
+  seats?: Array<{
+    seatLabel: string;
+    price: number;
+  }>;
+  tickets?: Array<{
+    id: string;
+    qrCode: string;
+    status: string;
+  }>;
+  payments?: Array<{
+    provider: string;
+    status: string;
+  }>;
+}
 
 @Component({
   selector: 'ch-result-page',
@@ -18,12 +47,56 @@ import { fmt } from '@cinehub/web/shared/util';
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (ticket(); as t) {
-      <main
-        class="relative grid min-h-screen place-items-center bg-[#020617] px-5 py-12 text-white selection:bg-amber-400 selection:text-black"
-      >
-        <div class="relative z-10 w-full max-w-[580px] text-center">
-          <!-- Circular Emerald Success Icon -->
+    <main
+      class="relative grid min-h-screen place-items-center bg-[#020617] px-5 py-12 text-white selection:bg-amber-400 selection:text-black"
+    >
+      <div class="relative z-10 w-full max-w-[560px] text-center">
+        @if (isLoading()) {
+          <div
+            class="rounded-3xl border border-white/20 bg-slate-900/60 p-8 text-center backdrop-blur-xl"
+          >
+            <div
+              class="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-amber-400 border-t-transparent"
+            ></div>
+            <h2 class="mt-4 text-xl font-black text-amber-300">Đang đối soát thanh toán...</h2>
+            <p class="mt-2 text-xs text-slate-400">
+              Vui lòng chờ trong giây lát trong khi hệ thống xác nhận giao dịch.
+            </p>
+          </div>
+        } @else if (isFailed()) {
+          <div
+            class="rounded-3xl border border-red-500/30 bg-slate-900/60 p-8 text-center backdrop-blur-xl"
+          >
+            <div
+              class="mx-auto grid h-16 w-16 place-items-center rounded-full bg-red-500/20 text-red-400"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="32"
+                height="32"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </div>
+            <h2 class="mt-4 text-2xl font-black text-red-400">Thanh toán chưa hoàn tất</h2>
+            <p class="mt-2 text-xs text-slate-300">
+              Giao dịch chưa được xác nhận hoặc đã hết hạn giữ chỗ.
+            </p>
+            <div class="mt-6 flex justify-center gap-3">
+              <a
+                routerLink="/showtimes"
+                class="rounded-xl bg-amber-400 px-6 py-3 text-xs font-black text-black"
+              >
+                Đặt lại vé khác
+              </a>
+            </div>
+          </div>
+        } @else if (displayData(); as t) {
+          <!-- Success State -->
           <div
             class="mx-auto grid h-20 w-20 place-items-center rounded-full border border-emerald-400/30 bg-emerald-500/20 text-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.3)] backdrop-blur-md"
           >
@@ -43,11 +116,11 @@ import { fmt } from '@cinehub/web/shared/util';
             Cảm ơn bạn đã đặt vé!
           </h1>
           <p class="mt-2 text-xs font-bold leading-relaxed text-white/90 sm:text-sm">
-            Vé điện tử ký số HMAC-SHA256 đã được gửi tới email của bạn và lưu trong mục
+            Vé đã được gửi tới email <b class="text-amber-300">{{ t.email }}</b> và lưu trong mục
             <b class="text-amber-300">Vé của tôi</b>.
           </p>
 
-          <!-- Khung Thông Tin Đơn Hàng & QR Code -->
+          <!-- Khung Thông Tin Đơn Hàng -->
           <div
             class="mt-8 rounded-3xl border border-white/20 bg-slate-900/60 p-6 text-left shadow-2xl backdrop-blur-xl sm:p-8"
           >
@@ -69,33 +142,7 @@ import { fmt } from '@cinehub/web/shared/util';
               </span>
             </div>
 
-            <!-- QR Code Ký Số HMAC-SHA256 -->
-            <div
-              class="my-5 flex flex-col items-center rounded-2xl border border-white/10 bg-slate-950/70 p-4"
-            >
-              <div
-                class="grid h-[168px] w-[168px] rounded-2xl bg-white p-2.5 shadow-xl"
-                [style.grid-template-columns]="'repeat(25, minmax(0, 1fr))'"
-                role="img"
-                [attr.aria-label]="'Mã QR vé ' + t.bookingCode"
-              >
-                @for (cell of qrCells(t.qrPayload || t.bookingCode); track $index) {
-                  <span class="min-h-0 min-w-0" [class.bg-black]="cell"></span>
-                }
-              </div>
-              <p class="mt-2 font-mono text-[11px] font-bold text-slate-300 break-all text-center">
-                {{ t.qrPayload || t.id }}
-              </p>
-              <button
-                type="button"
-                (click)="copyQrPayload(t.qrPayload || t.bookingCode)"
-                class="mt-2 rounded-lg border border-amber-400/50 bg-amber-400/15 px-3 py-1 text-[11px] font-black text-amber-300 hover:bg-amber-400 hover:text-slate-950 transition"
-              >
-                {{ copied() ? '✓ Đã sao chép mã QR' : '📋 Sao chép mã QR để Soát vé' }}
-              </button>
-            </div>
-
-            <dl class="mt-4 space-y-3.5 text-sm">
+            <dl class="mt-5 space-y-3.5 text-sm">
               <div class="flex justify-between gap-4">
                 <dt class="font-semibold text-white/70">Phim</dt>
                 <dd class="text-right font-black text-white">{{ t.movieTitle }}</dd>
@@ -124,12 +171,44 @@ import { fmt } from '@cinehub/web/shared/util';
               </div>
 
               <div class="flex justify-between gap-4 border-t border-white/10 pt-3">
-                <dt class="font-semibold text-white/70">Tổng thanh toán ({{ t.paymentMethod }})</dt>
+                <dt class="font-semibold text-white/70">Tổng thanh toán</dt>
                 <dd class="text-right text-lg font-black text-amber-300">
                   {{ formatCurrency(t.totalPaid) }}
                 </dd>
               </div>
             </dl>
+
+            <!-- Mã QR Vé Điện Tử -->
+            @if (t.qrCodes && t.qrCodes.length > 0) {
+              <div class="mt-6 border-t border-white/10 pt-4 text-center">
+                <p class="text-xs font-bold text-amber-300">
+                  Mã QR Check-in vào rạp (xuất trình cho nhân viên soát vé):
+                </p>
+                <div class="mt-4 flex flex-wrap justify-center gap-4">
+                  @for (qr of t.qrCodes; track $index) {
+                    <div
+                      class="flex flex-col items-center rounded-2xl bg-white p-4 shadow-2xl text-black"
+                    >
+                      <img
+                        [src]="
+                          'https://quickchart.io/qr?text=' +
+                          encodeURIComponent(qr) +
+                          '&size=220&margin=2'
+                        "
+                        alt="QR Ticket Code"
+                        class="h-[220px] w-[220px] object-contain"
+                        loading="eager"
+                      />
+                      <span
+                        class="mt-2 font-mono text-xs font-black tracking-widest text-slate-900"
+                      >
+                        {{ qr }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
 
             <!-- Action Buttons -->
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -147,69 +226,178 @@ import { fmt } from '@cinehub/web/shared/util';
               </a>
             </div>
           </div>
-        </div>
-      </main>
-    }
+        }
+      </div>
+    </main>
   `,
 })
-export class ResultPageComponent implements OnInit {
+export class ResultPageComponent implements OnInit, OnDestroy {
   private readonly store = inject(BookingStore);
+  private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
-  private readonly toast = inject(ToastService);
-  readonly ticketId = input<string>('');
-  readonly copied = signal<boolean>(false);
 
-  readonly ticket = computed(() => {
-    const id = this.ticketId() || this.route.snapshot.paramMap.get('ticketId') || '';
-    return this.store.findTicketById(id) ?? this.store.issuedTickets()[0] ?? null;
-  });
+  readonly bookingId = input<string>('');
+  readonly ticketId = input<string>('');
+  readonly bookingState = signal<BackendBooking | null>(null);
+  readonly isLoading = signal<boolean>(true);
+  readonly isFailed = signal<boolean>(false);
+
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+  encodeURIComponent(val: string): string {
+    return encodeURIComponent(val || '');
+  }
 
   ngOnInit(): void {
-    const id = this.ticketId() || this.route.snapshot.paramMap.get('ticketId') || '';
-    if (id) {
-      void this.store.loadTicketByIdFromApi(id);
-    } else {
-      void this.store.loadMyTicketsFromApi();
+    const id =
+      this.bookingId() ||
+      this.ticketId() ||
+      this.route.snapshot.paramMap.get('bookingId') ||
+      this.route.snapshot.paramMap.get('ticketId') ||
+      this.route.snapshot.queryParamMap.get('bookingId') ||
+      '';
+
+    if (!id) {
+      this.isLoading.set(false);
+      return;
     }
-  }
 
-  qrCells(code: string): boolean[] {
-    const size = 25;
-    const finders = [
-      [0, 0],
-      [0, size - 7],
-      [size - 7, 0],
-    ];
-    let seed = 0;
-    for (const character of code) seed = (seed * 31 + character.charCodeAt(0)) >>> 0;
+    // 1. Nếu có param từ cổng thanh toán redirect về (resultCode, vnp_ResponseCode, status, orderId, v.v.):
+    // Luôn gọi API refresh đối chiếu của backend trước, TUYỆT ĐỐI không tin resultCode trên URL để kết luận thành công!
+    const query = this.route.snapshot.queryParams;
+    if (
+      query['resultCode'] !== undefined ||
+      query['vnp_ResponseCode'] !== undefined ||
+      query['status'] !== undefined ||
+      query['apptransid'] !== undefined
+    ) {
+      this.http.post<any>(`/api/v1/booking/${id}/payments/refresh`, {}).subscribe({
+        next: (res) => {
+          if (res.data) this.handleBookingUpdate(res.data);
+        },
+        error: () => {
+          // Bỏ qua lỗi và để polling xử lý tiếp
+        },
+      });
+    }
 
-    return Array.from({ length: size * size }, (_, index) => {
-      const row = Math.floor(index / size);
-      const column = index % size;
-      for (const [top, left] of finders) {
-        const rowOffset = row - top;
-        const columnOffset = column - left;
-        if (rowOffset < 0 || columnOffset < 0 || rowOffset >= 7 || columnOffset >= 7) continue;
-        return (
-          rowOffset === 0 ||
-          rowOffset === 6 ||
-          columnOffset === 0 ||
-          columnOffset === 6 ||
-          (rowOffset >= 2 && rowOffset <= 4 && columnOffset >= 2 && columnOffset <= 4)
-        );
+    // 2. Dùng interval(2500) gọi GET /api/v1/booking/${id} (và đối chiếu) cho đến khi status là CONFIRMED, FAILED hoặc EXPIRED
+    this.pollStatus(id);
+
+    // 3. Giới hạn thời gian chờ 30 giây: nếu quá thời gian thì chuyển trạng thái
+    this.timeoutTimer = setTimeout(() => {
+      if (this.isLoading()) {
+        this.isLoading.set(false);
+        if (!this.bookingState() || this.bookingState()?.status !== 'CONFIRMED') {
+          const localTicket = this.store.findTicketById(id) ?? this.store.issuedTickets()[0];
+          if (!localTicket) this.isFailed.set(true);
+        }
       }
-      return ((seed + index * 17 + (index % size) * 13) >>> 2) % 2 === 0;
-    });
+    }, 30000);
   }
 
-  copyQrPayload(payload: string): void {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      void navigator.clipboard.writeText(payload);
+  ngOnDestroy(): void {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
     }
-    this.copied.set(true);
-    this.toast.show('Đã sao chép mã QR vé điện tử!', 'success');
-    setTimeout(() => this.copied.set(false), 2000);
+    if (this.timeoutTimer) {
+      clearTimeout(this.timeoutTimer);
+      this.timeoutTimer = null;
+    }
   }
+
+  private pollStatus(id: string): void {
+    const fetchBooking = () => {
+      this.http.get<any>(`/api/v1/booking/${id}`).subscribe({
+        next: (res) => {
+          if (res.data) this.handleBookingUpdate(res.data);
+        },
+        error: () => {
+          // Nếu 404 hoặc không tìm thấy, fallback về local store ticket nếu có
+          const localTicket = this.store.findTicketById(id) ?? this.store.issuedTickets()[0];
+          if (localTicket) {
+            this.isLoading.set(false);
+          }
+        },
+      });
+    };
+
+    fetchBooking();
+    this.pollTimer = setInterval(fetchBooking, 2500);
+  }
+
+  private handleBookingUpdate(data: BackendBooking): void {
+    this.bookingState.set(data);
+    if (data.status === 'CONFIRMED') {
+      this.isLoading.set(false);
+      this.isFailed.set(false);
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer);
+        this.pollTimer = null;
+      }
+    } else if (data.status === 'CANCELLED' || data.status === 'EXPIRED') {
+      this.isLoading.set(false);
+      this.isFailed.set(true);
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer);
+        this.pollTimer = null;
+      }
+    }
+  }
+
+  formatConfirmedBooking(b: BackendBooking) {
+    return {
+      bookingCode: b.code,
+      email: b.contactEmail,
+      movieTitle: b.showtime?.movie?.title || 'Phim đã đặt',
+      cinemaName: b.showtime?.cinema?.name || 'Rạp CineHub',
+      screenName: b.showtime?.auditorium?.name || 'Phòng chiếu',
+      showTime: b.showtime?.startTime
+        ? new Date(b.showtime.startTime).toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'Suất chiếu',
+      format: b.showtime?.format || '2D',
+      seats: (b.seats || []).map((s) => s.seatLabel),
+      totalPaid: b.totalAmount,
+      qrCodes: (b.tickets || []).map((t) => t.qrCode).filter(Boolean),
+    };
+  }
+
+  readonly displayData = computed(() => {
+    const b = this.bookingState();
+    if (b && b.status === 'CONFIRMED') {
+      return this.formatConfirmedBooking(b);
+    }
+
+    // Fallback to local store ticket if available
+    const activeId =
+      this.bookingId() ||
+      this.ticketId() ||
+      this.route.snapshot.paramMap.get('bookingId') ||
+      this.route.snapshot.paramMap.get('ticketId') ||
+      '';
+    const local = this.store.findTicketById(activeId) ?? this.store.issuedTickets()[0];
+    if (local) {
+      return {
+        bookingCode: local.bookingCode,
+        email: 'bạn',
+        movieTitle: local.movieTitle,
+        cinemaName: local.cinemaName,
+        screenName: local.screenName,
+        showTime: local.showTime,
+        format: local.format,
+        seats: [...local.seats],
+        totalPaid: local.totalPaid,
+        qrCodes: [],
+      };
+    }
+
+    return null;
+  });
 
   formatCurrency(n: number): string {
     return fmt(n);

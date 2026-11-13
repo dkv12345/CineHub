@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { BookingStore, type ShowtimeMetadata } from '@cinehub/web/booking/data-access';
 import { BookingSummaryCardComponent } from '@cinehub/web/booking/ui';
 import { ToastService } from '@cinehub/web/core';
@@ -17,7 +18,6 @@ import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
 import type { GalaxySession } from '@cinehub/web/showtimes/util';
 import {
   generateAuditoriumSeats,
-  hasOrphanSingleSeatGap,
   layoutForCinema,
   SeatMap3DComponent,
   SeatPOVSceneComponent,
@@ -93,25 +93,15 @@ import {
         </div>
 
         <!-- Header Info -->
-        <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 class="text-2xl font-black text-white sm:text-3xl">
-              Chọn ghế ngồi & Góc nhìn 3D POV
-            </h1>
-            <p class="mt-1 text-xs font-bold text-slate-400">
-              {{ store.movieTitle() }} · {{ store.cinemaName() }} · Suất {{ store.showTime() }} ({{
-                store.format()
-              }})
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-950/70 px-3 py-1 text-[11px] font-bold text-emerald-300"
-            >
-              <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              {{ realtimeConnected() ? 'Đồng bộ ghế Realtime (SSE)' : 'Chế độ tiêu chuẩn' }}
-            </span>
-          </div>
+        <div class="mb-6">
+          <h1 class="text-2xl font-black text-white sm:text-3xl">
+            Chọn ghế ngồi & Góc nhìn 3D POV
+          </h1>
+          <p class="mt-1 text-xs font-bold text-slate-400">
+            {{ store.movieTitle() }} · {{ store.cinemaName() }} · Suất {{ store.showTime() }} ({{
+              store.format()
+            }})
+          </p>
         </div>
 
         <div class="grid gap-8 lg:grid-cols-12">
@@ -144,18 +134,6 @@ import {
                   class="h-4 w-6 rounded border border-pink-400 bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.5)]"
                 ></span>
                 <span class="text-pink-300 font-black">Ghế đôi Sweetbox</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span
-                  class="h-4 w-4 rounded border border-white bg-[#e50914] shadow-[0_0_8px_rgba(229,9,20,0.8)]"
-                ></span>
-                <span class="text-red-300 font-black">Của tôi</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span
-                  class="h-4 w-4 rounded border border-cyan-300 bg-cyan-500 animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.7)]"
-                ></span>
-                <span class="text-cyan-300 font-black">Người khác đang giữ</span>
               </div>
               <div class="flex items-center gap-2">
                 <span class="h-4 w-4 rounded border border-white/10 bg-slate-950 opacity-40"></span>
@@ -247,63 +225,55 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly showtimesStore = inject(ShowtimesStore);
-  private holdTimer: ReturnType<typeof setInterval> | null = null;
-  private eventSource: EventSource | null = null;
-  private readonly onWindowOnline = () => {
-    const id = this.resolvedShowtimeId();
-    if (id) void this.store.loadSeatMapFromApi(id);
-  };
+  private readonly http = inject(HttpClient);
+
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly showtimeId = input<string>('');
   readonly lastActiveSeat = signal<SeatCell | null>(null);
   readonly pendingUnselectSeat = signal<SeatCell | null>(null);
-  readonly realtimeConnected = signal<boolean>(false);
+  readonly backendSeats = signal<any[]>([]);
+  readonly expiresAt = signal<string | null>(null);
 
-  readonly auditoriumLayout = computed(
-    () => this.store.serverLayout() ?? layoutForCinema(this.store.cinemaName()),
-  );
+  readonly auditoriumLayout = computed(() => layoutForCinema(this.store.cinemaName()));
 
-  readonly seats = computed<readonly SeatCell[]>(() => {
-    const serverSeats = this.store.serverSeats();
-    const selectedIds = this.store.selectedSeatIds();
-    if (serverSeats.length > 0) {
-      return serverSeats.map((s) => {
-        const isSelected = selectedIds.has(s.id);
-        return {
-          id: s.id,
-          showtimeSeatId: s.showtimeSeatId,
-          seatId: s.seatId,
-          row: s.row,
-          rowIndex: s.rowIndex,
-          column: s.column,
-          colSpan: s.colSpan,
-          zone: s.zone,
-          price: s.price,
-          status: s.status,
-          sold: s.sold,
-          selected: isSelected,
-          heldByViewer: isSelected || s.heldByViewer,
-          heldByOther: Boolean(s.heldByOther && !isSelected),
-        };
-      });
+  readonly seats = computed(() => {
+    const base = generateAuditoriumSeats(
+      this.auditoriumLayout(),
+      this.store.selectedSeatIds(),
+      this.store.showtimeId(),
+    );
+    const backend = this.backendSeats();
+    if (!backend || backend.length === 0) return base;
+
+    const backendMap = new Map<string, any>();
+    for (const b of backend) {
+      if (b.label) backendMap.set(b.label, b);
+      if (b.seatId) backendMap.set(b.seatId, b);
     }
 
-    return generateAuditoriumSeats(this.auditoriumLayout(), selectedIds, this.store.showtimeId());
+    return base.map((cell) => {
+      const bs = backendMap.get(cell.id);
+      if (!bs) return cell;
+      const isUnavailable =
+        (bs.status === 'HELD' && !bs.isHeldByMe) ||
+        bs.status === 'SOLD' ||
+        bs.status === 'BLOCKED' ||
+        bs.status === 'BOOKED';
+
+      return {
+        ...cell,
+        sold: isUnavailable,
+        selected: this.store.selectedSeatIds().has(cell.id),
+      };
+    });
   });
 
   readonly selectedSeatLabels = computed(() => this.store.selectedSeats().map((s) => s.id));
 
-  private resolvedShowtimeId(): string {
-    return (
-      this.showtimeId() ||
-      this.route.snapshot.paramMap.get('showtimeId') ||
-      this.store.showtimeId() ||
-      ''
-    );
-  }
-
   ngOnInit(): void {
-    const showtimeId = this.resolvedShowtimeId();
+    const showtimeId = this.showtimeId() || this.route.snapshot.paramMap.get('showtimeId') || '';
     if (!showtimeId) return;
 
     const params = this.route.snapshot.queryParamMap;
@@ -325,7 +295,6 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
     } else if (metadata.movieTitle) {
       this.store.initShowtimeFromParam(showtimeId, metadata);
     } else {
-      this.store.initShowtimeFromParam(showtimeId, metadata);
       void this.showtimesStore.loadSessionsFromApi().then(() => {
         const loadedSession = this.showtimesStore.sessions().find((item) => item.id === showtimeId);
         if (loadedSession) {
@@ -334,66 +303,69 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Load real seat map from MySQL + Redis
-    void this.store.loadSeatMapFromApi(showtimeId, metadata);
+    // 1. Tải sơ đồ ghế ban đầu từ backend (KHÔNG gọi giữ ghế ở ngOnInit)
+    this.loadSeatsMap(showtimeId);
 
-    // Connect to SSE stream for <1s multi-browser real-time seat updates
-    this.connectRealtimeStream(showtimeId);
+    // 2. Tự động thăm dò sơ đồ ghế mỗi 7 giây để đồng bộ ghế người khác vừa giữ/mua
+    this.pollTimer = setInterval(() => {
+      this.loadSeatsMap(this.currentShowtimeId());
+    }, 7000);
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', this.onWindowOnline);
-    }
-
-    this.holdTimer = setInterval(() => {
-      const res = this.store.decrementHold();
-      if (res.expiredNow) {
-        this.toast.show(
-          'Hết thời gian giữ ghế! Ghế của bạn đã được tự động nhả cho khách hàng khác.',
-          'warning',
-        );
-        void this.store.loadSeatMapFromApi(showtimeId);
+    // 3. Đồng hồ đếm ngược theo expiresAt
+    this.countdownTimer = setInterval(() => {
+      const exp = this.expiresAt();
+      if (!exp) return;
+      const diff = Math.floor((new Date(exp).getTime() - Date.now()) / 1000);
+      if (diff <= 0) {
+        this.expiresAt.set(null);
+        this.store.clearSelectedSeats();
+        this.toast.show('Đã hết thời gian giữ ghế. Vui lòng chọn lại!', 'warning');
+        this.loadSeatsMap(this.currentShowtimeId());
+      } else {
+        this.store.setHoldRemainingSeconds(diff);
       }
     }, 1000);
   }
 
   ngOnDestroy(): void {
-    if (this.holdTimer) clearInterval(this.holdTimer);
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
     }
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('online', this.onWindowOnline);
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
     }
+    // CẤM gọi API nhả ghế ở ngOnDestroy khi người dùng chuyển sang bắp nước/thanh toán
   }
 
-  private connectRealtimeStream(showtimeId: string): void {
-    if (typeof EventSource === 'undefined' || !showtimeId) return;
-    try {
-      if (this.eventSource) {
-        this.eventSource.close();
-      }
-      const es = new EventSource(`/api/v1/booking/stream/${encodeURIComponent(showtimeId)}`);
-      this.eventSource = es;
+  private currentShowtimeId(): string {
+    return (
+      this.showtimeId() ||
+      this.route.snapshot.paramMap.get('showtimeId') ||
+      this.store.showtimeId() ||
+      ''
+    );
+  }
 
-      es.addEventListener('connected', () => {
-        this.realtimeConnected.set(true);
-      });
+  loadSeatsMap(showtimeId: string): void {
+    if (!showtimeId) return;
+    this.http.get<any>(`/api/v1/showtimes/${showtimeId}/seats`).subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.backendSeats.set(res.data);
+        }
+      },
+      error: () => {
+        // Fallback: nếu showtime chưa có trong DB backend, dùng layout local
+      },
+    });
+  }
 
-      es.addEventListener('seat_update', () => {
-        void this.store.loadSeatMapFromApi(showtimeId);
-      });
-
-      es.onerror = () => {
-        this.realtimeConnected.set(false);
-        // On reconnect, EventSource automatically retries; refresh full seat map
-        setTimeout(() => {
-          void this.store.loadSeatMapFromApi(showtimeId);
-        }, 1500);
-      };
-    } catch {
-      this.realtimeConnected.set(false);
-    }
+  findSeatIdForLabel(label: string): string {
+    const backend = this.backendSeats();
+    const found = backend.find((s) => s.label === label || s.seatId === label || s.id === label);
+    return found?.seatId || found?.id || label;
   }
 
   private useSession(showtimeId: string, session: GalaxySession): void {
@@ -412,67 +384,100 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
   }
 
   onSeatChosen(seat: SeatCell): void {
-    // Criterion 3: Clicking a seat held by another browser triggers 409 SEAT_TAKEN without changing state
-    if (seat.heldByOther) {
-      const requested = [...Array.from(this.store.selectedSeatIds()), seat.id];
-      void this.store.holdSeatsOnServer(requested).then((res) => {
-        this.toast.show(
-          res.message || `409 SEAT_TAKEN: Ghế ${seat.id} đang được người khác giữ!`,
-          'error',
-        );
-      });
-      return;
-    }
-
     if (this.store.selectedSeatIds().has(seat.id)) {
       this.pendingUnselectSeat.set(seat);
       return;
     }
 
-    const res = this.store.toggleSeat(seat.id, seat.zone, seat.price);
-    if (!res.ok && res.reason) {
-      this.toast.show(res.reason, 'warning');
-      return;
-    }
-    const selected = this.store.selectedSeatIds().has(seat.id);
-    this.lastActiveSeat.set(selected ? seat : null);
-    void this.liveAnnouncer.announce(
-      selected ? `Đã chọn ghế ${seat.id} hạng ${seat.zone}` : `Đã bỏ chọn ghế ${seat.id}`,
-    );
+    const showtimeId = this.currentShowtimeId();
+    const targetSeatId = this.findSeatIdForLabel(seat.id);
 
-    // Criterion 2 & 5: Atomically acquire seat lock on server & broadcast via SSE
-    const currentSelectedIds = Array.from(this.store.selectedSeatIds());
-    if (currentSelectedIds.length > 0) {
-      void this.store.holdSeatsOnServer(currentSelectedIds).then((holdRes) => {
-        if (!holdRes.ok) {
-          // Rollback local seat if server rejected with 409 SEAT_TAKEN
-          if (this.store.selectedSeatIds().has(seat.id)) {
-            this.store.toggleSeat(seat.id, seat.zone, seat.price);
+    // Gọi API giữ ghế thật trên backend
+    this.http
+      .post<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
+        showtimeId,
+        seatIds: [targetSeatId],
+      })
+      .subscribe({
+        next: (res) => {
+          const toggleRes = this.store.toggleSeat(seat.id, seat.zone);
+          if (!toggleRes.ok && toggleRes.reason) {
+            this.toast.show(toggleRes.reason, 'warning');
+            return;
           }
-          this.toast.show(
-            holdRes.message || `409 SEAT_TAKEN: Ghế ${seat.id} vừa được người khác giữ!`,
-            'error',
-          );
-        }
+          this.lastActiveSeat.set(seat);
+          if (res.data?.expiresAt) {
+            this.expiresAt.set(res.data.expiresAt);
+          }
+          this.toast.show(`Đã giữ ghế ${seat.id}`, 'success');
+          void this.liveAnnouncer.announce(`Đã chọn ghế ${seat.id} hạng ${seat.zone}`);
+        },
+        error: (err) => {
+          if (err.status === 409) {
+            this.toast.show(
+              `Ghế ${seat.id} đã bị người khác nhanh tay giữ mất. Vui lòng chọn ghế khác!`,
+              'warning',
+            );
+            this.loadSeatsMap(showtimeId);
+          } else {
+            this.toast.show(
+              err.error?.message || 'Không thể giữ ghế vào lúc này. Vui lòng thử lại!',
+              'warning',
+            );
+          }
+        },
       });
-    }
   }
 
   confirmUnselectSeat(seat: SeatCell): void {
-    const res = this.store.toggleSeat(seat.id, seat.zone, seat.price);
-    this.pendingUnselectSeat.set(null);
-    if (!res.ok) {
-      if (res.reason) this.toast.show(res.reason, 'warning');
-      return;
-    }
-    this.lastActiveSeat.set(null);
-    void this.liveAnnouncer.announce(`Đã bỏ chọn ghế ${seat.id}`);
+    const showtimeId = this.currentShowtimeId();
+    const targetSeatId = this.findSeatIdForLabel(seat.id);
 
-    // Criterion 4: Release seat on server so Browser B sees it become available within <1s
-    void this.store.releaseSeatOnServer(seat.id);
+    // Gọi API nhả ghế thật trên backend
+    this.http
+      .delete<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
+        body: {
+          showtimeId,
+          seatIds: [targetSeatId],
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.store.toggleSeat(seat.id, seat.zone);
+          this.pendingUnselectSeat.set(null);
+          this.lastActiveSeat.set(null);
+          if (this.store.selectedSeats().length === 0) {
+            this.expiresAt.set(null);
+          }
+          this.loadSeatsMap(showtimeId);
+          this.toast.show(`Đã bỏ chọn ghế ${seat.id}`, 'info');
+          void this.liveAnnouncer.announce(`Đã bỏ chọn ghế ${seat.id}`);
+        },
+        error: () => {
+          // Ngay cả khi backend trả lỗi, vẫn dọn dẹp local
+          this.store.toggleSeat(seat.id, seat.zone);
+          this.pendingUnselectSeat.set(null);
+          this.lastActiveSeat.set(null);
+        },
+      });
   }
 
   goBack(): void {
+    const showtimeId = this.currentShowtimeId();
+    const selected = this.store.selectedSeats();
+    if (selected.length > 0) {
+      const ids = selected.map((s) => this.findSeatIdForLabel(s.id));
+      this.http
+        .delete<any>(`/api/v1/showtimes/${showtimeId}/seat-holds`, {
+          body: {
+            showtimeId,
+            seatIds: ids,
+          },
+        })
+        .subscribe();
+      this.store.clearSelectedSeats();
+      this.expiresAt.set(null);
+    }
     void this.router.navigateByUrl('/showtimes');
   }
 
@@ -481,21 +486,7 @@ export class SeatsPageComponent implements OnInit, OnDestroy {
       this.toast.show('Vui lòng chọn ít nhất một ghế trước khi tiếp tục.', 'warning');
       return;
     }
-
-    // Rule BR-09: No Orphan Single-Seat Gap
-    const orphanCheck = hasOrphanSingleSeatGap(
-      this.seats(),
-      this.store.selectedSeatIds(),
-      this.auditoriumLayout().aislesAfter,
-    );
-    if (orphanCheck.hasOrphan) {
-      this.toast.show(
-        `Không được chừa 1 ghế trống lẻ (${orphanCheck.orphanSeatId}) bên cạnh ghế đã chọn (Quy tắc BR-09).`,
-        'warning',
-      );
-      return;
-    }
-
+    // Không nhả ghế khi đi tiếp sang bắp nước và checkout!
     void this.router.navigateByUrl('/concessions');
   }
 }

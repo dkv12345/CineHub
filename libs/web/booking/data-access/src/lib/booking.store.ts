@@ -491,6 +491,14 @@ export const BookingStore = signalStore(
         }
       },
 
+      setHoldRemainingSeconds(sec: number): void {
+        patchState(store, { holdRemainingSeconds: Math.max(0, sec) });
+      },
+
+      clearSelectedSeats(): void {
+        patchState(store, { selectedSeats: [] });
+      },
+
       toggleSeat(
         id: string,
         zone: 'normal' | 'vip' | 'sweetbox',

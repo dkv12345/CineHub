@@ -9,29 +9,35 @@ import { moviesRouter } from '../modules/movies/index.js';
 import { sessionsRouter } from '../modules/sessions/index.js';
 import { bookingRouter } from '../modules/booking/index.js';
 import { paymentRouter } from '../modules/payment/index.js';
+import { ticketsRouter } from '../modules/tickets/index.js';
+import { simulatePaymentController } from '../modules/payment/payment.controller.js';
 import { staffRouter } from '../modules/staff/index.js';
 import { adminRouter } from '../modules/admin/index.js';
 import { memberRouter } from '../modules/member/index.js';
 
 export const routes = Router();
 
-const mounts = [
-  ['/health', healthRouter],
-  ['/auth', authRouter],
-  ['/cinemas', cinemasRouter],
-  ['/concessions', concessionsRouter],
-  ['/chatbot', chatbotRouter],
-  ['/recommendations', recommendationsRouter],
-  ['/movies', moviesRouter],
-  ['/sessions', sessionsRouter],
-  ['/booking', bookingRouter],
-  ['/payments', paymentRouter],
-  ['/staff', staffRouter],
-  ['/admin', adminRouter],
-  ['/member', memberRouter],
-];
+routes.use('/health', healthRouter);
+routes.use('/auth', authRouter);
+routes.use('/v1/auth', authRouter);
+routes.use('/cinemas', cinemasRouter);
+routes.use('/concessions', concessionsRouter);
+routes.use('/chatbot', chatbotRouter);
+routes.use('/recommendations', recommendationsRouter);
+routes.use('/movies', moviesRouter);
+routes.use('/sessions', sessionsRouter);
+routes.use('/booking', bookingRouter);
+routes.use('/bookings', bookingRouter);
+routes.use('/showtimes', bookingRouter);
+routes.use('/tickets', ticketsRouter);
 
-for (const [prefix, router] of mounts) {
-  routes.use(prefix, router);
-  routes.use(`/v1${prefix}`, router);
-}
+routes.use('/payments', paymentRouter); // 2. Mount đường dẫn /payments
+routes.use('/v1/payments', paymentRouter);
+routes.post('/dev/payments/:paymentId/simulate', simulatePaymentController);
+
+routes.use('/staff', staffRouter);
+routes.use('/v1/staff', staffRouter);
+routes.use('/admin', adminRouter);
+routes.use('/v1/admin', adminRouter);
+routes.use('/member', memberRouter);
+routes.use('/v1/member', memberRouter);
