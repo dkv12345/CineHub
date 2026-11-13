@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { TranslocoService } from '@jsverse/transloco';
 import { ChatbotWidgetComponent } from '@cinehub/web/assistant/feature';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
@@ -18,29 +27,34 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
       <header
         class="sticky top-0 z-50 border-b border-white/15 bg-[rgba(15,23,42,0.85)] shadow-[0_10px_40px_rgba(0,0,0,0.3)] backdrop-blur-[20px] backdrop-saturate-150"
       >
-        <div class="mx-auto flex h-[74px] max-w-[1440px] items-center gap-4 px-5 md:gap-6 md:px-9">
+        <div
+          class="mx-auto flex h-[74px] max-w-[1440px] items-center gap-4 px-5 md:gap-6 md:px-9"
+          [class.justify-center]="isAuthRoute()"
+        >
           <!-- Mobile Menu Button -->
-          <button
-            type="button"
-            (click)="mobileMenuOpen.set(!mobileMenuOpen())"
-            aria-label="Menu"
-            class="rounded-full p-2 text-white/70 hover:bg-white/10 lg:hidden"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="22"
-              height="22"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+          @if (!isAuthRoute()) {
+            <button
+              type="button"
+              (click)="mobileMenuOpen.set(!mobileMenuOpen())"
+              aria-label="Menu"
+              class="rounded-full p-2 text-white/70 hover:bg-white/10 lg:hidden"
             >
-              @if (mobileMenuOpen()) {
-                <path d="M18 6L6 18M6 6l12 12" />
-              } @else {
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              }
-            </svg>
-          </button>
+              <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                @if (mobileMenuOpen()) {
+                  <path d="M18 6L6 18M6 6l12 12" />
+                } @else {
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                }
+              </svg>
+            </button>
+          }
 
           <!-- Red CINEHUB Brand Logo -->
           <a
@@ -55,208 +69,214 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
             </span>
-            <span class="text-[22px] font-extrabold tracking-[-.04em] text-white">
-              CINE<span class="text-[#e50914]">HUB</span>
+            <span
+              class="inline-flex items-baseline text-[22px] font-extrabold leading-none tracking-[-0.02em] text-white"
+            >
+              <span>CINE</span><span class="text-[#e50914]">HUB</span>
             </span>
           </a>
 
-          <!-- Main Desktop Nav -->
-          <nav class="ml-4 hidden items-center gap-7 text-sm font-bold lg:flex">
-            <a
-              routerLink="/"
-              routerLinkActive="!text-amber-300"
-              [routerLinkActiveOptions]="{ exact: true }"
-              class="text-white/75 transition hover:text-white"
-            >
-              {{ activeLang() === 'vi' ? 'Phim' : 'Movies' }}
-            </a>
-            <a
-              routerLink="/showtimes"
-              routerLinkActive="!text-amber-300"
-              class="text-white/75 transition hover:text-white"
-            >
-              {{ activeLang() === 'vi' ? 'Lịch chiếu' : 'Showtimes' }}
-            </a>
-            <a
-              routerLink="/concessions"
-              routerLinkActive="!text-amber-300"
-              class="text-white/75 transition hover:text-white"
-            >
-              {{ activeLang() === 'vi' ? 'Bắp & Nước' : 'Concessions' }}
-            </a>
-            <a
-              routerLink="/my-tickets"
-              routerLinkActive="!text-amber-300"
-              class="text-white/75 transition hover:text-white"
-            >
-              {{ activeLang() === 'vi' ? 'Vé của tôi' : 'My Tickets' }}
-            </a>
-          </nav>
-
-          <!-- Search Bar with Live Results Dropdown -->
-          <div class="relative ml-auto hidden max-w-[340px] flex-1 sm:block">
-            <div
-              class="glass-control flex items-center gap-3 rounded-full px-4 py-2 text-white/70 focus-within:border-amber-400/50"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
+          @if (!isAuthRoute()) {
+            <!-- Main Desktop Nav -->
+            <nav class="ml-4 hidden items-center gap-7 text-sm font-bold lg:flex">
+              <a
+                routerLink="/"
+                routerLinkActive="!text-amber-300"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="text-white/75 transition hover:text-white"
               >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                aria-label="Tìm kiếm phim"
-                [value]="searchQuery()"
-                (input)="onSearchInput($event)"
-                (focus)="searchFocus.set(true)"
-                (blur)="onSearchBlur()"
-                class="w-full bg-transparent text-xs font-semibold text-white outline-none placeholder:text-white/40"
-                placeholder="Tìm phim, đạo diễn, diễn viên..."
-              />
+                {{ activeLang() === 'vi' ? 'Phim' : 'Movies' }}
+              </a>
+              <a
+                routerLink="/showtimes"
+                routerLinkActive="!text-amber-300"
+                class="text-white/75 transition hover:text-white"
+              >
+                {{ activeLang() === 'vi' ? 'Lịch chiếu' : 'Showtimes' }}
+              </a>
+              <a
+                routerLink="/concessions"
+                routerLinkActive="!text-amber-300"
+                class="text-white/75 transition hover:text-white"
+              >
+                {{ activeLang() === 'vi' ? 'Bắp & Nước' : 'Concessions' }}
+              </a>
+              <a
+                routerLink="/my-tickets"
+                routerLinkActive="!text-amber-300"
+                class="text-white/75 transition hover:text-white"
+              >
+                {{ activeLang() === 'vi' ? 'Vé của tôi' : 'My Tickets' }}
+              </a>
+            </nav>
+
+            <!-- Search Bar with Live Results Dropdown -->
+            <div class="relative ml-auto hidden max-w-[340px] flex-1 sm:block">
+              <div
+                class="glass-control flex items-center gap-3 rounded-full px-4 py-2 text-white/70 focus-within:border-amber-400/50"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  aria-label="Tìm kiếm phim"
+                  [value]="searchQuery()"
+                  (input)="onSearchInput($event)"
+                  (focus)="searchFocus.set(true)"
+                  (blur)="onSearchBlur()"
+                  class="w-full bg-transparent text-xs font-semibold text-white outline-none placeholder:text-white/40"
+                  placeholder="Tìm phim, đạo diễn, diễn viên..."
+                />
+              </div>
+
+              @if (searchFocus() && searchResults().length > 0) {
+                <div
+                  class="glass-panel absolute inset-x-0 top-[48px] z-50 max-h-80 overflow-y-auto rounded-2xl p-2 shadow-2xl"
+                >
+                  @for (m of searchResults(); track m.id) {
+                    <a
+                      [routerLink]="['/movie', m.id]"
+                      (mousedown)="selectSearchResult()"
+                      class="flex items-center gap-3 rounded-xl p-2.5 transition hover:bg-white/10"
+                    >
+                      <img
+                        [src]="m.poster"
+                        [alt]="m.title"
+                        class="h-12 w-8.5 rounded-lg object-cover ring-1 ring-white/20"
+                      />
+                      <div class="min-w-0">
+                        <b
+                          class="block truncate text-xs font-black text-white hover:text-amber-300"
+                          >{{ m.title }}</b
+                        >
+                        <small class="block truncate text-[11px] font-bold text-amber-300">{{
+                          m.genre
+                        }}</small>
+                      </div>
+                    </a>
+                  }
+                </div>
+              }
             </div>
 
-            @if (searchFocus() && searchResults().length > 0) {
-              <div
-                class="glass-panel absolute inset-x-0 top-[48px] z-50 max-h-80 overflow-y-auto rounded-2xl p-2 shadow-2xl"
-              >
-                @for (m of searchResults(); track m.id) {
+            <!-- User Session / Sign In Actions -->
+            <div class="flex items-center gap-3">
+              @if (authStore.isAuthenticated()) {
+                <div class="relative">
+                  <button
+                    type="button"
+                    (click)="userDropdownOpen.set(!userDropdownOpen())"
+                    aria-label="Tài khoản"
+                    class="flex items-center gap-2 rounded-full border border-amber-400/40 bg-slate-900/80 p-1 pr-3 text-xs font-bold text-white transition hover:border-amber-400"
+                  >
+                    <span
+                      class="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 font-black"
+                    >
+                      {{ authStore.displayName().slice(0, 1).toUpperCase() }}
+                    </span>
+                    <span class="max-w-[120px] truncate hidden sm:inline">{{
+                      authStore.displayName()
+                    }}</span>
+                  </button>
+
+                  @if (userDropdownOpen()) {
+                    <div
+                      class="glass-panel absolute right-0 top-12 z-50 w-56 rounded-2xl p-1.5 shadow-2xl backdrop-blur-2xl"
+                      (click)="userDropdownOpen.set(false)"
+                    >
+                      <div class="border-b border-white/10 px-3.5 py-2.5">
+                        <b class="block truncate text-xs font-black text-white">{{
+                          authStore.displayName()
+                        }}</b>
+                        <small class="block truncate text-[10px] text-white/50">{{
+                          authStore.user()?.email
+                        }}</small>
+                      </div>
+                      <a
+                        routerLink="/profile"
+                        class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white"
+                      >
+                        Hồ sơ của tôi
+                      </a>
+                      <a
+                        routerLink="/my-tickets"
+                        class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white"
+                      >
+                        Vé của tôi
+                      </a>
+                      @if (
+                        authStore.user()?.role === 'STAFF' || authStore.user()?.role === 'ADMIN'
+                      ) {
+                        <a
+                          routerLink="/staff/checkin"
+                          class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-amber-300 transition hover:bg-white/10"
+                        >
+                          Soát vé QR (Staff)
+                        </a>
+                      }
+                      @if (authStore.user()?.role === 'ADMIN') {
+                        <a
+                          routerLink="/admin"
+                          class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-emerald-300 transition hover:bg-white/10"
+                        >
+                          Quản trị hệ thống (Admin)
+                        </a>
+                      }
+                      <button
+                        type="button"
+                        (click)="logout()"
+                        class="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-rose-300 transition hover:bg-rose-500/15"
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="flex items-center gap-2">
                   <a
-                    [routerLink]="['/movie', m.id]"
-                    (mousedown)="selectSearchResult()"
-                    class="flex items-center gap-3 rounded-xl p-2.5 transition hover:bg-white/10"
+                    [routerLink]="['/auth']"
+                    [queryParams]="{ mode: 'register' }"
+                    class="hidden rounded-xl px-4 py-2 text-xs font-black text-white/80 transition hover:text-white md:block"
                   >
-                    <img
-                      [src]="m.poster"
-                      [alt]="m.title"
-                      class="h-12 w-8.5 rounded-lg object-cover ring-1 ring-white/20"
-                    />
-                    <div class="min-w-0">
-                      <b
-                        class="block truncate text-xs font-black text-white hover:text-amber-300"
-                        >{{ m.title }}</b
-                      >
-                      <small class="block truncate text-[11px] font-bold text-amber-300">{{
-                        m.genre
-                      }}</small>
-                    </div>
+                    {{ activeLang() === 'vi' ? 'Đăng ký' : 'Sign Up' }}
                   </a>
-                }
-              </div>
-            }
-          </div>
-
-          <!-- User Session / Sign In Actions -->
-          <div class="flex items-center gap-3">
-            @if (authStore.isAuthenticated()) {
-              <div class="relative">
-                <button
-                  type="button"
-                  (click)="userDropdownOpen.set(!userDropdownOpen())"
-                  aria-label="Tài khoản"
-                  class="flex items-center gap-2 rounded-full border border-amber-400/40 bg-slate-900/80 p-1 pr-3 text-xs font-bold text-white transition hover:border-amber-400"
-                >
-                  <span
-                    class="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 font-black"
+                  <a
+                    [routerLink]="['/auth']"
+                    [queryParams]="{ mode: 'login' }"
+                    class="rounded-xl bg-[#e50914] px-4.5 py-2 text-xs font-black text-white shadow-lg shadow-red-900/40 transition hover:bg-[#ff101c]"
                   >
-                    {{ authStore.displayName().slice(0, 1).toUpperCase() }}
-                  </span>
-                  <span class="max-w-[120px] truncate hidden sm:inline">{{
-                    authStore.displayName()
-                  }}</span>
-                </button>
+                    {{ activeLang() === 'vi' ? 'Đăng nhập' : 'Sign In' }}
+                  </a>
+                </div>
+              }
 
-                @if (userDropdownOpen()) {
-                  <div
-                    class="glass-panel absolute right-0 top-12 z-50 w-56 rounded-2xl p-1.5 shadow-2xl backdrop-blur-2xl"
-                    (click)="userDropdownOpen.set(false)"
-                  >
-                    <div class="border-b border-white/10 px-3.5 py-2.5">
-                      <b class="block truncate text-xs font-black text-white">{{
-                        authStore.displayName()
-                      }}</b>
-                      <small class="block truncate text-[10px] text-white/50">{{
-                        authStore.user()?.email
-                      }}</small>
-                    </div>
-                    <a
-                      routerLink="/profile"
-                      class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white"
-                    >
-                      Hồ sơ của tôi
-                    </a>
-                    <a
-                      routerLink="/my-tickets"
-                      class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-200 transition hover:bg-white/10 hover:text-white"
-                    >
-                      Vé của tôi
-                    </a>
-                    @if (authStore.user()?.role === 'STAFF' || authStore.user()?.role === 'ADMIN') {
-                      <a
-                        routerLink="/staff/checkin"
-                        class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-amber-300 transition hover:bg-white/10"
-                      >
-                        Soát vé QR (Staff)
-                      </a>
-                    }
-                    @if (authStore.user()?.role === 'ADMIN') {
-                      <a
-                        routerLink="/admin"
-                        class="flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-emerald-300 transition hover:bg-white/10"
-                      >
-                        Quản trị hệ thống (Admin)
-                      </a>
-                    }
-                    <button
-                      type="button"
-                      (click)="logout()"
-                      class="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2 text-xs font-bold text-rose-300 transition hover:bg-rose-500/15"
-                    >
-                      Đăng xuất
-                    </button>
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="flex items-center gap-2">
-                <a
-                  [routerLink]="['/auth']"
-                  [queryParams]="{ mode: 'register' }"
-                  class="hidden rounded-xl px-4 py-2 text-xs font-black text-white/80 transition hover:text-white md:block"
-                >
-                  {{ activeLang() === 'vi' ? 'Đăng ký' : 'Sign Up' }}
-                </a>
-                <a
-                  [routerLink]="['/auth']"
-                  [queryParams]="{ mode: 'login' }"
-                  class="rounded-xl bg-[#e50914] px-4.5 py-2 text-xs font-black text-white shadow-lg shadow-red-900/40 transition hover:bg-[#ff101c]"
-                >
-                  {{ activeLang() === 'vi' ? 'Đăng nhập' : 'Sign In' }}
-                </a>
-              </div>
-            }
-
-            <!-- AI Chatbot Header Trigger Button -->
-            <button
-              type="button"
-              (click)="triggerChatbot()"
-              aria-label="Hỏi CineBot AI"
-              title="Hỏi CineBot AI"
-              class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/5 text-amber-300 transition hover:border-amber-400 hover:bg-amber-400/20"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
-              </svg>
-            </button>
-          </div>
+              <!-- AI Chatbot Header Trigger Button -->
+              <button
+                type="button"
+                (click)="triggerChatbot()"
+                aria-label="Hỏi CineBot AI"
+                title="Hỏi CineBot AI"
+                class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/20 bg-white/5 text-amber-300 transition hover:border-amber-400 hover:bg-amber-400/20"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+                </svg>
+              </button>
+            </div>
+          }
         </div>
 
         <!-- Mobile Navigation Menu -->
-        @if (mobileMenuOpen()) {
+        @if (!isAuthRoute() && mobileMenuOpen()) {
           <nav
             class="border-t border-white/10 bg-[rgba(10,13,20,0.95)] px-5 py-4 backdrop-blur-2xl lg:hidden"
             (click)="mobileMenuOpen.set(false)"
@@ -396,6 +416,25 @@ export class ShellLayoutComponent {
   private readonly catalogStore = inject(CatalogStore);
   private readonly transloco = inject(TranslocoService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly currentUrl = signal(this.router.url);
+  readonly isAuthRoute = computed(() =>
+    /^\/(auth|login|register|forgot-password|verify-email|reset-password)(\?|$|\/)/.test(
+      this.currentUrl(),
+    ),
+  );
+
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((event) => {
+        this.currentUrl.set(event.urlAfterRedirects || event.url);
+      });
+  }
 
   readonly activeLang = signal<'vi' | 'en'>('vi');
   readonly mobileMenuOpen = signal(false);
