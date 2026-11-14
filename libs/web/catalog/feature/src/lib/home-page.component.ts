@@ -363,9 +363,9 @@ import {
             </div>
           </div>
 
-          <!-- Carousel Banner Container (Image 2 style) -->
+          <!-- Carousel Banner Container (Tỷ lệ 2.36:1 chuẩn theo kích thước ảnh poster 3168x1344) -->
           <div
-            class="relative h-[200px] sm:h-[280px] md:h-[350px] lg:h-[390px] w-full overflow-hidden rounded-[8px] border border-white/10 shadow-2xl"
+            class="relative w-full aspect-[2.35/1] overflow-hidden rounded-[8px] border border-white/10 shadow-2xl bg-[#090d16]"
           >
             @for (slide of banners; track slide.id; let idx = $index) {
               <div
@@ -380,17 +380,18 @@ import {
                   class="h-full w-full object-cover object-center"
                 />
                 <div
-                  class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-black/30"
-                ></div>
-                <div class="absolute bottom-6 left-6 z-20 max-w-lg">
+                  class="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-20 flex items-center gap-2"
+                >
                   <span
-                    class="rounded bg-[#e50914] px-2.5 py-1 text-[10px] font-black uppercase text-white shadow"
+                    class="rounded bg-[#e50914] px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase text-white shadow"
                   >
                     HOT PROMO
                   </span>
-                  <h3 class="mt-2 text-xl sm:text-2xl font-black text-white drop-shadow-lg">
+                  <span
+                    class="text-xs sm:text-sm font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+                  >
                     {{ slide.title }}
-                  </h3>
+                  </span>
                 </div>
               </div>
             }
@@ -1026,7 +1027,11 @@ export class HomePageComponent implements OnInit, OnDestroy {
     this.stopTrendingAutoSlide();
     this.trendingTimer = setInterval(() => {
       if (!this.isTrendingPaused && this.trendingMovies().length > 0) {
-        this.stepTrending(1);
+        const len = this.trendingMovies().length;
+        const currIdx = this.selectedTrendingIndex();
+        const nextIdx = (currIdx + 1) % len;
+        // On automatic timer: transition banner without scrolling window/container
+        this.selectTrending(nextIdx, false);
       }
     }, 7000);
   }
@@ -1046,7 +1051,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
     this.isTrendingPaused = false;
   }
 
-  selectTrending(index: number): void {
+  selectTrending(index: number, shouldScroll = true): void {
     const movie = this.trendingMovies()[index];
     if (!movie) return;
     this.selectedMovieId.set(String(movie.id));
@@ -1059,8 +1064,10 @@ export class HomePageComponent implements OnInit, OnDestroy {
       this.quickMovieId.set(match.slug || String(match.id));
       this.selectFirstQuickDate();
     }
-    this.scrollToActiveCard(index);
-    this.startTrendingAutoSlide();
+    if (shouldScroll) {
+      this.scrollToActiveCard(index);
+      this.startTrendingAutoSlide();
+    }
   }
 
   stepTrending(direction: number): void {
@@ -1068,7 +1075,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
     if (len === 0) return;
     const currIdx = this.selectedTrendingIndex();
     const nextIdx = (currIdx + direction + len) % len;
-    this.selectTrending(nextIdx);
+    this.selectTrending(nextIdx, true);
   }
 
   scrollToActiveCard(index: number): void {
@@ -1076,10 +1083,13 @@ export class HomePageComponent implements OnInit, OnDestroy {
     if (!container) return;
     const targetCard = container.querySelector<HTMLElement>(`[data-index="${index}"]`);
     if (targetCard) {
-      targetCard.scrollIntoView({
+      const cardLeft = targetCard.offsetLeft;
+      const cardWidth = targetCard.offsetWidth;
+      const containerWidth = container.offsetWidth;
+      const scrollTarget = cardLeft - containerWidth / 2 + cardWidth / 2;
+      container.scrollTo({
+        left: Math.max(0, scrollTarget),
         behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
       });
     }
   }
