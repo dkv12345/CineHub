@@ -580,66 +580,62 @@ import {
         </div>
       </section>
 
-      <!-- 5. Section Phim Đang Chiếu & Lọc Thể Loại -->
+      <!-- 5. Section Phim Chiếu Rạp & Lọc Thể Loại (Đúng chuẩn thiết kế) -->
       <section
         id="phim-dang-chieu"
         class="relative mx-auto max-w-[1440px] px-5 pt-14 md:px-9 md:pt-16"
       >
-        <div
-          class="mb-8 flex flex-col gap-4 border-b border-white/[0.08] pb-6 sm:flex-row sm:items-end sm:justify-between"
-        >
-          <div class="flex items-center gap-3">
-            <span class="h-7 w-1 rounded-[1px] bg-[#e50914] shadow-[0_0_12px_#e50914]"></span>
-            <div>
-              <p class="text-[11px] font-black uppercase tracking-[0.25em] text-[#e50914]">
-                DANH MỤC PHIM
-              </p>
-              <h2 class="mt-0.5 text-2xl font-black uppercase tracking-wide text-white md:text-3xl">
-                Phim Đang Chiếu
-              </h2>
-            </div>
+        <!-- Header: Tiêu đề & Tabs ĐANG CHIẾU / SẮP CHIẾU -->
+        <div class="mb-5 flex flex-col gap-4">
+          <!-- Title row: | PHIM CHIẾU RẠP -->
+          <div class="flex items-center gap-2.5">
+            <span class="h-5 w-1 rounded-[1px] bg-[#e50914] shadow-[0_0_8px_#e50914]"></span>
+            <h2 class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
+              PHIM CHIẾU RẠP
+            </h2>
           </div>
 
-          <!-- Tabs Now / Soon -->
-          <div class="flex items-center gap-2">
+          <!-- Tabs row: ĐANG CHIẾU | SẮP CHIẾU -->
+          <div class="flex items-center gap-6 border-b border-white/[0.08] pb-1">
             <button
               type="button"
               (click)="activeTab.set('now')"
-              class="rounded-[4px] px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition duration-200"
+              class="relative pb-2.5 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors duration-200"
               [class]="
                 activeTab() === 'now'
-                  ? 'bg-[#e50914] text-white shadow-lg shadow-red-600/30'
-                  : 'border border-white/10 bg-black/40 text-slate-300 hover:border-white/20 hover:text-white'
+                  ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#e50914] after:shadow-[0_0_8px_#e50914]'
+                  : 'text-slate-400 hover:text-white'
               "
             >
-              Đang Chiếu ({{ nowShowingMovies().length }})
+              ĐANG CHIẾU
             </button>
+
             <button
               type="button"
               (click)="activeTab.set('soon')"
-              class="rounded-[4px] px-4 py-2 text-xs font-extrabold uppercase tracking-wider transition duration-200"
+              class="relative pb-2.5 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors duration-200"
               [class]="
                 activeTab() === 'soon'
-                  ? 'bg-[#e50914] text-white shadow-lg shadow-red-600/30'
-                  : 'border border-white/10 bg-black/40 text-slate-300 hover:border-white/20 hover:text-white'
+                  ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#e50914] after:shadow-[0_0_8px_#e50914]'
+                  : 'text-slate-400 hover:text-white'
               "
             >
-              Sắp Chiếu ({{ comingSoonMovies().length }})
+              SẮP CHIẾU
             </button>
           </div>
         </div>
 
-        <!-- Filter Genres -->
-        <div class="scrollbar-hide mb-8 flex items-center gap-2 overflow-x-auto pb-2">
+        <!-- Filter Genres (Pill buttons style) -->
+        <div class="scrollbar-hide mb-8 flex items-center gap-2 overflow-x-auto pb-2 pt-1">
           @for (filter of filterOptions(); track filter.key) {
             <button
               type="button"
               (click)="catalogFilter.set(filter.key)"
-              class="shrink-0 rounded-[4px] px-3.5 py-1.5 text-xs font-bold transition duration-200"
+              class="shrink-0 rounded-[4px] px-3.5 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition duration-200"
               [class]="
                 catalogFilter() === filter.key
-                  ? 'bg-white text-black shadow-md'
-                  : 'border border-white/10 bg-white/5 text-slate-300 hover:border-white/25 hover:text-white'
+                  ? 'bg-[#e50914] text-white shadow-md shadow-red-600/30 font-black'
+                  : 'border border-white/10 bg-[#121829] text-slate-200 hover:border-white/20 hover:bg-[#1a233b] hover:text-white'
               "
             >
               {{ filter.label }}
