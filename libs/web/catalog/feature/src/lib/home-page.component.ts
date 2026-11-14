@@ -24,6 +24,21 @@ import {
   vietnamDate,
 } from '@cinehub/web/showtimes/util';
 
+export interface CinemaTech {
+  id: string;
+  badge: string;
+  title: string;
+  desc: string;
+  image: string;
+  accent: string;
+  glow: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  tag: string;
+  features: string[];
+}
+
 @Component({
   selector: 'ch-home-page',
   standalone: true,
@@ -655,76 +670,192 @@ import {
         </div>
       </section>
 
-      <!-- 6. Section Trải Nghiệm Công Nghệ Rạp -->
-      <section class="mx-auto max-w-[1440px] px-5 py-16 md:px-9">
-        <div class="mb-10 text-center">
+      <!-- 6. Section Trải Nghiệm Công Nghệ Rạp (3D Curved Perspective Carousel) -->
+      <section
+        class="relative mx-auto max-w-[1440px] px-4 py-20 sm:px-6 md:px-9 overflow-hidden"
+        (mouseenter)="pauseTech()"
+        (mouseleave)="resumeTech()"
+        aria-label="Công nghệ chiếu đỉnh cao"
+      >
+        <!-- Dynamic Ambient Background Glow matched to active technology color -->
+        <div
+          class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[420px] w-[650px] max-w-full rounded-full blur-[140px] opacity-20 transition-all duration-700 ease-out"
+          [style.backgroundColor]="currentTechItem().accent"
+        ></div>
+
+        <!-- Section Header -->
+        <div class="relative z-10 mb-12 text-center">
           <p class="text-[11px] font-black uppercase tracking-[0.25em] text-[#e50914]">
             ĐẲNG CẤP ĐIỆN ẢNH
           </p>
-          <h2 class="mt-1 text-2xl font-black uppercase tracking-wide text-white md:text-4xl">
+          <h2
+            class="mt-1 text-2xl font-black uppercase tracking-wide text-white sm:text-3xl md:text-4xl"
+          >
             Công Nghệ Chiếu Đỉnh Cao
           </h2>
-          <p class="mx-auto mt-2 max-w-xl text-xs md:text-sm text-slate-400">
+          <p class="mx-auto mt-2 max-w-2xl text-xs sm:text-sm text-slate-400">
             Hòa mình vào không gian điện ảnh chân thực chuẩn quốc tế tại mọi cụm rạp CineHub
           </p>
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            class="group relative overflow-hidden rounded-[6px] border border-white/10 bg-gradient-to-b from-[#101726] to-[#04060c] p-6 shadow-xl transition-all duration-300 hover:border-amber-400/50 hover:shadow-[0_12px_30px_rgba(251,191,36,0.15)]"
-          >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-[4px] bg-amber-400/20 text-amber-400"
-            >
-              <span class="text-xl font-black">IMAX</span>
-            </div>
-            <h3 class="mt-4 text-base font-extrabold text-white">IMAX Laser 4K</h3>
-            <p class="mt-2 text-xs leading-relaxed text-slate-400">
-              Màn hình cong cực đại cùng hệ thống máy chiếu đôi tái hiện độ tương phản hoàn hảo.
-            </p>
+        <!-- 3D Curved Cylinder Carousel Stage -->
+        <div
+          class="relative mx-auto h-[480px] sm:h-[520px] md:h-[550px] w-full max-w-5xl [perspective:1200px]"
+        >
+          <!-- Inner 3D Stage -->
+          <div class="relative h-full w-full [transform-style:preserve-3d]">
+            @for (item of techItems; track item.id; let idx = $index) {
+              <div
+                class="absolute left-1/2 top-1/2 h-[430px] sm:h-[470px] md:h-[490px] w-[290px] sm:w-[350px] md:w-[390px] rounded-[24px] sm:rounded-[28px] border bg-[#0d111c]/90 backdrop-blur-xl transition-all duration-700 ease-out cursor-pointer overflow-hidden flex flex-col group select-none"
+                [style]="getTechCardStyle(idx)"
+                (click)="selectTech(idx)"
+                [attr.aria-label]="item.title"
+              >
+                <!-- Top Image Hero with visual gradient overlay -->
+                <div
+                  class="relative h-[200px] sm:h-[225px] md:h-[240px] w-full shrink-0 overflow-hidden bg-black"
+                >
+                  <img
+                    [src]="item.image"
+                    [alt]="item.title"
+                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-[#0d111c] via-[#0d111c]/30 to-transparent"
+                  ></div>
+
+                  <!-- Badges overlay -->
+                  <div
+                    class="absolute inset-x-3 sm:inset-x-4 top-3 sm:top-4 flex items-center justify-between"
+                  >
+                    <span
+                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border shadow-md backdrop-blur-md"
+                      [class]="item.badgeBg + ' ' + item.badgeText + ' ' + item.badgeBorder"
+                    >
+                      {{ item.badge }}
+                    </span>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide text-slate-300 bg-black/60 border border-white/10 backdrop-blur-md"
+                    >
+                      {{ item.tag }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Card Content -->
+                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                  <div>
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight">
+                      {{ item.title }}
+                    </h3>
+                    <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-3">
+                      {{ item.desc }}
+                    </p>
+                  </div>
+
+                  <!-- Highlight Features Pills -->
+                  <div class="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
+                    @for (feat of item.features; track feat) {
+                      <span
+                        class="inline-flex items-center rounded-md bg-white/5 px-2 py-1 text-[10px] sm:text-[11px] font-medium text-slate-300 border border-white/5"
+                      >
+                        {{ feat }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
           </div>
 
-          <div
-            class="group relative overflow-hidden rounded-[6px] border border-white/10 bg-gradient-to-b from-[#101726] to-[#04060c] p-6 shadow-xl transition-all duration-300 hover:border-[#e50914]/50 hover:shadow-[0_12px_30px_rgba(229,9,20,0.15)]"
+          <!-- Left / Right Navigation Buttons (Glassmorphic floating arrows) -->
+          <button
+            type="button"
+            (click)="stepTech(-1); $event.stopPropagation()"
+            class="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 z-40 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 active:scale-95 shadow-2xl"
+            aria-label="Công nghệ trước"
           >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-[4px] bg-[#e50914]/20 text-[#e50914]"
+            <svg
+              class="h-5 w-5 sm:h-6 sm:w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <span class="text-xl font-black">4DX</span>
-            </div>
-            <h3 class="mt-4 text-base font-extrabold text-white">4DX Cinematic Motion</h3>
-            <p class="mt-2 text-xs leading-relaxed text-slate-400">
-              Ghế chuyển động đa chiều kết hợp hiệu ứng gió, nước, mùi hương chân thực.
-            </p>
-          </div>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            (click)="stepTech(1); $event.stopPropagation()"
+            class="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 z-40 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 active:scale-95 shadow-2xl"
+            aria-label="Công nghệ kế tiếp"
+          >
+            <svg
+              class="h-5 w-5 sm:h-6 sm:w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </div>
 
-          <div
-            class="group relative overflow-hidden rounded-[6px] border border-white/10 bg-gradient-to-b from-[#101726] to-[#04060c] p-6 shadow-xl transition-all duration-300 hover:border-cyan-400/50 hover:shadow-[0_12px_30px_rgba(6,182,212,0.15)]"
-          >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-[4px] bg-cyan-400/20 text-cyan-400"
-            >
-              <span class="text-xl font-black">ATMOS</span>
-            </div>
-            <h3 class="mt-4 text-base font-extrabold text-white">Dolby Atmos Sound</h3>
-            <p class="mt-2 text-xs leading-relaxed text-slate-400">
-              Âm thanh vòm 360 độ di chuyển sống động xung quanh bạn với 64 kênh độc lập.
-            </p>
-          </div>
+        <!-- Pagination Indicator Dots -->
+        <div class="relative z-20 mt-6 flex items-center justify-center gap-2">
+          @for (item of techItems; track item.id; let idx = $index) {
+            <button
+              type="button"
+              (click)="selectTech(idx)"
+              class="h-2 rounded-full transition-all duration-300"
+              [class]="
+                activeTechIndex() === idx ? 'w-8 bg-[#e50914]' : 'w-2 bg-white/20 hover:bg-white/50'
+              "
+              [attr.aria-label]="'Chuyển đến ' + item.title"
+            ></button>
+          }
+        </div>
 
-          <div
-            class="group relative overflow-hidden rounded-[6px] border border-white/10 bg-gradient-to-b from-[#101726] to-[#04060c] p-6 shadow-xl transition-all duration-300 hover:border-purple-400/50 hover:shadow-[0_12px_30px_rgba(168,85,247,0.15)]"
+        <!-- Action Buttons (Pill shape styled like reference image) -->
+        <div class="relative z-20 mt-8 flex flex-wrap items-center justify-center gap-4">
+          <a
+            routerLink="/showtimes"
+            class="inline-flex items-center gap-2 rounded-full bg-[#e50914] px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-red-900/30 transition-all hover:bg-red-700 hover:scale-105 active:scale-95"
           >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-[4px] bg-purple-400/20 text-purple-400"
-            >
-              <span class="text-xl font-black">GOLD</span>
-            </div>
-            <h3 class="mt-4 text-base font-extrabold text-white">Gold Class Luxury</h3>
-            <p class="mt-2 text-xs leading-relaxed text-slate-400">
-              Ghế bọc da ngả lưng cao cấp kèm chăn gối và phục vụ ẩm thực chuẩn 5 sao tận nơi.
-            </p>
-          </div>
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+              />
+            </svg>
+            <span>Đặt vé theo định dạng</span>
+          </a>
+          <a
+            routerLink="/showtimes"
+            class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-xs sm:text-sm font-bold text-white backdrop-blur-md transition-all hover:border-white/40 hover:bg-white/10 hover:scale-105 active:scale-95"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+            <span>Tìm cụm rạp gần nhất</span>
+          </a>
         </div>
       </section>
 
@@ -817,6 +948,74 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly currentSlide = signal(0);
   private carouselTimer: ReturnType<typeof setInterval> | null = null;
   private isCarouselPaused = false;
+
+  // 3D Cinema Technology Carousel
+  readonly techItems: CinemaTech[] = [
+    {
+      id: 'imax',
+      badge: 'IMAX',
+      title: 'IMAX Laser 4K',
+      desc: 'Màn hình cong cực đại cùng hệ thống máy chiếu đôi tái hiện độ tương phản hoàn hảo.',
+      image: '/images/tech/imax.jpg',
+      accent: '#f59e0b',
+      glow: 'rgba(245, 158, 11, 0.35)',
+      badgeBg: 'bg-amber-400/20',
+      badgeText: 'text-amber-300',
+      badgeBorder: 'border-amber-400/50',
+      tag: 'Laser 4K Double Projector',
+      features: ['Màn hình cong cực đại', 'Máy chiếu đôi Laser 4K', 'Tỷ lệ khung hình 1.43:1'],
+    },
+    {
+      id: '4dx',
+      badge: '4DX',
+      title: '4DX Cinematic Motion',
+      desc: 'Ghế chuyển động đa chiều kết hợp hiệu ứng gió, nước, mùi hương chân thực.',
+      image: '/images/tech/4dx.jpg',
+      accent: '#ef4444',
+      glow: 'rgba(239, 68, 68, 0.35)',
+      badgeBg: 'bg-rose-500/20',
+      badgeText: 'text-rose-300',
+      badgeBorder: 'border-rose-500/50',
+      tag: 'Sensory & Motion Hall',
+      features: [
+        'Ghế chuyển động đa chiều',
+        'Hiệu ứng gió, nước & sương',
+        'Rung chấn cảm biến môi trường',
+      ],
+    },
+    {
+      id: 'atmos',
+      badge: 'ATMOS',
+      title: 'Dolby Atmos Sound',
+      desc: 'Âm thanh vòm 360 độ di chuyển sống động xung quanh bạn với 64 kênh độc lập.',
+      image: '/images/tech/atmos.jpg',
+      accent: '#06b6d4',
+      glow: 'rgba(6, 182, 212, 0.35)',
+      badgeBg: 'bg-cyan-500/20',
+      badgeText: 'text-cyan-300',
+      badgeBorder: 'border-cyan-500/50',
+      tag: 'Spatial Audio 360°',
+      features: ['Âm thanh vòm 360 độ', '64 kênh âm thanh độc lập', 'Loa âm trần đa chiều'],
+    },
+    {
+      id: 'gold',
+      badge: 'GOLD',
+      title: 'Gold Class Luxury',
+      desc: 'Ghế bọc da ngả lưng cao cấp kèm chăn gối và phục vụ ẩm thực chuẩn 5 sao tận nơi.',
+      image: '/images/tech/gold-class.jpg',
+      accent: '#a855f7',
+      glow: 'rgba(168, 85, 247, 0.35)',
+      badgeBg: 'bg-purple-500/20',
+      badgeText: 'text-purple-300',
+      badgeBorder: 'border-purple-500/50',
+      tag: '5-Star VIP Lounge',
+      features: ['Ghế bọc da ngả 180°', 'Chăn gối cao cấp', 'Phục vụ ẩm thực chuẩn 5 sao'],
+    },
+  ];
+  readonly activeTechIndex = signal(0);
+  readonly currentTechItem = computed(() => this.techItems[this.activeTechIndex()]);
+  private techTimer: ReturnType<typeof setInterval> | null = null;
+  private isTechPaused = false;
 
   // Trending Movies Hero Banner
   readonly selectedMovieId = signal<string>('');
@@ -987,11 +1186,100 @@ export class HomePageComponent implements OnInit, OnDestroy {
     );
     this.startCarousel();
     this.startTrendingAutoSlide();
+    this.startTechAutoSlide();
   }
 
   ngOnDestroy(): void {
     this.stopCarousel();
     this.stopTrendingAutoSlide();
+    this.stopTechAutoSlide();
+  }
+
+  // 3D Cinema Technology Carousel handlers
+  startTechAutoSlide(): void {
+    this.stopTechAutoSlide();
+    this.techTimer = setInterval(() => {
+      if (!this.isTechPaused) {
+        this.stepTech(1);
+      }
+    }, 6000);
+  }
+
+  stopTechAutoSlide(): void {
+    if (this.techTimer) {
+      clearInterval(this.techTimer);
+      this.techTimer = null;
+    }
+  }
+
+  pauseTech(): void {
+    this.isTechPaused = true;
+  }
+
+  resumeTech(): void {
+    this.isTechPaused = false;
+  }
+
+  stepTech(direction: number): void {
+    const len = this.techItems.length;
+    this.activeTechIndex.update((i) => (i + direction + len) % len);
+  }
+
+  selectTech(index: number): void {
+    this.activeTechIndex.set(index);
+  }
+
+  getTechCardStyle(index: number): Record<string, string | number> {
+    const len = this.techItems.length;
+    let diff = (index - this.activeTechIndex() + len) % len;
+    if (diff > len / 2) {
+      diff = diff - len;
+    }
+    const item = this.techItems[index];
+
+    if (diff === 0) {
+      return {
+        transform: 'translate3d(-50%, -50%, 0px) rotateY(0deg) scale(1)',
+        opacity: 1,
+        zIndex: 30,
+        pointerEvents: 'auto',
+        borderColor: item.accent,
+        boxShadow: `0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px ${item.glow}`,
+        filter: 'brightness(1)',
+      };
+    } else if (diff === -1) {
+      return {
+        transform:
+          'translate3d(calc(-50% - min(330px, 62vw)), -50%, -100px) rotateY(24deg) scale(0.88)',
+        opacity: 0.65,
+        zIndex: 20,
+        pointerEvents: 'auto',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        boxShadow: '0 15px 35px -10px rgba(0, 0, 0, 0.7)',
+        filter: 'brightness(0.7)',
+      };
+    } else if (diff === 1) {
+      return {
+        transform:
+          'translate3d(calc(-50% + min(330px, 62vw)), -50%, -100px) rotateY(-24deg) scale(0.88)',
+        opacity: 0.65,
+        zIndex: 20,
+        pointerEvents: 'auto',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        boxShadow: '0 15px 35px -10px rgba(0, 0, 0, 0.7)',
+        filter: 'brightness(0.7)',
+      };
+    } else {
+      return {
+        transform: 'translate3d(-50%, -50%, -240px) rotateY(180deg) scale(0.72)',
+        opacity: 0,
+        zIndex: 10,
+        pointerEvents: 'none',
+        borderColor: 'transparent',
+        boxShadow: 'none',
+        filter: 'brightness(0.4)',
+      };
+    }
   }
 
   // Promotion Carousel handlers
