@@ -29,7 +29,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-[#020617] text-white selection:bg-amber-400 selection:text-black">
-      <!-- 1. Top Phim Thịnh Hành (Cinematic Hero Showcase with Horizontal Backdrop & Thumbnail Strip) -->
+      <!-- 1. Top Phim Thịnh Hành (Cinematic Hero Showcase & Top 10 Thumbnail Strip with Outline Numbers) -->
       @if (trendingMovies().length > 0) {
         <section
           class="relative w-full overflow-hidden bg-[#020617] text-white"
@@ -37,9 +37,9 @@ import {
           (mouseleave)="resumeTrending()"
           aria-label="Top phim thịnh hành"
         >
-          <!-- Background Horizontal Posters with Smooth Cross-Fade Transition -->
+          <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Độ rộng mở rộng, tỷ lệ poster ngang fit đẹp) -->
           <div
-            class="relative min-h-[500px] sm:min-h-[540px] md:min-h-[580px] w-full overflow-hidden"
+            class="relative w-full min-h-[460px] sm:min-h-[520px] md:min-h-[580px] lg:min-h-[620px] overflow-hidden"
           >
             @for (movie of trendingMovies(); track movie.id; let idx = $index) {
               <div
@@ -53,61 +53,59 @@ import {
                 <img
                   [src]="movie.backdrop || movie.poster"
                   [alt]="movie.title"
-                  class="h-full w-full object-cover object-top md:object-center"
+                  class="h-full w-full object-cover object-right md:object-center"
                 />
               </div>
             }
 
-            <!-- Multi-layer cinematic contrast scrims (Addressing Feedback 2: che chữ nền, nửa trái tối rõ nét, nửa phải sáng đẹp) -->
-            <!-- Scrim trái đậm: Giúp tiêu đề & mô tả cực rõ ràng, triệt tiêu hoàn toàn sự tranh chấp chữ nền (như WORLD TOUR ARIRANG) -->
+            <!-- Soft Contrast Scrim: Che mờ nền chữ bên trái, giữ sáng 100% hình ảnh poster/nhân vật ở giữa và bên phải -->
             <div
-              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full md:w-3/5 lg:w-1/2 bg-gradient-to-r from-[#020617] via-[#020617]/95 via-50% to-transparent"
+              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-2/3 md:w-[55%] lg:w-[48%] bg-gradient-to-r from-[#020617] via-[#020617]/85 to-transparent"
             ></div>
             <div
-              class="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent"
+              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-36 bg-gradient-to-t from-[#020617] via-[#020617]/80 to-transparent"
             ></div>
             <div
-              class="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-[#020617]/80 to-transparent"
+              class="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-[#020617]/70 to-transparent"
             ></div>
 
             <!-- Hero Content Container (Overlaying the Backdrop) -->
             <div
-              class="relative z-20 mx-auto flex h-full min-h-[500px] sm:min-h-[540px] md:min-h-[580px] max-w-[1400px] flex-col justify-between px-5 pt-8 pb-8 md:px-9 md:pt-10 md:pb-10"
+              class="relative z-20 mx-auto flex h-full min-h-[460px] sm:min-h-[520px] md:min-h-[580px] lg:min-h-[620px] max-w-[1440px] flex-col justify-center px-5 pt-10 pb-12 md:px-9 md:pt-14 md:pb-16"
             >
-              <!-- Movie Details Info (Top/Middle Area) -->
-              <div class="max-w-2xl pt-2 md:pt-4">
+              <div class="max-w-2xl">
                 <!-- Badge Xu hướng -->
                 <div
-                  class="inline-flex items-center gap-2 rounded-full border border-amber-400/50 bg-amber-400/15 px-3 py-1 backdrop-blur-md"
+                  class="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-0.5 backdrop-blur-md"
                 >
-                  <span class="flex h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-                  <span class="text-xs font-black uppercase tracking-widest text-amber-300">
+                  <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span class="text-xs font-black uppercase tracking-wider text-amber-300">
                     TOP #{{ selectedTrendingIndex() + 1 }} THỊNH HÀNH
                   </span>
                 </div>
 
                 <!-- Big Bold Movie Title -->
                 <h1
-                  class="mt-3 text-2xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]"
+                  class="mt-3.5 text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] leading-tight"
                 >
                   {{ currentTrendingMovie()?.title }}
                 </h1>
 
-                <!-- Metadata Row -->
+                <!-- Metadata Row (Rating, Year, Duration, Age, Genre) -->
                 <div
-                  class="mt-2.5 flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-white/90"
+                  class="mt-3 flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-white/90"
                 >
                   <span
                     class="flex items-center gap-1 rounded bg-amber-400 px-2 py-0.5 text-xs font-black text-black shadow-md shadow-amber-400/30"
                   >
-                    ★ {{ currentTrendingMovie()?.rating || '9.5' }}
+                    ★ {{ currentTrendingMovie()?.rating || '9.6' }}
                   </span>
                   <span class="text-slate-300">
-                    {{ currentTrendingMovie()?.release?.slice(0, 4) || '2026' }}
+                    {{ currentTrendingMovie()?.release?.slice(0, 5) || '02/11' }}
                   </span>
                   <span class="text-white/30">•</span>
                   <span class="text-slate-300">
-                    {{ currentTrendingMovie()?.duration || '120 phút' }}
+                    {{ currentTrendingMovie()?.duration || '2h 2m' }}
                   </span>
                   <span class="text-white/30">•</span>
                   <span
@@ -116,26 +114,26 @@ import {
                     {{ currentTrendingMovie()?.age || 'P' }}
                   </span>
                   <span class="text-white/30">•</span>
-                  <span class="font-medium text-amber-200">
+                  <span class="font-medium text-amber-300">
                     {{ currentTrendingMovie()?.genre }}
                   </span>
                 </div>
 
-                <!-- Description (Addressing Feedback 2: Rút gọn tối đa 2 dòng, ý trọn vẹn, không che khuất hay rối mắt) -->
+                <!-- Description (Rút gọn tối đa 3 dòng, súc tích trọn vẹn) -->
                 <p
-                  class="mt-3 line-clamp-2 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-300 font-medium drop-shadow"
+                  class="mt-3.5 line-clamp-3 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-200 font-medium drop-shadow"
                 >
                   {{ currentTrendingMovie()?.description }}
                 </p>
 
-                <!-- Action Buttons (Spider-man style: Mua vé ngay / Chi tiết phim / Trailer) -->
-                <div class="mt-4 flex flex-wrap items-center gap-3">
+                <!-- Action Buttons (Mua vé ngay, Chi tiết phim, Trailer) -->
+                <div class="mt-5 flex flex-wrap items-center gap-3">
                   <a
                     [routerLink]="['/showtimes']"
                     [queryParams]="
                       currentTrendingMovie() ? showtimesQueryParams(currentTrendingMovie()!) : {}
                     "
-                    class="inline-flex items-center gap-2 rounded-[4px] bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 px-5 py-2.5 text-xs md:text-sm font-black text-black shadow-[0_4px_18px_rgba(251,191,36,0.4)] transition active:scale-95"
+                    class="inline-flex items-center gap-2 rounded-[6px] bg-gradient-to-r from-[#e50914] to-[#f43f5e] hover:from-[#f43f5e] hover:to-[#fb7185] px-6 py-2.5 text-xs sm:text-sm font-black text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition active:scale-95"
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                       <path
@@ -150,7 +148,7 @@ import {
                       '/movie',
                       currentTrendingMovie()?.slug || currentTrendingMovie()?.id,
                     ]"
-                    class="inline-flex items-center justify-center rounded-[4px] border border-white/20 bg-white/10 hover:bg-white/20 px-4 py-2.5 text-xs md:text-sm font-bold text-white backdrop-blur-md transition"
+                    class="inline-flex items-center justify-center rounded-[6px] border border-white/20 bg-white/10 hover:bg-white/20 px-5 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-md transition"
                   >
                     Chi tiết phim
                   </a>
@@ -159,117 +157,241 @@ import {
                     <button
                       type="button"
                       (click)="openTrailer(currentTrendingMovie()?.trailer)"
-                      class="inline-flex items-center gap-1.5 rounded-[4px] border border-white/15 bg-black/40 hover:bg-black/60 px-4 py-2.5 text-xs md:text-sm font-semibold text-slate-200 backdrop-blur-md transition"
+                      class="inline-flex items-center gap-1.5 rounded-[6px] border border-white/15 bg-black/40 hover:bg-black/60 px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-200 backdrop-blur-md transition"
                     >
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                         <path d="M8 5v14l11-7z" />
                       </svg>
                       Trailer
                     </button>
                   }
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <!-- Slide Navigation Controls -->
-                <div class="mt-4 flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="stepTrending(-1)"
-                    aria-label="Phim trước"
-                    class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
+          <!-- Section TOP 10 THỊNH HÀNH với Dãy Phim và Số Viền (Đúng như Hình 1) -->
+          <div class="relative z-20 mx-auto -mt-6 sm:-mt-8 max-w-[1440px] px-5 pb-8 md:px-9">
+            <div class="mb-4 flex items-center justify-between">
+              <h2 class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
+                <span class="text-amber-400">TOP 10</span> THỊNH HÀNH
+              </h2>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="stepTrending(-1)"
+                  aria-label="Phim trước"
+                  class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <path d="M15 18l-6-6 6-6" />
-                    </svg>
-                  </button>
-
-                  <button
-                    type="button"
-                    (click)="stepTrending(1)"
-                    aria-label="Phim sau"
-                    class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  (click)="stepTrending(1)"
+                  aria-label="Phim sau"
+                  class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
-                  </button>
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-                  <span class="ml-1 text-xs font-bold text-slate-400">
-                    {{ selectedTrendingIndex() + 1 }} / {{ trendingMovies().length }}
+            <!-- Row Cards with Stylized Numbers (Hollow Outline for unselected, Solid Yellow for active) -->
+            <div class="scrollbar-hide flex items-end gap-5 overflow-x-auto pb-4 pt-2">
+              @for (movie of trendingMovies(); track movie.id; let idx = $index) {
+                <button
+                  type="button"
+                  (click)="selectTrending(idx)"
+                  [attr.aria-label]="'Chọn phim ' + movie.title"
+                  class="group relative flex shrink-0 items-end cursor-pointer text-left transition-transform duration-300 hover:scale-[1.03] focus:outline-none"
+                >
+                  <!-- Stylized Giant Number (Italic, outlined or filled gold) -->
+                  <span
+                    class="select-none font-black italic tracking-tighter leading-none transition-all duration-300 pr-1.5 shrink-0"
+                    [style]="
+                      selectedTrendingIndex() === idx
+                        ? 'color: #fbbf24; text-shadow: 0 0 25px rgba(251,191,36,0.6); -webkit-text-stroke: 0;'
+                        : 'color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.45);'
+                    "
+                    style="font-size: clamp(56px, 7vw, 92px);"
+                  >
+                    {{ idx + 1 }}
                   </span>
-                </div>
-              </div>
 
-              <!-- Dãy Thumbnail Slider (Addressing Feedback 3: Đồng cỡ, viền vàng mảnh cho mục đang chọn, bấm vào đổi banner) -->
-              <div class="mt-5 w-full">
-                <div class="scrollbar-hide flex items-center gap-3 overflow-x-auto pb-1 pt-1">
-                  @for (movie of trendingMovies(); track movie.id; let idx = $index) {
-                    <button
-                      type="button"
-                      (click)="selectTrending(idx)"
-                      [attr.aria-label]="'Chọn phim ' + movie.title"
-                      class="group relative shrink-0 overflow-hidden rounded-[4px] transition-all duration-300"
-                      [class]="
-                        selectedTrendingIndex() === idx
-                          ? 'w-20 h-28 sm:w-24 sm:h-34 border-2 border-amber-400 ring-2 ring-amber-400/40 shadow-[0_0_15px_rgba(251,191,36,0.6)] opacity-100 scale-105 z-10'
-                          : 'w-20 h-28 sm:w-24 sm:h-34 border border-white/15 opacity-70 hover:opacity-100 hover:scale-102 hover:border-white/40'
-                      "
-                    >
-                      <img
-                        [src]="movie.poster"
-                        [alt]="movie.title"
-                        class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                      />
-                      <div
-                        class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"
-                      ></div>
-                      <!-- Ranking Badge -->
-                      <span
-                        class="absolute top-1 left-1 rounded-[2px] px-1.5 py-0.5 text-[9px] font-black"
-                        [class]="
-                          selectedTrendingIndex() === idx
-                            ? 'bg-amber-400 text-black font-extrabold'
-                            : 'bg-black/80 text-white'
-                        "
-                      >
-                        {{ idx + 1 }}
-                      </span>
-                      <!-- Rating -->
-                      <span
-                        class="absolute bottom-1 right-1 text-[9px] font-bold text-amber-300 drop-shadow"
-                      >
-                        ★ {{ movie.rating }}
-                      </span>
-                      <!-- Title snippet -->
-                      <span
-                        class="absolute bottom-1 left-1 right-7 truncate text-[9px] font-bold text-white drop-shadow"
-                      >
+                  <!-- Poster Card -->
+                  <div
+                    class="relative aspect-[2/3] w-[135px] sm:w-[165px] md:w-[190px] lg:w-[210px] overflow-hidden rounded-[6px] bg-[#0c1322] transition-all duration-300"
+                    [class]="
+                      selectedTrendingIndex() === idx
+                        ? 'border-2 border-amber-400 ring-2 ring-amber-400/30 shadow-[0_0_25px_rgba(251,191,36,0.45)]'
+                        : 'border border-white/10 group-hover:border-white/40'
+                    "
+                  >
+                    <img
+                      [src]="movie.poster"
+                      [alt]="movie.title"
+                      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div
+                      class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent"
+                    ></div>
+
+                    <!-- Info inside poster (Image 1 style) -->
+                    <div class="absolute bottom-2.5 left-2.5 right-2.5">
+                      <p class="truncate text-xs sm:text-sm font-bold text-white drop-shadow">
                         {{ movie.title }}
-                      </span>
-                    </button>
-                  }
-                </div>
-              </div>
+                      </p>
+                      <p
+                        class="mt-0.5 flex items-center gap-1 text-[11px] font-bold text-amber-300 drop-shadow"
+                      >
+                        <span>★</span>
+                        <span>{{ movie.rating }}</span>
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              }
             </div>
           </div>
         </section>
       }
 
-      <!-- 2. Thanh QuickBooking Mua vé nhanh (Addressing Feedback 1: Đưa thanh đặt vé lên cao, nhìn thấy ngay trong màn hình đầu) -->
-      <div class="relative z-20 mx-auto -mt-4 sm:-mt-6 max-w-[1400px] px-5 md:px-9">
+      <!-- 2. Section ƯU ĐÃI ĐẶC QUYỀN - KHUYẾN MÃI & SỰ KIỆN NỔI BẬT (Đưa lên ngay dưới phần Top Thịnh Hành theo yêu cầu 2) -->
+      @if (banners.length > 0) {
+        <section
+          class="relative mx-auto mt-6 md:mt-10 max-w-[1440px] px-5 md:px-9"
+          (mouseenter)="pauseCarousel()"
+          (mouseleave)="resumeCarousel()"
+          aria-roledescription="carousel"
+          aria-label="Chương trình ưu đãi và sự kiện"
+        >
+          <div class="mb-5 flex items-center justify-between border-b border-white/[0.08] pb-3">
+            <div class="flex items-center gap-3">
+              <span class="h-6 w-1 rounded-[1px] bg-amber-400 shadow-[0_0_12px_#fbbf24]"></span>
+              <div>
+                <p class="text-[11px] font-black uppercase tracking-[0.25em] text-amber-400">
+                  ƯU ĐÃI ĐẶC QUYỀN
+                </p>
+                <h2
+                  class="mt-0.5 text-xl font-black uppercase tracking-wide text-white md:text-2xl"
+                >
+                  KHUYẾN MÃI & SỰ KIỆN NỔI BẬT
+                </h2>
+              </div>
+            </div>
+
+            <!-- Slide Dots & Controls (Image 2 style) -->
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                (click)="stepSlide(-1)"
+                aria-label="Ưu đãi trước"
+                class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/10 bg-black/60 text-white shadow backdrop-blur transition hover:bg-[#e50914] hover:border-transparent"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+
+              <div class="hidden sm:flex items-center gap-1.5">
+                @for (slide of banners; track slide.id; let idx = $index) {
+                  <button
+                    type="button"
+                    (click)="currentSlide.set(idx)"
+                    [attr.aria-label]="'Banner ' + (idx + 1)"
+                    class="h-1 rounded-[1px] transition-all duration-300"
+                    [class]="
+                      currentSlide() === idx
+                        ? 'w-7 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                        : 'w-2.5 bg-white/30 hover:bg-white/60'
+                    "
+                  ></button>
+                }
+              </div>
+
+              <button
+                type="button"
+                (click)="stepSlide(1)"
+                aria-label="Ưu đãi sau"
+                class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/10 bg-black/60 text-white shadow backdrop-blur transition hover:bg-[#e50914] hover:border-transparent"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Carousel Banner Container (Image 2 style) -->
+          <div
+            class="relative h-[200px] sm:h-[280px] md:h-[350px] lg:h-[390px] w-full overflow-hidden rounded-[8px] border border-white/10 shadow-2xl"
+          >
+            @for (slide of banners; track slide.id; let idx = $index) {
+              <div
+                class="absolute inset-0 transition-opacity duration-700"
+                [class]="
+                  currentSlide() === idx ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                "
+              >
+                <img
+                  [src]="slide.image || slide.imageUrl"
+                  [alt]="slide.title"
+                  class="h-full w-full object-cover object-center"
+                />
+                <div
+                  class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-black/30"
+                ></div>
+                <div class="absolute bottom-6 left-6 z-20 max-w-lg">
+                  <span
+                    class="rounded bg-[#e50914] px-2.5 py-1 text-[10px] font-black uppercase text-white shadow"
+                  >
+                    HOT PROMO
+                  </span>
+                  <h3 class="mt-2 text-xl sm:text-2xl font-black text-white drop-shadow-lg">
+                    {{ slide.title }}
+                  </h3>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- 3. Thanh QuickBooking Mua vé nhanh (Luxury Cinema Console) -->
+      <div class="relative z-20 mx-auto mt-10 md:mt-14 max-w-[1440px] px-5 md:px-9">
         <section
           class="grid gap-4 rounded-[6px] border border-white/[0.12] bg-gradient-to-b from-[#101726]/95 via-[#090d17]/95 to-[#04060c]/98 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-2xl md:grid-cols-[1.15fr_1.15fr_.8fr_.8fr_auto] md:items-end md:p-6"
           aria-label="Đặt vé nhanh"
@@ -396,7 +518,7 @@ import {
         </section>
       </div>
 
-      <!-- 3. Section CineHub AI Dành riêng cho bạn (Atmospheric Cinematic Studio) -->
+      <!-- 4. Section CineHub AI Dành riêng cho bạn (Atmospheric Cinematic Studio) -->
       <section
         class="relative mt-14 overflow-hidden border-y border-white/[0.08] bg-gradient-to-b from-[#0a0f1d] via-[#05070d] to-[#020617] py-14"
       >
@@ -409,7 +531,7 @@ import {
           aria-hidden="true"
         ></div>
 
-        <div class="relative z-10 mx-auto max-w-[1400px] px-5 md:px-9">
+        <div class="relative z-10 mx-auto max-w-[1440px] px-5 md:px-9">
           <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div class="flex items-center gap-3">
               <span class="h-7 w-1 rounded-[1px] bg-amber-400 shadow-[0_0_12px_#fbbf24]"></span>
@@ -450,10 +572,10 @@ import {
         </div>
       </section>
 
-      <!-- 4. Section Phim Đang Chiếu & Lọc Thể Loại -->
+      <!-- 5. Section Phim Đang Chiếu & Lọc Thể Loại -->
       <section
         id="phim-dang-chieu"
-        class="relative mx-auto max-w-[1400px] px-5 pt-14 md:px-9 md:pt-16"
+        class="relative mx-auto max-w-[1440px] px-5 pt-14 md:px-9 md:pt-16"
       >
         <div
           class="mb-8 flex flex-col gap-4 border-b border-white/[0.08] pb-6 sm:flex-row sm:items-end sm:justify-between"
@@ -525,123 +647,8 @@ import {
         </div>
       </section>
 
-      <!-- 5. Section Chương trình ưu đãi & Sự kiện đặc biệt (Chuyển banner từ Hero xuống đây theo yêu cầu) -->
-      @if (banners.length > 0) {
-        <section
-          class="relative mx-auto mt-16 max-w-[1400px] px-5 md:px-9"
-          (mouseenter)="pauseCarousel()"
-          (mouseleave)="resumeCarousel()"
-          aria-roledescription="carousel"
-          aria-label="Chương trình ưu đãi và sự kiện"
-        >
-          <div class="mb-6 flex items-center justify-between border-b border-white/[0.08] pb-4">
-            <div class="flex items-center gap-3">
-              <span class="h-7 w-1 rounded-[1px] bg-amber-400 shadow-[0_0_12px_#fbbf24]"></span>
-              <div>
-                <p class="text-[11px] font-black uppercase tracking-[0.25em] text-amber-400">
-                  ƯU ĐÃI ĐẶC QUYỀN
-                </p>
-                <h2
-                  class="mt-0.5 text-2xl font-black uppercase tracking-wide text-white md:text-3xl"
-                >
-                  Khuyến Mãi & Sự Kiện Nổi Bật
-                </h2>
-              </div>
-            </div>
-
-            <!-- Slide Dots & Controls -->
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                (click)="stepSlide(-1)"
-                aria-label="Ưu đãi trước"
-                class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/10 bg-black/60 text-white shadow backdrop-blur transition hover:bg-[#e50914] hover:border-transparent"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
-
-              <div class="hidden sm:flex gap-1.5">
-                @for (slide of banners; track slide.id; let idx = $index) {
-                  <button
-                    type="button"
-                    (click)="currentSlide.set(idx)"
-                    [attr.aria-label]="'Banner ' + (idx + 1)"
-                    class="h-1 rounded-[1px] transition-all duration-300"
-                    [class]="
-                      currentSlide() === idx
-                        ? 'w-6 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
-                        : 'w-2 bg-white/30 hover:bg-white/60'
-                    "
-                  ></button>
-                }
-              </div>
-
-              <button
-                type="button"
-                (click)="stepSlide(1)"
-                aria-label="Ưu đãi sau"
-                class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/10 bg-black/60 text-white shadow backdrop-blur transition hover:bg-[#e50914] hover:border-transparent"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Carousel Container -->
-          <div
-            class="relative h-[220px] sm:h-[320px] md:h-[400px] w-full overflow-hidden rounded-[8px] border border-white/10 shadow-2xl"
-          >
-            @for (slide of banners; track slide.id; let idx = $index) {
-              <div
-                class="absolute inset-0 transition-opacity duration-700"
-                [class]="
-                  currentSlide() === idx ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
-                "
-              >
-                <img
-                  [src]="slide.image || slide.imageUrl"
-                  [alt]="slide.title"
-                  class="h-full w-full object-cover object-center"
-                />
-                <div
-                  class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-black/30"
-                ></div>
-                <div class="absolute bottom-6 left-6 z-20 max-w-lg">
-                  <span
-                    class="rounded bg-[#e50914] px-2.5 py-1 text-[10px] font-black uppercase text-white shadow"
-                  >
-                    HOT PROMO
-                  </span>
-                  <h3 class="mt-2 text-xl sm:text-2xl font-black text-white drop-shadow-lg">
-                    {{ slide.title }}
-                  </h3>
-                </div>
-              </div>
-            }
-          </div>
-        </section>
-      }
-
       <!-- 6. Section Trải Nghiệm Công Nghệ Rạp -->
-      <section class="mx-auto max-w-[1400px] px-5 py-16 md:px-9">
+      <section class="mx-auto max-w-[1440px] px-5 py-16 md:px-9">
         <div class="mb-10 text-center">
           <p class="text-[11px] font-black uppercase tracking-[0.25em] text-[#e50914]">
             ĐẲNG CẤP ĐIỆN ẢNH
