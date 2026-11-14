@@ -41,13 +41,13 @@ import {
         >
           <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Độ rộng mở rộng, tỷ lệ poster ngang fit đẹp) -->
           <div
-            class="relative w-full min-h-[460px] sm:min-h-[520px] md:min-h-[580px] lg:min-h-[620px] overflow-hidden"
+            class="relative w-full min-h-[500px] sm:min-h-[560px] md:min-h-[620px] lg:min-h-[660px] overflow-hidden"
           >
-            @for (movie of trendingMovies(); track movie.id; let idx = $index) {
+            @for (movie of trendingMovies(); track movie.id) {
               <div
                 class="absolute inset-0 transition-all duration-700 ease-out"
                 [class]="
-                  selectedTrendingIndex() === idx
+                  currentTrendingMovie()?.id === movie.id
                     ? 'opacity-100 scale-100 z-10'
                     : 'opacity-0 scale-105 pointer-events-none z-0'
                 "
@@ -55,17 +55,17 @@ import {
                 <img
                   [src]="movie.backdrop || movie.poster"
                   [alt]="movie.title"
-                  class="h-full w-full object-cover object-right md:object-center"
+                  class="h-full w-full object-cover object-top"
                 />
               </div>
             }
 
             <!-- Soft Contrast Scrim: Che mờ nền chữ bên trái, giữ sáng 100% hình ảnh poster/nhân vật ở giữa và bên phải -->
             <div
-              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-2/3 md:w-[55%] lg:w-[48%] bg-gradient-to-r from-[#020617] via-[#020617]/85 to-transparent"
+              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-3/5 md:w-1/2 lg:w-[46%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-45% to-transparent"
             ></div>
             <div
-              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-36 bg-gradient-to-t from-[#020617] via-[#020617]/80 to-transparent"
+              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-36 bg-gradient-to-t from-[#020617] via-[#020617]/85 to-transparent"
             ></div>
             <div
               class="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-[#020617]/70 to-transparent"
@@ -73,9 +73,9 @@ import {
 
             <!-- Hero Content Container (Overlaying the Backdrop) -->
             <div
-              class="relative z-20 mx-auto flex h-full min-h-[460px] sm:min-h-[520px] md:min-h-[580px] lg:min-h-[620px] max-w-[1440px] flex-col justify-center px-5 pt-10 pb-12 md:px-9 md:pt-14 md:pb-16"
+              class="relative z-20 mx-auto flex h-full min-h-[500px] sm:min-h-[560px] md:min-h-[620px] lg:min-h-[660px] max-w-[1440px] flex-col justify-center px-5 pt-10 pb-12 md:px-9 md:pt-14 md:pb-16"
             >
-              <div class="max-w-2xl">
+              <div class="max-w-xl lg:max-w-lg xl:max-w-xl">
                 <!-- Badge Xu hướng -->
                 <div
                   class="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-0.5 backdrop-blur-md"
@@ -160,7 +160,7 @@ import {
                   @if (currentTrendingMovie()?.trailer) {
                     <button
                       type="button"
-                      (click)="openTrailer(currentTrendingMovie()?.trailer)"
+                      (click)="openTrailer(currentTrendingMovie()!)"
                       class="inline-flex items-center gap-1.5 rounded-[6px] border border-white/15 bg-black/40 hover:bg-black/60 px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-200 backdrop-blur-md transition"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
@@ -236,7 +236,7 @@ import {
                   <span
                     class="select-none font-black italic tracking-tighter leading-none transition-all duration-300 pr-1.5 shrink-0"
                     [style]="
-                      selectedTrendingIndex() === idx
+                      currentTrendingMovie()?.id === movie.id
                         ? 'color: #fbbf24; text-shadow: 0 0 25px rgba(251,191,36,0.6); -webkit-text-stroke: 0;'
                         : 'color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.45);'
                     "
@@ -249,7 +249,7 @@ import {
                   <div
                     class="relative aspect-[2/3] w-[135px] sm:w-[165px] md:w-[190px] lg:w-[210px] overflow-hidden rounded-[6px] bg-[#0c1322] transition-all duration-300"
                     [class]="
-                      selectedTrendingIndex() === idx
+                      currentTrendingMovie()?.id === movie.id
                         ? 'border-2 border-amber-400 ring-2 ring-amber-400/30 shadow-[0_0_25px_rgba(251,191,36,0.45)]'
                         : 'border border-white/10 group-hover:border-white/40'
                     "
@@ -744,7 +744,7 @@ import {
               class="flex items-center justify-between border-b border-white/10 bg-slate-900/80 px-4 py-3"
             >
               <h3 class="font-bold text-white text-sm">
-                Trailer: {{ currentTrendingMovie()?.title }}
+                Trailer: {{ activeTrailerMovie()?.title }}
               </h3>
               <button
                 type="button"
@@ -819,11 +819,12 @@ export class HomePageComponent implements OnInit, OnDestroy {
   private isCarouselPaused = false;
 
   // Trending Movies Hero Banner
-  readonly selectedTrendingIndex = signal(0);
+  readonly selectedMovieId = signal<string>('');
   readonly trendingRowRef = viewChild<ElementRef<HTMLDivElement>>('trendingRow');
   private trendingTimer: ReturnType<typeof setInterval> | null = null;
   private isTrendingPaused = false;
   readonly trailerModalUrl = signal<SafeResourceUrl | null>(null);
+  readonly activeTrailerMovie = signal<Movie | null>(null);
 
   // QuickBooking Bar State
   readonly cinemaList = computed(() => {
@@ -923,7 +924,21 @@ export class HomePageComponent implements OnInit, OnDestroy {
 
   readonly currentTrendingMovie = computed<Movie | undefined>(() => {
     const list = this.trendingMovies();
-    return list[this.selectedTrendingIndex()] ?? list[0];
+    const id = this.selectedMovieId();
+    if (id) {
+      const match = list.find((m) => String(m.id) === id || m.slug === id || m.dbId === id);
+      if (match) return match;
+    }
+    return list[0];
+  });
+
+  readonly selectedTrendingIndex = computed<number>(() => {
+    const curr = this.currentTrendingMovie();
+    if (!curr) return 0;
+    const idx = this.trendingMovies().findIndex(
+      (m) => String(m.id) === String(curr.id) || m.slug === curr.slug,
+    );
+    return idx >= 0 ? idx : 0;
   });
 
   readonly recommendedMovies = computed(() => this.trendingMovies().slice(0, 3));
@@ -1036,25 +1051,27 @@ export class HomePageComponent implements OnInit, OnDestroy {
   }
 
   selectTrending(index: number): void {
-    this.selectedTrendingIndex.set(index);
     const movie = this.trendingMovies()[index];
-    if (movie) {
-      // Also sync quick booking to this movie if available
-      const match = this.quickMovies().find(
-        (m) => m.slug === movie.slug || String(m.id) === String(movie.id),
-      );
-      if (match) {
-        this.quickMovieId.set(match.slug || String(match.id));
-        this.selectFirstQuickDate();
-      }
+    if (!movie) return;
+    this.selectedMovieId.set(String(movie.id));
+
+    // Also sync quick booking to this movie if available
+    const match = this.quickMovies().find(
+      (m) => m.slug === movie.slug || String(m.id) === String(movie.id),
+    );
+    if (match) {
+      this.quickMovieId.set(match.slug || String(match.id));
+      this.selectFirstQuickDate();
     }
     this.scrollToActiveCard(index);
+    this.startTrendingAutoSlide();
   }
 
   stepTrending(direction: number): void {
     const len = this.trendingMovies().length;
     if (len === 0) return;
-    const nextIdx = (this.selectedTrendingIndex() + direction + len) % len;
+    const currIdx = this.selectedTrendingIndex();
+    const nextIdx = (currIdx + direction + len) % len;
     this.selectTrending(nextIdx);
   }
 
@@ -1072,22 +1089,31 @@ export class HomePageComponent implements OnInit, OnDestroy {
   }
 
   formatReleaseDate(release?: string): string {
-    if (!release) return '02/11';
+    if (!release) return '29/01';
     if (release.includes('-')) {
       const parts = release.split('-');
       if (parts.length >= 3) {
         return `${parts[2].slice(0, 2)}/${parts[1]}`;
       }
     }
+    if (release.includes('/')) {
+      const parts = release.split('/');
+      if (parts.length >= 2) {
+        return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}`;
+      }
+    }
     return release.slice(0, 5);
   }
 
-  openTrailer(trailerUrl?: string): void {
-    if (!trailerUrl) return;
+  openTrailer(movie?: Movie): void {
+    if (!movie || !movie.trailer) return;
+    this.pauseTrending();
+    this.activeTrailerMovie.set(movie);
+
     const match =
-      trailerUrl.match(
+      movie.trailer.match(
         /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/,
-      ) || trailerUrl.match(/^[a-zA-Z0-9_-]{11}$/);
+      ) || movie.trailer.match(/^[a-zA-Z0-9_-]{11}$/);
     const videoId = match ? match[1] || match[0] : null;
     if (!videoId) return;
 
@@ -1100,6 +1126,8 @@ export class HomePageComponent implements OnInit, OnDestroy {
 
   closeTrailer(): void {
     this.trailerModalUrl.set(null);
+    this.activeTrailerMovie.set(null);
+    this.resumeTrending();
   }
 
   // QuickBooking Handlers

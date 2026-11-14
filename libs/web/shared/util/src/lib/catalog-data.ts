@@ -132,7 +132,7 @@ export const movies: Movie[] = [
     startDate: '2027-02-06 00:00:00',
     endDate: '2027-05-02 00:00:00',
     slug: 'loan-the',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=d8J2b_kZkY0',
     themeKey: 'scarlet',
     country: 'Việt Nam',
     synopsis:
@@ -182,7 +182,7 @@ export const movies: Movie[] = [
     startDate: '2026-12-29 00:00:00',
     endDate: '2027-01-03 00:00:00',
     slug: 'bts-world-tour-arirang-in-jakarta-live-viewing',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=7uV8Z3mD05A',
     themeKey: 'korea',
     country: 'Hàn Quốc',
     synopsis:
@@ -942,7 +942,7 @@ export const movies: Movie[] = [
     startDate: '2026-11-21 00:00:00',
     endDate: '2026-11-23 00:00:00',
     slug: 'bts-world-tour-arirang-in-kaohsiung-live-viewing',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=7uV8Z3mD05A',
     themeKey: 'korea',
     country: 'Hàn Quốc',
     synopsis:
@@ -1096,7 +1096,7 @@ export const movies: Movie[] = [
     startDate: '2026-11-14 00:00:00',
     endDate: '2027-01-29 00:00:00',
     slug: 'arnie--barney',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=f-zFp4l5i8I',
     themeKey: 'ocean',
     country: 'Đức',
     synopsis:
@@ -1446,7 +1446,7 @@ export const movies: Movie[] = [
     startDate: '2026-11-05 00:00:00',
     endDate: '2027-01-31 00:00:00',
     slug: 'paradise-lost',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=KzK6r0Z7jZk',
     themeKey: 'scarlet',
     country: 'Hàn Quốc',
     synopsis:
@@ -1498,7 +1498,7 @@ export const movies: Movie[] = [
     startDate: '2026-10-31 00:00:00',
     endDate: '2026-11-01 00:00:00',
     slug: 'bts-world-tour-arirang-in-sao-paulo-live-viewing',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=7uV8Z3mD05A',
     themeKey: 'korea',
     country: 'Hàn Quốc',
     synopsis:
@@ -1523,7 +1523,7 @@ export const movies: Movie[] = [
     startDate: '2026-10-30 00:00:00',
     endDate: '2027-01-31 00:00:00',
     slug: 'tran-yem',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=d8J2b_kZkY0',
     themeKey: 'noir',
     country: 'Việt Nam',
     synopsis:
@@ -1625,7 +1625,7 @@ export const movies: Movie[] = [
     startDate: '2026-10-25 00:00:00',
     endDate: '2026-10-26 00:00:00',
     slug: 'bts-world-tour-arirang-in-buenos-aires-live-viewing',
-    trailer: 'https://www.youtube.com/watch?v=NSrioJtAiEU',
+    trailer: 'https://www.youtube.com/watch?v=7uV8Z3mD05A',
     themeKey: 'korea',
     country: 'Hàn Quốc',
     synopsis:
