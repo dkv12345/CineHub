@@ -84,6 +84,38 @@ export const ShowtimesStore = signalStore(
         .map(([id, name]) => ({ id, name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
     }),
+    cinemas: computed(() => {
+      const map = new Map<
+        string,
+        { id: string; name: string; cityId?: string; cityName?: string; code?: string }
+      >();
+      for (const s of store.sessions()) {
+        const id = s.cinema.code || s.cinema.dbId || s.cinema.id;
+        if (id && !map.has(id)) {
+          const cityName = getShowtimeCityName(s);
+          map.set(id, {
+            id,
+            name: s.cinema.name,
+            code: s.cinema.code,
+            cityId: s.cinema.cityId || cityName,
+            cityName,
+          });
+        }
+      }
+      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+    }),
+    formats: computed(() => {
+      const set = new Set<string>();
+      for (const s of store.sessions()) {
+        if (s.movieFormat) set.add(s.movieFormat);
+      }
+      if (set.size === 0) {
+        set.add('2D');
+        set.add('3D');
+        set.add('IMAX');
+      }
+      return Array.from(set).sort();
+    }),
     movies: computed(() => {
       const map = new Map<string, { id: string; dbId: string; slug: string; name: string }>();
       for (const s of store.sessions()) {

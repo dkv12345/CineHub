@@ -160,12 +160,13 @@ interface MovieGroup {
           </div>
         </section>
 
-        <div class="mb-6 rounded-2xl border-2 border-slate-700 bg-slate-900 p-4 shadow-xl">
+        <div class="mb-6">
           <ch-showtime-filter-bar
             [filters]="store.filters()"
             [cities]="store.cities()"
+            [cinemas]="store.cinemas()"
+            [formats]="store.formats()"
             [movies]="store.movies()"
-            [movieLocked]="hasMovieFilter()"
             (filterChanged)="updateFilters($event)"
             (resetClicked)="resetFilters()"
           />
@@ -531,9 +532,17 @@ export class ShowtimesPageComponent implements OnInit {
       const date =
         params.get('date') || (legacyDay !== null ? vietnamDate(Number(legacyDay)) : null);
       const movieId = params.get('movie') || params.get('movieId') || 'all';
+      const cinemaId = params.get('cinema') || params.get('cinemaId') || 'all';
+      const cityId = params.get('city') || params.get('cityId') || 'all';
+      const format = params.get('format') || 'all';
+      const searchQuery = params.get('q') || params.get('search') || '';
+
       this.store.updateFilters({
         movieId,
-        cinemaId: params.get('cinema') || params.get('cinemaId') || 'all',
+        cinemaId,
+        cityId,
+        format,
+        searchQuery,
         date,
       });
       if (
@@ -570,8 +579,22 @@ export class ShowtimesPageComponent implements OnInit {
       queryParams['cinemaId'] = null;
     }
     if (filters.movieId !== undefined) {
-      queryParams['movie'] = filters.movieId === 'all' ? null : String(filters.movieId ?? '');
+      queryParams['movie'] =
+        filters.movieId === 'all' || !filters.movieId ? null : String(filters.movieId);
       queryParams['movieId'] = null;
+    }
+    if (filters.cityId !== undefined) {
+      queryParams['city'] = filters.cityId === 'all' ? null : (filters.cityId ?? null);
+      queryParams['cityId'] = null;
+    }
+    if (filters.format !== undefined) {
+      queryParams['format'] = filters.format === 'all' ? null : (filters.format ?? null);
+    }
+    if (filters.searchQuery !== undefined) {
+      queryParams['q'] =
+        filters.searchQuery && filters.searchQuery.trim().length > 0
+          ? filters.searchQuery.trim()
+          : null;
     }
     if (Object.keys(queryParams).length > 0) {
       void this.router.navigate([], {
@@ -585,7 +608,7 @@ export class ShowtimesPageComponent implements OnInit {
   resetFilters(): void {
     this.updateFilters({
       date: null,
-      movieId: this.hasMovieFilter() ? this.store.filters().movieId : 'all',
+      movieId: 'all',
       cinemaId: 'all',
       cityId: 'all',
       format: 'all',
