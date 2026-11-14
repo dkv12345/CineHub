@@ -3,10 +3,12 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   OnDestroy,
   OnInit,
   signal,
+  viewChild,
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
@@ -101,7 +103,7 @@ import {
                     ★ {{ currentTrendingMovie()?.rating || '9.6' }}
                   </span>
                   <span class="text-slate-300">
-                    {{ currentTrendingMovie()?.release?.slice(0, 5) || '02/11' }}
+                    {{ formatReleaseDate(currentTrendingMovie()?.release) }}
                   </span>
                   <span class="text-white/30">•</span>
                   <span class="text-slate-300">
@@ -119,12 +121,14 @@ import {
                   </span>
                 </div>
 
-                <!-- Description (Rút gọn tối đa 3 dòng, súc tích trọn vẹn) -->
-                <p
-                  class="mt-3.5 line-clamp-3 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-200 font-medium drop-shadow"
-                >
-                  {{ currentTrendingMovie()?.description }}
-                </p>
+                <!-- Description / Giới thiệu phim trên banner (Đầy đủ nội dung, súc tích trọn vẹn) -->
+                @if (currentTrendingMovie()?.synopsis || currentTrendingMovie()?.description) {
+                  <p
+                    class="mt-3.5 max-w-xl text-xs sm:text-sm md:text-base leading-relaxed text-slate-200 font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] line-clamp-3 md:line-clamp-4"
+                  >
+                    {{ currentTrendingMovie()?.synopsis || currentTrendingMovie()?.description }}
+                  </p>
+                }
 
                 <!-- Action Buttons (Mua vé ngay, Chi tiết phim, Trailer) -->
                 <div class="mt-5 flex flex-wrap items-center gap-3">
@@ -216,10 +220,14 @@ import {
             </div>
 
             <!-- Row Cards with Stylized Numbers (Hollow Outline for unselected, Solid Yellow for active) -->
-            <div class="scrollbar-hide flex items-end gap-5 overflow-x-auto pb-4 pt-2">
+            <div
+              #trendingRow
+              class="scrollbar-hide flex items-end gap-5 overflow-x-auto pb-4 pt-2 scroll-smooth"
+            >
               @for (movie of trendingMovies(); track movie.id; let idx = $index) {
                 <button
                   type="button"
+                  [attr.data-index]="idx"
                   (click)="selectTrending(idx)"
                   [attr.aria-label]="'Chọn phim ' + movie.title"
                   class="group relative flex shrink-0 items-end cursor-pointer text-left transition-transform duration-300 hover:scale-[1.03] focus:outline-none"
@@ -812,6 +820,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
 
   // Trending Movies Hero Banner
   readonly selectedTrendingIndex = signal(0);
+  readonly trendingRowRef = viewChild<ElementRef<HTMLDivElement>>('trendingRow');
   private trendingTimer: ReturnType<typeof setInterval> | null = null;
   private isTrendingPaused = false;
   readonly trailerModalUrl = signal<SafeResourceUrl | null>(null);
@@ -1039,6 +1048,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
         this.selectFirstQuickDate();
       }
     }
+    this.scrollToActiveCard(index);
   }
 
   stepTrending(direction: number): void {
@@ -1046,6 +1056,30 @@ export class HomePageComponent implements OnInit, OnDestroy {
     if (len === 0) return;
     const nextIdx = (this.selectedTrendingIndex() + direction + len) % len;
     this.selectTrending(nextIdx);
+  }
+
+  scrollToActiveCard(index: number): void {
+    const container = this.trendingRowRef()?.nativeElement;
+    if (!container) return;
+    const targetCard = container.querySelector<HTMLElement>(`[data-index="${index}"]`);
+    if (targetCard) {
+      targetCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }
+
+  formatReleaseDate(release?: string): string {
+    if (!release) return '02/11';
+    if (release.includes('-')) {
+      const parts = release.split('-');
+      if (parts.length >= 3) {
+        return `${parts[2].slice(0, 2)}/${parts[1]}`;
+      }
+    }
+    return release.slice(0, 5);
   }
 
   openTrailer(trailerUrl?: string): void {
