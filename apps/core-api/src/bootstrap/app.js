@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
 import pinoHttp from 'pino-http';
 import { corsOptions } from '../platform/config/cors.js';
 import { logger } from '../platform/observability/logger.js';
@@ -17,6 +18,11 @@ export function createApp() {
   app.use(cors(corsOptions));
   app.use(cookieParser());
   app.use(express.json({ limit: '1mb' }));
+  app.use(
+    morgan(process.env.MORGAN_FORMAT || 'combined', {
+      skip: () => process.env.NODE_ENV === 'test' && !process.env.MORGAN_TEST,
+    }),
+  );
   app.use(
     pinoHttp({
       logger,
