@@ -504,17 +504,32 @@ export interface CinemaTech {
           </label>
 
           <!-- Chọn suất -->
-          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-400">
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
             CHỌN SUẤT
             <div class="relative mt-2">
               <select
-                disabled
-                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/5 bg-[#05080e]/60 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-500 outline-none"
+                (change)="onQuickSessionChange($event)"
+                [value]="quickSessionId()"
+                [disabled]="showtimesStore.loading() || quickSessionOptions().length === 0"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] disabled:opacity-50"
               >
-                <option class="bg-slate-900">Xem tại bước sau</option>
+                @if (quickSessionOptions().length === 0) {
+                  <option value="" class="bg-slate-900 font-bold text-white">
+                    Chưa có suất phù hợp
+                  </option>
+                } @else {
+                  <option value="" class="bg-slate-900 font-bold text-white">
+                    Tất cả suất ({{ quickSessionOptions().length }} suất)
+                  </option>
+                  @for (s of quickSessionOptions(); track s.id) {
+                    <option [value]="s.id" class="bg-slate-900 font-bold text-white">
+                      {{ s.label }}
+                    </option>
+                  }
+                }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 text-xs"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
@@ -528,14 +543,10 @@ export interface CinemaTech {
               showtimesStore.loading() || quickMovies().length === 0 || !quickShowtimeDate()
             "
             aria-label="Mua vé nhanh theo phim, rạp và ngày đã chọn"
-            class="inline-flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-[4px] bg-gradient-to-r from-[#e50914] to-[#f6121d] px-7 text-sm font-extrabold uppercase tracking-wider text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition hover:from-[#f6121d] hover:to-[#ff2a36] disabled:cursor-not-allowed disabled:opacity-50 md:w-auto active:scale-[0.99]"
+            class="inline-flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-[4px] bg-[#e50914] px-7 text-sm font-black uppercase tracking-wider text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition hover:bg-[#ff1f2d] hover:shadow-[0_6px_25px_rgba(229,9,20,0.7)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
           >
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
-              <path
-                d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a3 3 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a3 3 0 0 1 0-4z"
-              />
-            </svg>
-            Mua vé nhanh
+            <span class="text-xs">■</span>
+            MUA VÉ NHANH
           </button>
           @if (!showtimesStore.loading() && quickMovies().length > 0 && !quickShowtimeDate()) {
             <p class="text-xs font-bold text-amber-200 md:col-span-full">
@@ -1043,6 +1054,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly quickMovieId = signal<string>('');
   readonly quickCinemaId = signal<string>('');
   readonly quickShowtimeDate = signal<string>('');
+  readonly quickSessionId = signal<string>('');
 
   // Tabs & Filters
   readonly activeTab = signal<'now' | 'soon'>('now');
@@ -1104,6 +1116,37 @@ export class HomePageComponent implements OnInit, OnDestroy {
           date,
           count,
           label: `${weekday} · ${date.slice(8, 10)}/${date.slice(5, 7)} · ${count} suất`,
+        };
+      });
+  });
+
+  readonly quickSessionOptions = computed(() => {
+    const movieId = this.quickMovieId();
+    const date = this.quickShowtimeDate();
+    if (!movieId || !date) return [];
+
+    const cinemaId = this.quickCinemaId();
+    const sessions = filterShowtimes([...this.showtimesStore.sessions()], {
+      movieId,
+      cinemaId: cinemaId || 'all',
+      date,
+    });
+
+    return sessions
+      .slice()
+      .sort((a, b) => a.showTime.localeCompare(b.showTime))
+      .map((s) => {
+        const time = s.showTime;
+        const format = s.movieFormat || '2D';
+        const caption = s.caption ? ` · ${s.caption}` : '';
+        const screen = s.screenName ? ` · ${s.screenName}` : '';
+        const cinema = !cinemaId ? `${s.cinema.name} - ` : '';
+        return {
+          id: s.id,
+          time: s.showTime,
+          format: s.movieFormat,
+          label: `${cinema}${time} (${format}${caption}${screen})`,
+          session: s,
         };
       });
   });
@@ -1353,6 +1396,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
     );
     if (match) {
       this.quickMovieId.set(match.slug || String(match.id));
+      this.quickSessionId.set('');
       this.selectFirstQuickDate();
     }
     if (shouldScroll) {
@@ -1431,16 +1475,23 @@ export class HomePageComponent implements OnInit, OnDestroy {
   onQuickMovieChange(event: Event): void {
     this.quickMovieId.set((event.target as HTMLSelectElement).value);
     this.quickCinemaId.set('');
+    this.quickSessionId.set('');
     this.selectFirstQuickDate();
   }
 
   onQuickCinemaChange(event: Event): void {
     this.quickCinemaId.set((event.target as HTMLSelectElement).value);
+    this.quickSessionId.set('');
     this.selectFirstQuickDate();
   }
 
   onQuickDayChange(event: Event): void {
     this.quickShowtimeDate.set((event.target as HTMLSelectElement).value);
+    this.quickSessionId.set('');
+  }
+
+  onQuickSessionChange(event: Event): void {
+    this.quickSessionId.set((event.target as HTMLSelectElement).value);
   }
 
   submitQuickBooking(): void {
@@ -1455,6 +1506,11 @@ export class HomePageComponent implements OnInit, OnDestroy {
       this.showtimesStore.loading() ||
       !this.quickDateOptions().some((option) => option.date === date)
     ) {
+      return;
+    }
+    const sessionId = this.quickSessionId();
+    if (sessionId) {
+      void this.router.navigate(['/seats', sessionId]);
       return;
     }
     const cId = this.quickCinemaId();
@@ -1486,6 +1542,12 @@ export class HomePageComponent implements OnInit, OnDestroy {
       this.quickCinemaId.set('');
     }
     this.selectFirstQuickDate();
+    if (
+      this.quickSessionId() &&
+      !this.quickSessionOptions().some((s) => s.id === this.quickSessionId())
+    ) {
+      this.quickSessionId.set('');
+    }
   }
 
   private selectFirstQuickDate(): void {
