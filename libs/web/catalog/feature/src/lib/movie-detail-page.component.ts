@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   OnInit,
@@ -10,6 +11,7 @@ import {
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
+import { MovieCardComponent } from '@cinehub/web/catalog/ui';
 import { ShowtimesStore } from '@cinehub/web/showtimes/data-access';
 import type { Movie } from '@cinehub/web/shared/util';
 import { buildShowtimesQueryParams } from '@cinehub/web/showtimes/util';
@@ -39,7 +41,7 @@ function normalizeGenre(value: string): string {
 @Component({
   selector: 'ch-movie-detail-page',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, MovieCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (resolvedMovie(); as m) {
@@ -334,22 +336,7 @@ function normalizeGenre(value: string): string {
             </div>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               @for (sim of similarMovies(); track sim.id) {
-                <a
-                  [routerLink]="['/movie', sim.id]"
-                  class="group flex flex-col transition duration-300"
-                >
-                  <div
-                    class="aspect-[2/3] overflow-hidden rounded-[4px] bg-[#0c1322] border border-white/[0.08] shadow-md transition duration-500 group-hover:scale-105 group-hover:border-[#e50914]/60 group-hover:shadow-[0_12px_30px_rgba(229,9,20,0.3)]"
-                  >
-                    <img [src]="sim.poster" [alt]="sim.title" class="h-full w-full object-cover" />
-                  </div>
-                  <h3
-                    class="mt-2.5 truncate text-xs font-bold text-white group-hover:text-amber-300"
-                  >
-                    {{ sim.title }}
-                  </h3>
-                  <p class="text-[11px] font-bold text-amber-300">★ {{ sim.rating }}</p>
-                </a>
+                <ch-movie-card [movie]="sim" />
               }
             </div>
           </section>
@@ -399,6 +386,24 @@ export class MovieDetailPageComponent implements OnInit {
   readonly movie = input<Movie | null>(null);
 
   readonly showTrailerModal = signal(false);
+
+  constructor() {
+    effect(() => {
+      // Whenever the movie id changes, immediately scroll to the top of the page
+      const currentId = this.id();
+      if (currentId && typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    });
+
+    this.route.queryParamMap.subscribe((params) => {
+      if (params.get('trailer') === '1') {
+        this.showTrailerModal.set(true);
+      }
+    });
+  }
 
   showtimesQueryParams(movie: Movie | null): Record<string, string> {
     return buildShowtimesQueryParams(movie ?? undefined);
@@ -483,6 +488,17 @@ export class MovieDetailPageComponent implements OnInit {
     const genres = new Set(m.genre.split(',').map(normalizeGenre).filter(Boolean));
     if (!genres.size) return [];
 
+    const sessions = this.showtimesStore.sessions();
+    const isNowShowing = (candidate: Movie) => {
+      if (candidate.status === 'now') return true;
+      return sessions.some(
+        (session) =>
+          String(session.movie.id) === String(candidate.id) ||
+          (!!candidate.dbId && session.movie.dbId === candidate.dbId) ||
+          (!!candidate.slug && session.movie.slug === candidate.slug),
+      );
+    };
+
     return this.store
       .movies()
       .filter(
@@ -498,7 +514,12 @@ export class MovieDetailPageComponent implements OnInit {
             .filter((genre) => genres.has(genre)).length;
         return sharedGenreCount(b) - sharedGenreCount(a) || b.rating - a.rating;
       })
-      .slice(0, 5);
+      .slice(0, 5)
+      .map((movie) =>
+        isNowShowing(movie) && movie.status !== 'now'
+          ? { ...movie, status: 'now' as const }
+          : movie,
+      );
   });
 
   readonly trailerUrl = computed<SafeResourceUrl | null>(() => {
