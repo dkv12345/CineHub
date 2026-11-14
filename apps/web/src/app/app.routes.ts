@@ -13,5 +13,10 @@ export const appRoutes: Routes = [
     loadComponent: () =>
       import('./portal/portal-redirect.component').then((m) => m.PortalRedirectComponent),
   },
+  {
+    path: 'style-guide',
+    loadComponent: () =>
+      import('./style-guide/style-guide.component').then((m) => m.StyleGuideComponent),
+  },
   ...SHELL_ROUTES,
 ];
