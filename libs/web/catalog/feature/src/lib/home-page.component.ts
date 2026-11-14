@@ -62,7 +62,7 @@ import {
 
             <!-- Soft Contrast Scrim: Che mờ nền chữ bên trái, giữ sáng 100% hình ảnh poster/nhân vật ở giữa và bên phải -->
             <div
-              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-3/5 md:w-1/2 lg:w-[46%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-45% to-transparent"
+              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-1/2 md:w-[42%] lg:w-[38%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-50% to-transparent"
             ></div>
             <div
               class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-36 bg-gradient-to-t from-[#020617] via-[#020617]/85 to-transparent"
@@ -71,11 +71,11 @@ import {
               class="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-[#020617]/70 to-transparent"
             ></div>
 
-            <!-- Hero Content Container (Overlaying the Backdrop) -->
+            <!-- Hero Content Container (Overlaying the Backdrop - Dịch sang bên trái gọn gàng để lộ trọn vẹn poster ngang) -->
             <div
-              class="relative z-20 mx-auto flex h-full min-h-[500px] sm:min-h-[560px] md:min-h-[620px] lg:min-h-[660px] max-w-[1440px] flex-col justify-center px-5 pt-10 pb-12 md:px-9 md:pt-14 md:pb-16"
+              class="relative z-20 mx-auto flex h-full min-h-[500px] sm:min-h-[560px] md:min-h-[620px] lg:min-h-[660px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-10 pb-12 md:pt-14 md:pb-16"
             >
-              <div class="max-w-xl lg:max-w-lg xl:max-w-xl">
+              <div class="max-w-md lg:max-w-[440px] xl:max-w-[480px]">
                 <!-- Badge Xu hướng -->
                 <div
                   class="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-0.5 backdrop-blur-md"
@@ -773,42 +773,42 @@ export class HomePageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
 
-  // Promotion Carousel Banners
+  // Promotion Carousel Banners (Đã làm sạch watermark, tải trực tiếp từ local assets)
   readonly banners = [
     {
       id: 'trai-buon-nguoi',
       title: 'Ưu đãi Trại Buôn Người',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792729025/IMG_1348.png',
+      image: '/images/promotions/trai-buon-nguoi.png',
     },
     {
       id: 'shopeepay',
       title: 'Ưu đãi ShopeePay',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728689/IMG_1333.png',
+      image: '/images/promotions/shopeepay.png',
     },
     {
       id: 'momo',
       title: 'Ưu đãi MoMo',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755846/IMG_1365.png',
+      image: '/images/promotions/momo.png',
     },
     {
       id: 'joydrops',
       title: 'Ưu đãi JoyDrops',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728622/IMG_1332.png',
+      image: '/images/promotions/joydrops.png',
     },
     {
       id: 'shaune',
       title: 'Ưu đãi shaun',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792731423/IMG_1360.png',
+      image: '/images/promotions/shaune.png',
     },
     {
       id: 'godzila',
       title: 'Ưu đãi Godzila',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755871/IMG_1366.png',
+      image: '/images/promotions/godzila.png',
     },
     {
       id: 'dune',
       title: 'Ưu đãi Dune',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755977/IMG_1367.png',
+      image: '/images/promotions/dune.png',
     },
   ];
   readonly currentSlide = signal(0);

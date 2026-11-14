@@ -2899,37 +2899,37 @@ export const promotions = [
   {
     id: 'trai-buon-nguoi',
     title: 'Ưu đãi Trại Buôn Người',
-    image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792729025/IMG_1348.png',
+    image: '/images/promotions/trai-buon-nguoi.png',
   },
   {
     id: 'shopeepay',
     title: 'Ưu đãi ShopeePay',
-    image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728689/IMG_1333.png',
+    image: '/images/promotions/shopeepay.png',
   },
   {
     id: 'momo',
     title: 'Ưu đãi MoMo',
-    image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755846/IMG_1365.png',
+    image: '/images/promotions/momo.png',
   },
   {
     id: 'joydrops',
     title: 'Ưu đãi JoyDrops',
-    image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728622/IMG_1332.png',
+    image: '/images/promotions/joydrops.png',
   },
   {
     id: 'shaune',
     title: 'Ưu đãi shaun',
-    image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792731423/IMG_1360.png',
+    image: '/images/promotions/shaune.png',
   },
   {
     id: 'godzila',
     title: 'Ưu đãi Godzila',
-    image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755871/IMG_1366.png',
+    image: '/images/promotions/godzila.png',
   },
   {
     id: 'dune',
     title: 'Ưu đãi Dune',
-    image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755977/IMG_1367.png',
+    image: '/images/promotions/dune.png',
   },
 ];
 
