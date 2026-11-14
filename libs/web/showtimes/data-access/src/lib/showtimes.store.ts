@@ -40,39 +40,91 @@ export const ShowtimesStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
   withComputed((store) => ({
-    days: computed(() =>
-      Array.from({ length: 7 }, (_, offset) => {
-        const today = vietnamDate();
-        const selectedDate = store.filters().date;
-        const startDate = selectedDate && selectedDate > vietnamDate(6) ? selectedDate : today;
-        const dayDate = new Date(`${startDate}T00:00:00+07:00`);
-        dayDate.setUTCDate(dayDate.getUTCDate() + offset);
-        const isoDate = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'Asia/Ho_Chi_Minh',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        }).format(dayDate);
-        const day = new Date(`${isoDate}T12:00:00+07:00`);
-        const matchingSessions = filterShowtimes([...store.sessions()], {
-          ...store.filters(),
-          date: isoDate,
+    days: computed(() => {
+      const today = vietnamDate();
+      // Filter sessions by current filters EXCEPT date to get counts per date
+      const matchingSessions = filterShowtimes([...store.sessions()], {
+        ...store.filters(),
+        date: null,
+      });
+
+      // Group matching sessions by showDate (YYYY-MM-DD)
+      const counts = new Map<string, number>();
+      for (const session of matchingSessions) {
+        const d = session.showDate.slice(0, 10);
+        if (d >= today) {
+          counts.set(d, (counts.get(d) ?? 0) + 1);
+        }
+      }
+
+      // If user selected a specific date in the future that has sessions
+      const selectedDate = store.filters().date;
+      if (selectedDate && !counts.has(selectedDate) && selectedDate >= today) {
+        counts.set(selectedDate, 0);
+      }
+
+      // If no sessions exist >= today, but sessions exist overall (e.g. all upcoming or past)
+      if (counts.size === 0 && matchingSessions.length > 0) {
+        for (const session of matchingSessions) {
+          const d = session.showDate.slice(0, 10);
+          counts.set(d, (counts.get(d) ?? 0) + 1);
+        }
+      }
+
+      // If there are still no sessions, generate next 7 days from today
+      if (counts.size === 0) {
+        return Array.from({ length: 7 }, (_, offset) => {
+          const dayDate = new Date(`${today}T00:00:00+07:00`);
+          dayDate.setUTCDate(dayDate.getUTCDate() + offset);
+          const isoDate = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(dayDate);
+          const day = new Date(`${isoDate}T12:00:00+07:00`);
+          return {
+            isoDate,
+            month: isoDate.slice(5, 7),
+            short:
+              isoDate === today
+                ? 'Hôm nay'
+                : new Intl.DateTimeFormat('vi-VN', {
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                    weekday: 'short',
+                  })
+                    .format(day)
+                    .replace(/\.$/, ''),
+            num: isoDate.slice(8, 10),
+            count: 0,
+          };
         });
+      }
+
+      // Sort dates chronologically
+      const sortedDates = [...counts.entries()].sort(([a], [b]) => a.localeCompare(b));
+
+      return sortedDates.map(([isoDate, count]) => {
+        const dayDate = new Date(`${isoDate}T12:00:00+07:00`);
+        const weekday =
+          isoDate === today
+            ? 'Hôm nay'
+            : new Intl.DateTimeFormat('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                weekday: 'short',
+              })
+                .format(dayDate)
+                .replace(/\.$/, '');
+
         return {
           isoDate,
           month: isoDate.slice(5, 7),
-          short:
-            isoDate === today
-              ? 'Hôm nay'
-              : new Intl.DateTimeFormat('vi-VN', {
-                  timeZone: 'Asia/Ho_Chi_Minh',
-                  weekday: 'short',
-                }).format(day),
+          short: weekday,
           num: isoDate.slice(8, 10),
-          count: matchingSessions.length,
+          count,
         };
-      }),
-    ),
+      });
+    }),
     cities: computed(() => {
       const map = new Map<string, string>();
       for (const s of store.sessions()) {
@@ -117,14 +169,18 @@ export const ShowtimesStore = signalStore(
       return Array.from(set).sort();
     }),
     movies: computed(() => {
-      const map = new Map<string, { id: string; dbId: string; slug: string; name: string }>();
+      const map = new Map<
+        string,
+        { id: string; rawId: string; dbId: string; slug: string; name: string }
+      >();
       for (const s of store.sessions()) {
-        const id = s.movie.slug || s.movie.dbId || s.movie.id;
-        if (id && !map.has(id)) {
-          map.set(id, {
-            id,
-            dbId: s.movie.dbId || '',
-            slug: s.movie.slug || '',
+        const key = s.movie.slug || s.movie.id || s.movie.dbId;
+        if (key && !map.has(key)) {
+          map.set(key, {
+            id: key,
+            rawId: String(s.movie.id || ''),
+            dbId: String(s.movie.dbId || s.movie.id || ''),
+            slug: String(s.movie.slug || ''),
             name: s.movie.name,
           });
         }

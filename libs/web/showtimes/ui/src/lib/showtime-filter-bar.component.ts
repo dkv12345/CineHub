@@ -323,10 +323,17 @@ export class ShowtimeFilterBarComponent {
   readonly currentMovieValue = computed(() => {
     const current = this.filters().movieId;
     if (!current || current === 'all') return 'all';
-    const target = String(current);
-    const found = this.movies().find(
-      (m) => m.id === target || m.slug === target || m.dbId === target,
-    );
+    const target = String(current).toLowerCase().trim();
+    const found = this.movies().find((m) => {
+      const id = m.id.toLowerCase();
+      const rawId = ('rawId' in m ? String((m as any).rawId) : '').toLowerCase();
+      const dbId = (m.dbId || '').toLowerCase();
+      const slug = (m.slug || '').toLowerCase();
+      const name = m.name.toLowerCase();
+      return (
+        id === target || rawId === target || dbId === target || slug === target || name === target
+      );
+    });
     return found ? found.id : target;
   });
 
@@ -362,11 +369,18 @@ export class ShowtimeFilterBarComponent {
   readonly selectedMovieName = computed(() => {
     const movieId = this.filters().movieId;
     if (!movieId || movieId === 'all') return '';
-    const target = String(movieId);
-    return (
-      this.movies().find((m) => m.id === target || m.slug === target || m.dbId === target)?.name ||
-      target
-    );
+    const target = String(movieId).toLowerCase().trim();
+    const found = this.movies().find((m) => {
+      const id = m.id.toLowerCase();
+      const rawId = ('rawId' in m ? String((m as any).rawId) : '').toLowerCase();
+      const dbId = (m.dbId || '').toLowerCase();
+      const slug = (m.slug || '').toLowerCase();
+      const name = m.name.toLowerCase();
+      return (
+        id === target || rawId === target || dbId === target || slug === target || name === target
+      );
+    });
+    return found ? found.name : target;
   });
 
   readonly selectedCityName = computed(() => {
