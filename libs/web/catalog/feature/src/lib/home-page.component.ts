@@ -50,6 +50,13 @@ import {
                   [alt]="slide.title"
                   class="h-full w-full object-cover object-center"
                 />
+                <!-- Subtle cinematic vignette gradient -->
+                <div
+                  class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-[#020617]/40"
+                ></div>
+                <div
+                  class="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#020617]/60 via-transparent to-transparent"
+                ></div>
               </div>
             </div>
           }
@@ -62,7 +69,7 @@ import {
               type="button"
               (click)="stepSlide(-1)"
               aria-label="Slide trước"
-              class="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
+              class="grid h-10 w-10 place-items-center rounded-[4px] border border-white/10 bg-black/70 text-white shadow-xl backdrop-blur-md transition hover:bg-[#e50914] hover:border-transparent"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -82,11 +89,11 @@ import {
                   type="button"
                   (click)="currentSlide.set(idx)"
                   [attr.aria-label]="'Slide ' + (idx + 1)"
-                  class="h-2 rounded-full transition-all"
+                  class="h-1 rounded-[1px] transition-all duration-300"
                   [class]="
                     currentSlide() === idx
-                      ? 'w-8 bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,1)]'
-                      : 'w-3 bg-white/70'
+                      ? 'w-7 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                      : 'w-2.5 bg-white/40 hover:bg-white/70'
                   "
                 ></button>
               }
@@ -96,7 +103,7 @@ import {
               type="button"
               (click)="stepSlide(1)"
               aria-label="Slide sau"
-              class="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
+              class="grid h-10 w-10 place-items-center rounded-[4px] border border-white/10 bg-black/70 text-white shadow-xl backdrop-blur-md transition hover:bg-[#e50914] hover:border-transparent"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -113,104 +120,104 @@ import {
         </section>
       }
 
-      <!-- 2. Thanh QuickBooking Mua vé nhanh nằm tách biệt dưới Hero -->
+      <!-- 2. Thanh QuickBooking Mua vé nhanh (Luxury Cinema Console) -->
       <div class="relative z-10 mx-auto mt-6 max-w-[1400px] px-5 md:mt-8 md:px-9">
         <section
-          class="grid gap-3 rounded-2xl border-2 border-white/40 bg-slate-900 p-4 shadow-2xl shadow-black/90 ring-1 ring-white/20 backdrop-blur-2xl md:grid-cols-[1.15fr_1.15fr_.8fr_.8fr_auto] md:items-end md:p-5"
+          class="grid gap-4 rounded-[6px] border border-white/[0.12] bg-gradient-to-b from-[#101726]/95 via-[#090d17]/95 to-[#04060c]/98 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-2xl md:grid-cols-[1.15fr_1.15fr_.8fr_.8fr_auto] md:items-end md:p-6"
           aria-label="Đặt vé nhanh"
         >
           <!-- Chọn phim -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn phim
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
+            CHỌN PHIM
             <div class="relative mt-2">
               <select
                 [value]="quickMovieId()"
                 (change)="onQuickMovieChange($event)"
                 [disabled]="showtimesStore.loading() || quickMovies().length === 0"
-                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914]"
               >
                 @if (quickMovies().length === 0) {
                   <option value="">Chưa có phim có suất chiếu</option>
                 } @else {
                   @for (m of quickMovies(); track m.id) {
-                    <option [value]="m.slug || m.id" class="bg-slate-900 font-black text-white">
+                    <option [value]="m.slug || m.id" class="bg-slate-900 font-bold text-white">
                       {{ m.title }}
                     </option>
                   }
                 }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
           </label>
 
           <!-- Chọn rạp -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn rạp
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
+            CHỌN RẠP
             <div class="relative mt-2">
               <select
                 [value]="quickCinemaId()"
                 (change)="onQuickCinemaChange($event)"
                 [disabled]="showtimesStore.loading() || quickMovies().length === 0"
-                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914]"
               >
-                <option value="" class="bg-slate-900 font-black text-white">Tất cả rạp</option>
+                <option value="" class="bg-slate-900 font-bold text-white">Tất cả rạp</option>
                 @for (c of cinemaList(); track c.id) {
-                  <option [value]="c.id" class="bg-slate-900 font-black text-white">
+                  <option [value]="c.id" class="bg-slate-900 font-bold text-white">
                     {{ c.name }}
                   </option>
                 }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
           </label>
 
           <!-- Chọn ngày -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn ngày
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
+            CHỌN NGÀY
             <div class="relative mt-2">
               <select
                 (change)="onQuickDayChange($event)"
                 [value]="quickShowtimeDate()"
                 [disabled]="showtimesStore.loading() || quickDateOptions().length === 0"
-                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300 disabled:opacity-50"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] disabled:opacity-50"
               >
                 @if (quickDateOptions().length === 0) {
-                  <option value="" class="bg-slate-900 font-black text-white">
+                  <option value="" class="bg-slate-900 font-bold text-white">
                     Chưa có suất phù hợp
                   </option>
                 } @else {
                   @for (d of quickDateOptions(); track d.date) {
-                    <option [value]="d.date" class="bg-slate-900 font-black text-white">
+                    <option [value]="d.date" class="bg-slate-900 font-bold text-white">
                       {{ d.label }}
                     </option>
                   }
                 }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
           </label>
 
           <!-- Chọn suất -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn suất
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-400">
+            CHỌN SUẤT
             <div class="relative mt-2">
               <select
                 disabled
-                class="block w-full appearance-none rounded-xl border-2 border-white/40 bg-slate-950/60 py-3 pl-3.5 pr-10 text-sm font-black text-white/50 outline-none"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/5 bg-[#05080e]/60 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-500 outline-none"
               >
                 <option class="bg-slate-900">Xem tại bước sau</option>
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 text-xs"
                 >▼</span
               >
             </div>
@@ -224,7 +231,7 @@ import {
               showtimesStore.loading() || quickMovies().length === 0 || !quickShowtimeDate()
             "
             aria-label="Mua vé nhanh theo phim, rạp và ngày đã chọn"
-            class="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+            class="inline-flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-[4px] bg-gradient-to-r from-[#e50914] to-[#f6121d] px-7 text-sm font-extrabold uppercase tracking-wider text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition hover:from-[#f6121d] hover:to-[#ff2a36] disabled:cursor-not-allowed disabled:opacity-50 md:w-auto active:scale-[0.99]"
           >
             <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
               <path
@@ -241,20 +248,26 @@ import {
         </section>
       </div>
 
-      <!-- 3. Section Top Thịnh Hành (Giant 3D Numbering) -->
+      <!-- 3. Section Top Thịnh Hành (Giant Stylized Contour Numbering - Tubelix / Netflix Style) -->
       <section class="mx-auto max-w-[1400px] px-5 pt-10 md:px-9 md:pt-14">
-        <div class="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[.2em] text-amber-400">
-              Được khán giả lựa chọn
-            </p>
-            <h2 class="mt-2 text-2xl font-black text-white">Top thịnh hành</h2>
+        <div class="mb-8 flex items-end justify-between gap-4 border-b border-white/[0.08] pb-4">
+          <div class="flex items-center gap-3">
+            <span class="h-7 w-1 rounded-[1px] bg-[#e50914] shadow-[0_0_12px_#e50914]"></span>
+            <div>
+              <p class="text-[11px] font-black uppercase tracking-[0.25em] text-[#e50914]">
+                XU HƯỚNG BÌNH CHỌN
+              </p>
+              <h2 class="mt-0.5 text-2xl font-black uppercase tracking-wide text-white md:text-3xl">
+                Top 10 Phim Thịnh Hành
+              </h2>
+            </div>
           </div>
           <a
             [routerLink]="buildShowtimesLink()"
-            class="inline-flex items-center gap-1 text-xs font-black text-amber-300 transition hover:text-amber-200"
+            class="group inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 transition hover:text-[#e50914]"
           >
-            Xem lịch chiếu →
+            <span>Xem lịch chiếu</span>
+            <span class="transition-transform duration-300 group-hover:translate-x-1">→</span>
           </a>
         </div>
 
@@ -263,70 +276,106 @@ import {
         >
           @for (m of trendingMovies(); track m.id; let idx = $index) {
             <article
-              class="group relative flex w-[190px] shrink-0 snap-start flex-col rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 pt-3 shadow-xl transition hover:border-amber-400 sm:w-[220px]"
+              class="group relative flex w-[190px] shrink-0 snap-start flex-col transition duration-300 sm:w-[220px]"
             >
-              <!-- Số 3D nhô hẳn ra ngoài khung (-left-7) -->
+              <!-- Stylized Netflix/Tubelix Giant Red Contour Number -->
               <span
-                class="pointer-events-none display absolute -left-7 bottom-14 z-20 font-black leading-none text-amber-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.95)] transition-all duration-300 group-hover:scale-110 group-hover:text-amber-400"
-                [class]="idx >= 9 ? 'text-[100px] tracking-tighter' : 'text-[108px]'"
+                class="pointer-events-none select-none absolute -left-6 bottom-12 z-20 font-black leading-none transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1"
+                style="-webkit-text-stroke: 3px #e50914; color: #020617; text-shadow: 0 4px 25px rgba(229,9,20,0.6);"
+                [class]="idx >= 9 ? 'text-[92px] tracking-tighter' : 'text-[112px]'"
               >
                 {{ idx + 1 }}
               </span>
 
               <a
                 [routerLink]="['/movie', m.id]"
-                class="ml-9 block overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
+                class="ml-8 relative block aspect-[2/3] overflow-hidden rounded-[4px] bg-[#0c1322] border border-white/[0.08] shadow-[0_12px_30px_rgba(0,0,0,0.85)] transition-all duration-500 group-hover:scale-105 group-hover:border-[#e50914]/60 group-hover:shadow-[0_16px_40px_rgba(229,9,20,0.35)]"
               >
                 <img
                   [src]="m.poster"
                   [alt]="'Poster ' + m.title"
-                  class="aspect-[2/3] w-full object-cover transition duration-500 group-hover:scale-105"
+                  class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
-              </a>
-
-              <a
-                [routerLink]="['/movie', m.id]"
-                class="mt-3 block truncate pl-9 text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
-              >
-                {{ m.title }}
-              </a>
-              <span class="block pl-9 text-xs font-black text-amber-300">
-                ★ {{ m.rating }} · {{ m.country || 'Quốc tế' }}
-              </span>
-
-              <div class="mt-2.5 flex items-center gap-1.5 pl-9 pr-1 pb-1">
-                <a
-                  [routerLink]="['/showtimes']"
-                  [queryParams]="showtimesQueryParams(m)"
-                  class="inline-flex flex-1 items-center justify-center rounded-lg bg-[#e50914] px-2.5 py-1.5 text-[11px] font-black text-white shadow transition hover:bg-red-500"
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"
+                ></div>
+                <!-- Micro Badges -->
+                <span
+                  class="absolute top-2 left-2 rounded-[2px] bg-[#e50914] px-1.5 py-0.5 text-[9px] font-black uppercase text-white shadow"
                 >
-                  Mua vé
-                </a>
+                  TOP {{ idx + 1 }}
+                </span>
+                <span
+                  class="absolute top-2 right-2 rounded-[2px] bg-black/80 px-1.5 py-0.5 text-[9px] font-bold text-amber-400 border border-amber-400/30 backdrop-blur-sm"
+                >
+                  ★ {{ m.rating }}
+                </span>
+                <span
+                  class="absolute bottom-2 left-2 rounded-[2px] bg-white/20 px-1.5 py-0.5 text-[9px] font-black text-white backdrop-blur-sm"
+                >
+                  {{ m.age || 'P' }}
+                </span>
+              </a>
+
+              <div class="ml-8 pt-2.5">
                 <a
                   [routerLink]="['/movie', m.id]"
-                  class="inline-flex items-center justify-center rounded-lg border border-white/25 bg-slate-800 px-2.5 py-1.5 text-[11px] font-bold text-white/90 transition hover:border-amber-300 hover:text-amber-300"
+                  class="block truncate text-sm font-bold text-white transition hover:text-[#e50914] group-hover:text-amber-300"
                 >
-                  Chi tiết
+                  {{ m.title }}
                 </a>
+                <p class="mt-0.5 truncate text-[11px] font-medium text-slate-400">
+                  {{ m.genre.split(',')[0] }} · {{ m.country || 'Quốc tế' }}
+                </p>
+
+                <div class="mt-2.5 flex items-center gap-1.5">
+                  <a
+                    [routerLink]="['/showtimes']"
+                    [queryParams]="showtimesQueryParams(m)"
+                    class="inline-flex flex-1 items-center justify-center rounded-[4px] bg-[#e50914] px-3 py-1.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(229,9,20,0.4)] transition hover:bg-[#ff1f2d]"
+                  >
+                    Mua vé
+                  </a>
+                  <a
+                    [routerLink]="['/movie', m.id]"
+                    class="inline-flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 backdrop-blur-sm transition"
+                  >
+                    Chi tiết
+                  </a>
+                </div>
               </div>
             </article>
           }
         </div>
       </section>
 
-      <!-- 4. Section CineHub AI Dành riêng cho bạn -->
-      <section class="mt-12 border-y-2 border-white/20 bg-slate-900/90 backdrop-blur-md">
+      <!-- 4. Section CineHub AI Dành riêng cho bạn (Atmospheric Cinematic Studio) -->
+      <section
+        class="relative mt-14 overflow-hidden border-y border-white/[0.08] bg-gradient-to-b from-[#0a0f1d] via-[#05070d] to-[#020617] py-16"
+      >
+        <!-- Ambient Radial Glows -->
         <div
-          class="mx-auto grid max-w-[1400px] gap-8 px-5 py-10 md:grid-cols-[.8fr_2fr] md:items-center md:px-9"
+          class="pointer-events-none absolute -left-20 top-0 h-96 w-96 rounded-full bg-red-600/10 blur-[130px]"
+          aria-hidden="true"
+        ></div>
+        <div
+          class="pointer-events-none absolute right-0 bottom-0 h-96 w-96 rounded-full bg-amber-500/10 blur-[130px]"
+          aria-hidden="true"
+        ></div>
+
+        <div
+          class="relative z-10 mx-auto grid max-w-[1400px] gap-8 px-5 md:grid-cols-[.8fr_2fr] md:items-center md:px-9"
         >
           <div>
-            <p
-              class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-400"
+            <span
+              class="inline-flex items-center gap-2 rounded-[3px] bg-red-600/15 border border-red-500/30 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-red-400"
             >
-              ✨ CineHub AI
-            </p>
-            <h2 class="mt-2 text-2xl font-black text-white">Dành riêng cho bạn</h2>
-            <p class="mt-2 max-w-sm text-sm font-bold leading-6 text-white/80">
+              ✨ CINEHUB AI ENGINE
+            </span>
+            <h2 class="mt-2 text-2xl font-black uppercase tracking-wide text-white md:text-3xl">
+              Dành riêng cho bạn
+            </h2>
+            <p class="mt-2 max-w-sm text-sm font-medium leading-relaxed text-slate-300">
               {{
                 authStore.isAuthenticated()
                   ? 'Gợi ý chuẩn gu theo sở thích và lịch sử xem phim của ' +
@@ -338,45 +387,53 @@ import {
             @if (!authStore.isAuthenticated()) {
               <a
                 routerLink="/auth"
-                class="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-400 transition hover:text-amber-300"
+                class="mt-4 inline-flex items-center gap-2 text-sm font-bold text-amber-400 transition hover:text-amber-300"
               >
                 Đăng nhập để nhận gợi ý chuẩn gu →
               </a>
             }
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div class="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
             @for (m of recommendedMovies(); track m.id) {
               <div
-                class="group flex min-w-0 gap-3 rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-md transition hover:border-amber-400 hover:bg-slate-800"
+                class="group relative flex min-w-0 gap-3.5 rounded-[4px] border border-white/[0.08] bg-[#0c1322]/85 p-3.5 shadow-xl transition-all duration-300 hover:border-[#e50914]/50 hover:bg-[#11192e] hover:shadow-[0_12px_35px_rgba(0,0,0,0.9)] hover:-translate-y-0.5"
               >
-                <a [routerLink]="['/movie', m.id]" class="shrink-0">
+                <!-- Top Glow Hover Line -->
+                <div
+                  class="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[#e50914] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                ></div>
+
+                <a
+                  [routerLink]="['/movie', m.id]"
+                  class="shrink-0 overflow-hidden rounded-[3px] border border-white/10 shadow-lg"
+                >
                   <img
                     [src]="m.poster"
                     [alt]="'Poster ' + m.title"
-                    class="h-28 w-[74px] rounded-lg object-cover shadow-md ring-1 ring-white/20"
+                    class="h-28 w-[76px] object-cover shadow transition duration-300 group-hover:scale-105"
                   />
                 </a>
                 <div class="flex min-w-0 flex-1 flex-col justify-between py-0.5">
                   <div>
                     <a
                       [routerLink]="['/movie', m.id]"
-                      class="line-clamp-2 block text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
+                      class="line-clamp-2 block text-sm font-bold text-white transition hover:text-[#e50914] group-hover:text-amber-300"
                     >
                       {{ m.title }}
                     </a>
-                    <p class="mt-1 line-clamp-1 text-xs font-bold leading-5 text-amber-300">
-                      {{ m.genre.split(',')[0] }} · Đang được yêu thích
+                    <p class="mt-1 line-clamp-1 text-xs font-semibold text-amber-300">
+                      {{ m.genre.split(',')[0] }} · Đang thịnh hành
                     </p>
                   </div>
                   <div class="mt-2 flex items-center justify-between gap-2">
-                    <span class="text-[11px] font-black text-white/80">
-                      {{ m.age || 'Phim chiếu rạp' }}
+                    <span class="text-[11px] font-bold text-slate-400">
+                      {{ m.age || 'Phim rạp' }}
                     </span>
                     <a
                       [routerLink]="['/showtimes']"
                       [queryParams]="showtimesQueryParams(m)"
-                      class="rounded-lg bg-[#e50914] px-2.5 py-1 text-[11px] font-black text-white transition hover:bg-red-500"
+                      class="rounded-[4px] bg-[#e50914] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-[0_2px_10px_rgba(229,9,20,0.4)] transition hover:bg-[#ff1f2d]"
                     >
                       Mua vé
                     </a>
@@ -390,24 +447,24 @@ import {
 
       <!-- 5. Section Thư Viện Của Bạn -->
       <section
-        class="mx-auto grid max-w-[1400px] gap-5 px-5 py-14 md:px-9 lg:grid-cols-[220px_minmax(0,1fr)] lg:grid-rows-[auto_auto]"
+        class="mx-auto grid max-w-[1400px] gap-6 px-5 py-14 md:px-9 lg:grid-cols-[220px_minmax(0,1fr)] lg:grid-rows-[auto_auto]"
       >
         <aside
-          class="h-fit rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-xl backdrop-blur-md lg:col-start-1 lg:row-start-2"
+          class="h-fit rounded-[4px] border border-white/[0.08] bg-[#0c1322]/90 p-3.5 shadow-2xl backdrop-blur-xl lg:col-start-1 lg:row-start-2"
         >
-          <p class="px-3 pb-3 pt-2 text-[11px] font-black uppercase tracking-widest text-amber-300">
+          <p class="px-3 pb-3 pt-2 text-[11px] font-black uppercase tracking-widest text-[#e50914]">
             THƯ VIỆN CỦA BẠN
           </p>
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-1.5">
             @for (item of shelfOptions; track item.key) {
               <button
                 type="button"
                 (click)="shelf.set(item.key)"
-                class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition"
+                class="flex w-full items-center gap-3 rounded-[3px] px-3.5 py-2.5 text-left text-sm transition"
                 [class]="
                   shelf() === item.key
-                    ? 'border-2 border-amber-400 bg-amber-400/20 font-black text-amber-300 shadow-md'
-                    : 'border-2 border-white/40 bg-slate-800 font-black text-white shadow-md hover:bg-slate-700 hover:text-amber-300'
+                    ? 'bg-gradient-to-r from-[#e50914]/20 to-transparent border-l-2 border-[#e50914] font-bold text-white shadow-sm'
+                    : 'bg-transparent text-slate-300 font-semibold hover:bg-white/5 hover:text-white'
                 "
               >
                 <span>{{ item.label }}</span>
@@ -419,7 +476,7 @@ import {
         <div class="min-w-0 lg:contents">
           <div class="mb-5 flex items-end justify-between gap-4 lg:col-start-2 lg:row-start-1">
             <div>
-              <p class="text-xs font-black uppercase tracking-wider text-amber-400">
+              <p class="text-xs font-bold uppercase tracking-wider text-amber-400">
                 CineHub của bạn
               </p>
               <h2 class="mt-1 text-2xl font-black text-white">
@@ -432,7 +489,9 @@ import {
                 }}
               </h2>
             </div>
-            <span class="text-xs font-black text-white">{{ shelfMovies().length }} phim</span>
+            <span class="text-xs font-semibold text-slate-400"
+              >{{ shelfMovies().length }} phim</span
+            >
           </div>
 
           <div
@@ -440,46 +499,46 @@ import {
           >
             @for (m of shelfMovies(); track m.id) {
               <article
-                class="group flex w-[160px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg backdrop-blur transition hover:border-amber-400 sm:w-[178px]"
+                class="group flex w-[160px] shrink-0 snap-start flex-col transition duration-300 sm:w-[178px]"
               >
                 <a
                   [routerLink]="['/movie', m.id]"
-                  class="relative block aspect-[2/3] overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
+                  class="relative block aspect-[2/3] overflow-hidden rounded-[4px] bg-[#0c1322] border border-white/[0.08] shadow-md transition duration-500 group-hover:scale-105 group-hover:border-[#e50914]/60 group-hover:shadow-[0_12px_30px_rgba(229,9,20,0.3)]"
                 >
                   <img
                     [src]="m.poster"
                     [alt]="'Poster ' + m.title"
-                    class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    class="h-full w-full object-cover"
                   />
                   <span
-                    class="absolute right-2 top-2 rounded-full border border-amber-300 bg-slate-950/95 px-2 py-1 text-[10px] font-black text-amber-300 backdrop-blur"
+                    class="absolute right-2 top-2 rounded-[2px] bg-black/85 px-1.5 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-400/30 backdrop-blur-sm"
                   >
                     ★ {{ m.rating || 'Mới' }}
                   </span>
                 </a>
                 <a
                   [routerLink]="['/movie', m.id]"
-                  class="mt-3 block truncate px-1 text-xs font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
+                  class="mt-2 block truncate text-xs font-bold text-white transition hover:text-amber-300 group-hover:text-amber-300"
                 >
                   {{ m.title }}
                 </a>
                 <div
-                  class="mt-1.5 flex items-center justify-between px-1 text-[10px] font-bold text-amber-300"
+                  class="mt-0.5 flex items-center justify-between text-[11px] font-medium text-slate-400"
                 >
                   <span class="truncate">{{ m.genre.split(',')[0] }}</span>
-                  <span class="shrink-0 text-white/60">{{ m.country || 'Việt Nam' }}</span>
+                  <span class="shrink-0 text-slate-500">{{ m.country || 'Việt Nam' }}</span>
                 </div>
-                <div class="mt-2.5 flex items-center gap-1.5 px-1 pb-1">
+                <div class="mt-2 flex items-center gap-1.5">
                   <a
                     [routerLink]="['/showtimes']"
                     [queryParams]="showtimesQueryParams(m)"
-                    class="inline-flex flex-1 items-center justify-center rounded-lg bg-[#e50914] px-2.5 py-1.5 text-[11px] font-black text-white transition hover:bg-red-500"
+                    class="inline-flex flex-1 items-center justify-center rounded-[4px] bg-[#e50914] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-[0_2px_8px_rgba(229,9,20,0.4)] transition hover:bg-[#ff1f2d]"
                   >
                     Mua vé
                   </a>
                   <a
                     [routerLink]="['/movie', m.id]"
-                    class="inline-flex items-center justify-center rounded-lg border border-white/25 bg-slate-800 px-2 py-1.5 text-[11px] font-bold text-white/90 transition hover:border-amber-300 hover:text-amber-300"
+                    class="inline-flex items-center justify-center rounded-[4px] bg-white/10 hover:bg-white/20 border border-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-slate-200 transition"
                   >
                     Xem
                   </a>
@@ -495,46 +554,49 @@ import {
         @if (store.error()) {
           <div
             role="alert"
-            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-red-950/60 px-4 py-3 text-sm text-red-100"
+            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[4px] border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-200"
           >
             <span>{{ store.error() }} Đang hiển thị dữ liệu đã có.</span>
-            <button type="button" (click)="refreshCatalog()" class="font-black text-amber-200">
+            <button type="button" (click)="refreshCatalog()" class="font-bold text-amber-300">
               Thử cập nhật lại
             </button>
           </div>
         } @else if (store.loading()) {
-          <p role="status" class="mb-5 text-sm font-bold text-slate-300">
+          <p role="status" class="mb-5 text-sm font-semibold text-slate-400">
             Đang cập nhật danh sách phim mới nhất…
           </p>
         }
         @if (showtimesStore.error()) {
           <div
             role="alert"
-            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-red-950/60 px-4 py-3 text-sm text-red-100"
+            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[4px] border border-red-500/30 bg-red-950/50 px-4 py-3 text-sm text-red-200"
           >
             <span>{{ showtimesStore.error() }}</span>
-            <button type="button" (click)="refreshShowtimes()" class="font-black text-amber-200">
+            <button type="button" (click)="refreshShowtimes()" class="font-bold text-amber-300">
               Thử tải lịch lại
             </button>
           </div>
         }
-        <div class="mb-5 flex items-center gap-3">
-          <span aria-hidden="true" class="h-7 w-1 rounded-full bg-amber-400"></span>
-          <h2 class="text-xl font-black uppercase tracking-wide text-white">PHIM</h2>
+        <div class="mb-6 flex items-center gap-3">
+          <span
+            aria-hidden="true"
+            class="h-6 w-1 rounded-[1px] bg-[#e50914] shadow-[0_0_12px_#e50914]"
+          ></span>
+          <h2 class="text-2xl font-black uppercase tracking-wide text-white">PHIM CHIẾU RẠP</h2>
         </div>
 
-        <!-- Status Tabs: Đang chiếu / Sắp chiếu -->
-        <div role="tablist" class="mb-8 flex gap-8 border-b-2 border-white/20">
+        <!-- Status Tabs: Đang chiếu / Sắp chiếu (Hellbound / Tubelix Cinema Tabs) -->
+        <div role="tablist" class="mb-8 flex gap-8 border-b border-white/[0.08]">
           <button
             type="button"
             role="tab"
             [attr.aria-selected]="activeTab() === 'now'"
             (click)="activeTab.set('now')"
-            class="-mb-px border-b-[3px] pb-4 text-lg transition"
+            class="-mb-px border-b-2 pb-3.5 text-base uppercase tracking-wider transition"
             [class]="
               activeTab() === 'now'
-                ? 'border-amber-400 font-black text-amber-300'
-                : 'border-transparent font-black text-white hover:text-amber-300'
+                ? 'border-[#e50914] font-black text-white drop-shadow-[0_0_8px_rgba(229,9,20,0.6)]'
+                : 'border-transparent font-bold text-slate-400 hover:text-white'
             "
           >
             Đang chiếu
@@ -544,31 +606,31 @@ import {
             role="tab"
             [attr.aria-selected]="activeTab() === 'soon'"
             (click)="activeTab.set('soon')"
-            class="-mb-px border-b-[3px] pb-4 text-lg transition"
+            class="-mb-px border-b-2 pb-3.5 text-base uppercase tracking-wider transition"
             [class]="
               activeTab() === 'soon'
-                ? 'border-amber-400 font-black text-amber-300'
-                : 'border-transparent font-black text-white hover:text-amber-300'
+                ? 'border-[#e50914] font-black text-white drop-shadow-[0_0_8px_rgba(229,9,20,0.6)]'
+                : 'border-transparent font-bold text-slate-400 hover:text-white'
             "
           >
             Sắp chiếu
           </button>
         </div>
 
-        <!-- Thể loại Phim Filter Pills -->
+        <!-- Thể loại Phim Filter Pills (Sleek Clean Tabs - Auth Style) -->
         <div
-          class="scrollbar-hide mb-7 flex gap-2 overflow-x-auto pb-2"
+          class="scrollbar-hide mb-8 flex gap-2 overflow-x-auto pb-2"
           aria-label="Lọc theo thể loại phim"
         >
           @for (f of filterOptions(); track f.key) {
             <button
               type="button"
               (click)="catalogFilter.set(f.key)"
-              class="shrink-0 rounded-full border-2 px-4 py-2 text-xs font-black transition"
+              class="shrink-0 rounded-[4px] px-4 py-2 text-xs font-bold uppercase tracking-wider transition"
               [class]="
                 catalogFilter() === f.key
-                  ? 'border-amber-300 bg-amber-400 font-black text-slate-950 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
-                  : 'border-white/60 bg-slate-800 text-white shadow-md hover:border-amber-300 hover:bg-slate-700 hover:text-amber-300'
+                  ? 'bg-[#e50914] text-white shadow-[0_4px_16px_rgba(229,9,20,0.5)]'
+                  : 'bg-[#0f172a]/90 text-slate-300 hover:bg-[#1e293b] hover:text-white border border-white/[0.08]'
               "
             >
               {{ f.label }}
@@ -577,12 +639,12 @@ import {
         </div>
 
         <!-- Movie Cards Grid -->
-        <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           @for (m of displayMovies(); track m.id) {
             <ch-movie-card [movie]="m" />
           } @empty {
             <div
-              class="col-span-full rounded-2xl border-2 border-slate-700 bg-slate-900 p-12 text-center text-sm font-bold text-white/60"
+              class="col-span-full rounded-[4px] border border-white/10 bg-[#0c1322]/60 p-12 text-center text-sm font-medium text-slate-400"
             >
               Không tìm thấy bộ phim phù hợp với bộ lọc hiện tại.
             </div>
@@ -591,23 +653,31 @@ import {
       </section>
 
       <!-- 7. Member Promo Callout Banner -->
-      <section class="mx-auto max-w-[1400px] px-5 pb-14 md:px-9">
+      <section class="mx-auto max-w-[1400px] px-5 pb-16 md:px-9">
         <div
-          class="flex flex-col gap-5 rounded-3xl border-2 border-amber-500/50 bg-gradient-to-r from-slate-900 via-slate-900/95 to-amber-950/50 p-6 shadow-2xl backdrop-blur-xl ring-1 ring-white/20 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+          class="relative overflow-hidden flex flex-col gap-5 rounded-[6px] border border-white/[0.12] bg-gradient-to-r from-[#141b2c] via-[#0d1322] to-[#260b0e] p-7 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:p-9"
         >
-          <div>
-            <p class="text-xs font-black uppercase tracking-widest text-amber-400">
-              Ưu đãi thành viên
-            </p>
-            <h2 class="mt-2 text-2xl font-black text-white">Một vé hay, thêm một niềm vui</h2>
-            <p class="mt-2 text-sm font-extrabold text-white">
+          <div
+            class="pointer-events-none absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-red-600/10 to-transparent"
+            aria-hidden="true"
+          ></div>
+          <div class="relative z-10">
+            <span
+              class="inline-flex rounded-[2px] bg-[#e50914]/20 border border-[#e50914]/40 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-red-400"
+            >
+              ƯU ĐÃI ĐẶC QUYỀN THÀNH VIÊN
+            </span>
+            <h2 class="mt-2 text-2xl font-black text-white md:text-3xl">
+              Một Vé Hay, Thêm Vạn Niềm Vui
+            </h2>
+            <p class="mt-2 text-sm font-semibold text-slate-200">
               Nhập mã <b class="font-black text-amber-300">CINEHUB20</b> để nhận ưu đãi 20.000₫ cho
               vé tiếp theo.
             </p>
           </div>
           <a
             [routerLink]="buildShowtimesLink()"
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-7 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+            class="relative z-10 inline-flex items-center justify-center gap-2 rounded-[4px] bg-gradient-to-r from-[#e50914] to-[#f6121d] hover:from-[#f6121d] hover:to-[#ff2a36] px-8 py-3.5 text-sm font-extrabold uppercase tracking-wider text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition active:scale-[0.99]"
           >
             Khám phá suất chiếu →
           </a>

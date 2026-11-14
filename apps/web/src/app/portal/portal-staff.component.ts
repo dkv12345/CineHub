@@ -11,6 +11,7 @@ import {
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import jsQR from 'jsqr';
 import { ToastService } from '@cinehub/web/core';
 
 interface CheckinTicketResult {
@@ -704,6 +705,8 @@ export class PortalStaffComponent implements OnInit, OnDestroy {
   private scanTimerId: any = null;
   private isScanningPaused = false;
   private audioCtx: AudioContext | null = null;
+  private canvasElement: HTMLCanvasElement | null = null;
+  private canvasContext: CanvasRenderingContext2D | null = null;
 
   readonly qrForm = this.fb.nonNullable.group({
     qrPayload: [''],
@@ -948,42 +951,84 @@ export class PortalStaffComponent implements OnInit, OnDestroy {
   }
 
   private initBarcodeDetection(video: HTMLVideoElement): void {
+    if (typeof document !== 'undefined' && !this.canvasElement) {
+      this.canvasElement = document.createElement('canvas');
+      this.canvasContext = this.canvasElement.getContext('2d', { willReadFrequently: true });
+    }
+
     const hasDetector = typeof window !== 'undefined' && 'BarcodeDetector' in window;
-    let detector: any = null;
+    let nativeDetector: any = null;
     if (hasDetector) {
       try {
-        detector = new window.BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39'] });
+        nativeDetector = new window.BarcodeDetector({
+          formats: ['qr_code', 'code_128', 'code_39'],
+        });
       } catch {
-        detector = null;
+        nativeDetector = null;
       }
     }
 
     this.scanTimerId = setInterval(async () => {
-      if (this.isScanningPaused || !detector || video.readyState < 2) {
+      if (
+        this.isScanningPaused ||
+        video.readyState < 2 ||
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
         return;
       }
 
       try {
-        const barcodes = await detector.detect(video);
-        if (barcodes && barcodes.length > 0) {
-          const rawValue = barcodes[0].rawValue;
-          if (rawValue) {
-            this.isScanningPaused = true;
-            this.scanStatus.set(`Đã tìm thấy mã: ${rawValue.slice(0, 16)}...`);
-            await this.executeCheckin({ qrPayload: rawValue });
+        let detectedValue: string | null = null;
 
-            // Pause for 2.5s before resuming scanner to prevent multiple triggers
-            setTimeout(() => {
-              this.isScanningPaused = false;
-              this.scanStatus.set('Đang dò mã QR trong kính ngắm...');
-              this.flashState.set('idle');
-            }, 2500);
+        // Path 1: Native BarcodeDetector (Android / Chrome flags)
+        if (nativeDetector) {
+          try {
+            const barcodes = await nativeDetector.detect(video);
+            if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+              detectedValue = barcodes[0].rawValue;
+            }
+          } catch {
+            // fallback to jsQR
           }
         }
+
+        // Path 2: jsQR Canvas Decoder (100% cross-platform for Mac, iOS Safari, Chrome, Edge)
+        if (!detectedValue && this.canvasElement && this.canvasContext) {
+          const width = video.videoWidth;
+          const height = video.videoHeight;
+          if (this.canvasElement.width !== width || this.canvasElement.height !== height) {
+            this.canvasElement.width = width;
+            this.canvasElement.height = height;
+          }
+
+          this.canvasContext.drawImage(video, 0, 0, width, height);
+          const imageData = this.canvasContext.getImageData(0, 0, width, height);
+          const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'attemptBoth',
+          });
+
+          if (qrCode && qrCode.data) {
+            detectedValue = qrCode.data.trim();
+          }
+        }
+
+        if (detectedValue) {
+          this.isScanningPaused = true;
+          this.scanStatus.set(`Đã tìm thấy mã: ${detectedValue.slice(0, 16)}...`);
+          await this.executeCheckin({ qrPayload: detectedValue });
+
+          // Pause for 2.5s before resuming scanner to prevent multiple triggers
+          setTimeout(() => {
+            this.isScanningPaused = false;
+            this.scanStatus.set('Đang dò mã QR trong kính ngắm...');
+            this.flashState.set('idle');
+          }, 2500);
+        }
       } catch {
-        // frame detect ignore
+        // frame decode ignore
       }
-    }, 250);
+    }, 150);
   }
 
   // --- Form Submissions ---
@@ -1027,18 +1072,30 @@ export class PortalStaffComponent implements OnInit, OnDestroy {
 
       this.loading.set(false);
       if (res?.data) {
-        const ticketData: CheckinTicketResult = res.data.ticket || {
-          ticketId: res.data.ticketId || '',
-          status: res.data.status || 'USED',
-          usedAt: res.data.usedAt || new Date().toLocaleTimeString('vi-VN'),
-          bookingCode: res.data.bookingCode || '',
-          customerName: res.data.customerName || 'Khách hàng',
-          customerEmail: res.data.customerEmail || '',
-          movieTitle: res.data.movieTitle || 'Phim CineHub',
-          cinemaName: res.data.cinemaName || '',
-          auditoriumName: res.data.auditoriumName || '',
-          startTime: res.data.startTime || 'Suất chiếu',
-          seats: res.data.seats || (res.data.seatLabel ? [res.data.seatLabel] : []),
+        const rawSeats =
+          res.data.seats ||
+          res.data.ticket?.seats ||
+          (res.data.seatLabel ? res.data.seatLabel.split(',').map((s: string) => s.trim()) : []) ||
+          (res.data.ticket?.seatLabel
+            ? res.data.ticket.seatLabel.split(',').map((s: string) => s.trim())
+            : []);
+        const seatsArray = (Array.isArray(rawSeats) ? rawSeats : [String(rawSeats)]).filter(
+          Boolean,
+        );
+
+        const ticketData: CheckinTicketResult = {
+          ticketId: res.data.ticketId || res.data.ticket?.ticketId || '',
+          status: res.data.status || res.data.ticket?.status || 'USED',
+          usedAt:
+            res.data.usedAt || res.data.ticket?.usedAt || new Date().toLocaleTimeString('vi-VN'),
+          bookingCode: res.data.bookingCode || res.data.ticket?.bookingCode || '',
+          customerName: res.data.customerName || res.data.ticket?.customerName || 'Khách hàng',
+          customerEmail: res.data.customerEmail || res.data.ticket?.customerEmail || '',
+          movieTitle: res.data.movieTitle || res.data.ticket?.movieTitle || 'Phim CineHub',
+          cinemaName: res.data.cinemaName || res.data.ticket?.cinemaName || '',
+          auditoriumName: res.data.auditoriumName || res.data.ticket?.auditoriumName || '',
+          startTime: res.data.startTime || res.data.ticket?.startTime || 'Suất chiếu',
+          seats: seatsArray.length > 0 ? seatsArray : ['Ghế'],
         };
 
         this.lastCheckedIn.set(ticketData);

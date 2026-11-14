@@ -218,6 +218,31 @@ staffRouter.post('/checkin', requireAuth, async (req, res, next) => {
         );
       }
 
+      // Fetch full booking details with all seats & tickets for this order
+      const fullBooking = await prisma.booking.findUnique({
+        where: { id: ticket.bookingId },
+        include: {
+          seats: true,
+          tickets: {
+            include: {
+              bookingSeat: true,
+              checkedInBy: { select: { id: true, fullName: true, email: true } },
+            },
+          },
+          user: { select: { fullName: true, email: true, phone: true } },
+          showtime: {
+            include: { movie: true, cinema: true, auditorium: true },
+          },
+        },
+      });
+
+      const allSeats =
+        fullBooking?.seats && fullBooking.seats.length > 0
+          ? fullBooking.seats.map((s) => s.seatLabel)
+          : fullBooking?.tickets?.map((t) => t.bookingSeat?.seatLabel).filter(Boolean) || [
+              ticket.bookingSeat?.seatLabel || 'Ghế',
+            ];
+
       if (ticket.status === 'VOID') {
         throw new AppError(
           409,
@@ -226,18 +251,20 @@ staffRouter.post('/checkin', requireAuth, async (req, res, next) => {
         );
       }
 
-      if (ticket.status === 'USED') {
+      const validTickets = fullBooking?.tickets.filter((t) => t.status === 'VALID') || [];
+      if (validTickets.length === 0 && ticket.status === 'USED') {
         const usedTimeStr = ticket.usedAt
           ? new Date(ticket.usedAt).toLocaleString('vi-VN')
           : 'trước đó';
         throw new AppError(
           409,
           'TICKET_ALREADY_USED',
-          `409 TICKET_ALREADY_USED: Vé ghế ${ticket.bookingSeat?.seatLabel} (Đơn #${ticket.booking.code}) đã được quét vào cổng lúc ${usedTimeStr} bởi ${ticket.checkedInBy?.fullName || 'Nhân viên'}.`,
+          `409 TICKET_ALREADY_USED: Toàn bộ ghế (${allSeats.join(', ')}) của đơn #${ticket.booking.code} đã được quét vào cổng lúc ${usedTimeStr} bởi ${ticket.checkedInBy?.fullName || 'Nhân viên'}.`,
           {
             ticketId: ticket.id,
             bookingCode: ticket.booking.code,
-            seatLabel: ticket.bookingSeat?.seatLabel,
+            seatLabel: allSeats.join(', '),
+            seats: allSeats,
             usedAt: ticket.usedAt?.toISOString(),
             checkedInBy: ticket.checkedInBy?.fullName || 'Staff',
           },
@@ -245,8 +272,9 @@ staffRouter.post('/checkin', requireAuth, async (req, res, next) => {
       }
 
       const now = new Date();
-      const updated = await prisma.ticket.updateMany({
-        where: { id: ticket.id, status: 'VALID' },
+      // Check in ALL VALID tickets for this booking at once so all seats are admitted
+      await prisma.ticket.updateMany({
+        where: { bookingId: ticket.bookingId, status: 'VALID' },
         data: {
           status: 'USED',
           usedAt: now,
@@ -254,27 +282,30 @@ staffRouter.post('/checkin', requireAuth, async (req, res, next) => {
         },
       });
 
-      if (updated.count === 0) {
-        throw new AppError(409, 'TICKET_ALREADY_USED', 'Vé vừa được quét ở thiết bị khác.');
-      }
-
       const stats = await getShowtimeCheckinStats(ticket.booking.showtimeId);
 
       return res.status(200).json({
         data: {
           verified: true,
-          message: `Check-in thành công ghế ${ticket.bookingSeat?.seatLabel}!`,
+          message: `Check-in thành công toàn bộ ${allSeats.length} ghế (${allSeats.join(', ')})!`,
           ticketId: ticket.id,
           bookingCode: ticket.booking.code,
-          seatLabel: ticket.bookingSeat?.seatLabel,
-          seats: [ticket.bookingSeat?.seatLabel],
+          seatLabel: allSeats.join(', '),
+          seats: allSeats,
           seatTypeCode: ticket.bookingSeat?.seatTypeCode,
-          movieTitle: ticket.booking.showtime?.movie?.title,
-          cinemaName: ticket.booking.showtime?.cinema?.name,
-          screenName: ticket.booking.showtime?.auditorium?.name,
+          movieTitle: ticket.booking.showtime?.movie?.title || 'Phim CineHub',
+          cinemaName: ticket.booking.showtime?.cinema?.name || 'CineHub Cinema',
+          screenName: ticket.booking.showtime?.auditorium?.name || 'Phòng chiếu',
           customerName: ticket.booking.user?.fullName || ticket.booking.contactEmail,
+          customerEmail: ticket.booking.user?.email || ticket.booking.contactEmail,
           status: 'USED',
-          usedAt: now.toISOString(),
+          usedAt: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          startTime: ticket.booking.showtime?.startTime
+            ? new Date(ticket.booking.showtime.startTime).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Suất chiếu',
           checkedInBy: staffUser?.fullName || req.user.email,
           stats,
         },
@@ -345,21 +376,30 @@ staffRouter.post('/checkin', requireAuth, async (req, res, next) => {
 
       const stats = await getShowtimeCheckinStats(booking.showtimeId);
       const firstValid = validTickets[0];
-      const seatLabels = booking.seats.map((s) => s.seatLabel).join(', ');
+      const allSeatLabels = booking.seats.map((s) => s.seatLabel);
 
       return res.status(200).json({
         data: {
           verified: true,
+          message: `Check-in thành công toàn bộ ${allSeatLabels.length} ghế (${allSeatLabels.join(', ')})!`,
           ticketId: firstValid.id,
           qrPayload: buildQr(firstValid.id, firstValid.qrVersion),
           bookingCode: booking.code,
-          seatLabel: seatLabels,
+          seatLabel: allSeatLabels.join(', '),
+          seats: allSeatLabels,
           movieTitle: booking.showtime?.movie?.title,
           cinemaName: booking.showtime?.cinema?.name,
           screenName: booking.showtime?.auditorium?.name,
           customerName: booking.user?.fullName || booking.contactEmail,
+          customerEmail: booking.user?.email || booking.contactEmail,
           status: 'USED',
-          usedAt: now.toISOString(),
+          usedAt: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          startTime: booking.showtime?.startTime
+            ? new Date(booking.showtime.startTime).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Suất chiếu',
           checkedInBy: staffUser?.fullName || req.user.email,
           stats,
         },
