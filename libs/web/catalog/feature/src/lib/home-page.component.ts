@@ -39,10 +39,8 @@ import {
           (mouseleave)="resumeTrending()"
           aria-label="Top phim thịnh hành"
         >
-          <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Thu nhỏ tỷ lệ poster ngang cho sắc nét, tỷ lệ ~3:1 chuẩn mockup) -->
-          <div
-            class="relative w-full min-h-[420px] sm:min-h-[460px] md:min-h-[500px] lg:min-h-[530px] overflow-hidden"
-          >
+          <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Kéo dài xuống ngang chữ TOP 10 THỊNH HÀNH) -->
+          <div class="relative w-full overflow-hidden">
             @for (movie of trendingMovies(); track movie.id) {
               <div
                 class="absolute inset-0 transition-all duration-700 ease-out"
@@ -65,7 +63,7 @@ import {
               class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-1/2 md:w-[42%] lg:w-[36%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-50% to-transparent"
             ></div>
             <div
-              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-[#020617]/90 to-transparent"
+              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-[#020617] via-[#020617]/50 to-transparent"
             ></div>
             <div
               class="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#020617]/70 to-transparent"
@@ -73,7 +71,7 @@ import {
 
             <!-- Hero Content Container (Overlaying the Backdrop - Dịch sang bên trái gọn gàng để lộ trọn vẹn poster ngang) -->
             <div
-              class="relative z-20 mx-auto flex h-full min-h-[420px] sm:min-h-[460px] md:min-h-[500px] lg:min-h-[530px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-8 pb-10 md:pt-10 md:pb-12"
+              class="relative z-20 mx-auto flex min-h-[380px] sm:min-h-[420px] md:min-h-[460px] lg:min-h-[480px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-8 pb-4 md:pt-10 md:pb-6"
             >
               <div class="max-w-md lg:max-w-[420px] xl:max-w-[460px]">
                 <!-- Badge Xu hướng -->
@@ -172,55 +170,58 @@ import {
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Section TOP 10 THỊNH HÀNH với Dãy Phim và Số Viền (Lùi xuống bên dưới để thấy trọn vẹn banner hero) -->
-          <div
-            class="relative z-20 mx-auto mt-6 sm:mt-10 md:mt-12 max-w-[1440px] px-5 pb-8 md:px-9"
-          >
-            <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
-                <span class="text-amber-400">TOP 10</span> THỊNH HÀNH
-              </h2>
+            <!-- Section Title TOP 10 THỊNH HÀNH (Mở rộng banner xuống ngang dòng chữ này luôn) -->
+            <div class="relative z-20 mx-auto max-w-[1440px] px-5 pt-3 pb-2 md:px-9">
+              <div class="flex items-center justify-between">
+                <h2
+                  class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+                >
+                  <span class="text-amber-400">TOP 10</span> THỊNH HÀNH
+                </h2>
 
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  (click)="stepTrending(-1)"
-                  aria-label="Phim trước"
-                  class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    (click)="stepTrending(-1)"
+                    aria-label="Phim trước"
+                    class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
                   >
-                    <path d="M15 18l-6-6 6-6" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  (click)="stepTrending(1)"
-                  aria-label="Phim sau"
-                  class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="stepTrending(1)"
+                    aria-label="Phim sau"
+                    class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
                   >
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
-                </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
 
+          <!-- Section Dãy Card Phim TOP 10 THỊNH HÀNH (Nằm ngay dưới banner) -->
+          <div class="relative z-20 mx-auto max-w-[1440px] px-5 pb-8 pt-1 md:px-9">
             <!-- Row Cards with Stylized Numbers (Hollow Outline for unselected, Solid Yellow for active) -->
             <div
               #trendingRow
