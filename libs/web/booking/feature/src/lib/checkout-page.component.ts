@@ -207,10 +207,15 @@ import { HttpClient } from '@angular/common/http';
                       class="h-4 w-4 accent-amber-400"
                     />
                     <span
-                      class="grid h-9 w-11 place-items-center rounded-lg text-xs font-black text-white shadow-md"
-                      [class]="m.badge"
+                      class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-md border border-white/20"
                     >
-                      {{ m.mark }}
+                      <img
+                        [src]="m.icon"
+                        [alt]="m.name"
+                        class="h-full w-full object-contain rounded-lg"
+                        loading="eager"
+                        (error)="onPaymentIconError($event, m)"
+                      />
                     </span>
                     <span class="min-w-0 flex-1">
                       <b class="block text-sm font-black text-white">{{ m.name }}</b>
@@ -425,6 +430,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       desc: 'Quét QR hoặc thẻ ATM nội địa',
       badge: 'bg-[#0b4da2]',
       mark: 'VN',
+      icon: '/images/payment/vnpay.jpg',
     },
     {
       code: 'ZALOPAY' as const,
@@ -432,6 +438,7 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       desc: 'Ví điện tử ZaloPay',
       badge: 'bg-[#1473e6]',
       mark: 'Z',
+      icon: '/images/payment/zalopay.png',
     },
     {
       code: 'MOMO' as const,
@@ -439,8 +446,21 @@ export class CheckoutPageComponent implements OnInit, OnDestroy {
       desc: 'Ví điện tử MoMo',
       badge: 'bg-[#a50064]',
       mark: 'M',
+      icon: '/images/payment/momo.png',
     },
   ];
+
+  onPaymentIconError(event: Event, m: (typeof this.gateways)[number]): void {
+    const img = event.target as HTMLImageElement;
+    if (img) {
+      img.style.display = 'none';
+      const container = img.parentElement;
+      if (container) {
+        container.className = `grid h-11 w-11 shrink-0 place-items-center rounded-xl text-xs font-black text-white shadow-md ${m.badge}`;
+        container.textContent = m.mark;
+      }
+    }
+  }
 
   readonly voucherForm = this.fb.nonNullable.group(
     {

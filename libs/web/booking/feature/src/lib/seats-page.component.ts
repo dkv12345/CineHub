@@ -117,7 +117,7 @@ import {
           </div>
 
           <!-- Right Sidebar: 3D POV Scene + Summary Card -->
-          <div class="space-y-5">
+          <div class="flex flex-col gap-6">
             <div
               class="overflow-hidden rounded-3xl border-2 border-slate-700 bg-slate-900/90 shadow-2xl"
             >
@@ -140,7 +140,7 @@ import {
               (click)="proceedToConcessions()"
               [disabled]="store.selectedSeats().length === 0"
               aria-label="Tiếp tục chọn bắp nước"
-              class="w-full rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 py-4 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+              class="mt-2 w-full rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 py-4 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
               [class.opacity-50]="store.selectedSeats().length === 0"
             >
               Tiếp tục chọn bắp nước ({{ store.selectedSeats().length }} ghế) →

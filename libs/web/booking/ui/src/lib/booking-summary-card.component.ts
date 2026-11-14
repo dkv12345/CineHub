@@ -4,6 +4,7 @@ import { fmt } from '@cinehub/web/shared/util';
 @Component({
   selector: 'ch-booking-summary-card',
   standalone: true,
+  host: { class: 'block' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
