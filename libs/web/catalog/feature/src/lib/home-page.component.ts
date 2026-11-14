@@ -39,9 +39,9 @@ import {
           (mouseleave)="resumeTrending()"
           aria-label="Top phim thịnh hành"
         >
-          <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Độ rộng mở rộng, tỷ lệ poster ngang fit đẹp) -->
+          <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Thu nhỏ tỷ lệ poster ngang cho sắc nét, tỷ lệ ~3:1 chuẩn mockup) -->
           <div
-            class="relative w-full min-h-[500px] sm:min-h-[560px] md:min-h-[620px] lg:min-h-[660px] overflow-hidden"
+            class="relative w-full min-h-[360px] sm:min-h-[400px] md:min-h-[440px] lg:min-h-[460px] overflow-hidden"
           >
             @for (movie of trendingMovies(); track movie.id) {
               <div
@@ -55,27 +55,27 @@ import {
                 <img
                   [src]="movie.backdrop || movie.poster"
                   [alt]="movie.title"
-                  class="h-full w-full object-cover object-top"
+                  class="h-full w-full object-cover object-top [image-rendering:-webkit-optimize-contrast]"
                 />
               </div>
             }
 
             <!-- Soft Contrast Scrim: Che mờ nền chữ bên trái, giữ sáng 100% hình ảnh poster/nhân vật ở giữa và bên phải -->
             <div
-              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-1/2 md:w-[42%] lg:w-[38%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-50% to-transparent"
+              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-1/2 md:w-[42%] lg:w-[36%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-50% to-transparent"
             ></div>
             <div
-              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-36 bg-gradient-to-t from-[#020617] via-[#020617]/85 to-transparent"
+              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-[#020617] via-[#020617]/85 to-transparent"
             ></div>
             <div
-              class="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-[#020617]/70 to-transparent"
+              class="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#020617]/70 to-transparent"
             ></div>
 
             <!-- Hero Content Container (Overlaying the Backdrop - Dịch sang bên trái gọn gàng để lộ trọn vẹn poster ngang) -->
             <div
-              class="relative z-20 mx-auto flex h-full min-h-[500px] sm:min-h-[560px] md:min-h-[620px] lg:min-h-[660px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-10 pb-12 md:pt-14 md:pb-16"
+              class="relative z-20 mx-auto flex h-full min-h-[360px] sm:min-h-[400px] md:min-h-[440px] lg:min-h-[460px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-8 pb-10 md:pt-10 md:pb-12"
             >
-              <div class="max-w-md lg:max-w-[440px] xl:max-w-[480px]">
+              <div class="max-w-md lg:max-w-[420px] xl:max-w-[460px]">
                 <!-- Badge Xu hướng -->
                 <div
                   class="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-0.5 backdrop-blur-md"
@@ -88,14 +88,14 @@ import {
 
                 <!-- Big Bold Movie Title -->
                 <h1
-                  class="mt-3.5 text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] leading-tight"
+                  class="mt-2.5 text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl lg:text-[42px] drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] leading-tight"
                 >
                   {{ currentTrendingMovie()?.title }}
                 </h1>
 
                 <!-- Metadata Row (Rating, Year, Duration, Age, Genre) -->
                 <div
-                  class="mt-3 flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-white/90"
+                  class="mt-2.5 flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-white/90"
                 >
                   <span
                     class="flex items-center gap-1 rounded bg-amber-400 px-2 py-0.5 text-xs font-black text-black shadow-md shadow-amber-400/30"
@@ -124,20 +124,20 @@ import {
                 <!-- Description / Giới thiệu phim trên banner (Đầy đủ nội dung, súc tích trọn vẹn) -->
                 @if (currentTrendingMovie()?.synopsis || currentTrendingMovie()?.description) {
                   <p
-                    class="mt-3.5 max-w-xl text-xs sm:text-sm md:text-base leading-relaxed text-slate-200 font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] line-clamp-3 md:line-clamp-4"
+                    class="mt-2.5 max-w-lg text-xs sm:text-sm leading-relaxed text-slate-200 font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] line-clamp-2 sm:line-clamp-3"
                   >
                     {{ currentTrendingMovie()?.synopsis || currentTrendingMovie()?.description }}
                   </p>
                 }
 
                 <!-- Action Buttons (Mua vé ngay, Chi tiết phim, Trailer) -->
-                <div class="mt-5 flex flex-wrap items-center gap-3">
+                <div class="mt-4 flex flex-wrap items-center gap-2.5">
                   <a
                     [routerLink]="['/showtimes']"
                     [queryParams]="
                       currentTrendingMovie() ? showtimesQueryParams(currentTrendingMovie()!) : {}
                     "
-                    class="inline-flex items-center gap-2 rounded-[6px] bg-gradient-to-r from-[#e50914] to-[#f43f5e] hover:from-[#f43f5e] hover:to-[#fb7185] px-6 py-2.5 text-xs sm:text-sm font-black text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition active:scale-95"
+                    class="inline-flex items-center gap-2 rounded-[6px] bg-gradient-to-r from-[#e50914] to-[#f43f5e] hover:from-[#f43f5e] hover:to-[#fb7185] px-5 py-2 text-xs sm:text-sm font-black text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition active:scale-95"
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                       <path
@@ -152,7 +152,7 @@ import {
                       '/movie',
                       currentTrendingMovie()?.slug || currentTrendingMovie()?.id,
                     ]"
-                    class="inline-flex items-center justify-center rounded-[6px] border border-white/20 bg-white/10 hover:bg-white/20 px-5 py-2.5 text-xs sm:text-sm font-bold text-white backdrop-blur-md transition"
+                    class="inline-flex items-center justify-center rounded-[6px] border border-white/20 bg-white/10 hover:bg-white/20 px-4 py-2 text-xs sm:text-sm font-bold text-white backdrop-blur-md transition"
                   >
                     Chi tiết phim
                   </a>
@@ -161,7 +161,7 @@ import {
                     <button
                       type="button"
                       (click)="openTrailer(currentTrendingMovie()!)"
-                      class="inline-flex items-center gap-1.5 rounded-[6px] border border-white/15 bg-black/40 hover:bg-black/60 px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-200 backdrop-blur-md transition"
+                      class="inline-flex items-center gap-1.5 rounded-[6px] border border-white/15 bg-black/40 hover:bg-black/60 px-4 py-2 text-xs sm:text-sm font-bold text-slate-200 backdrop-blur-md transition"
                     >
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                         <path d="M8 5v14l11-7z" />
