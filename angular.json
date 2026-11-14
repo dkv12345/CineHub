@@ -72,6 +72,10 @@
             },
             "development": {
               "buildTarget": "web:build:development"
+            },
+            "portal": {
+              "buildTarget": "web:build:development",
+              "port": 4300
             }
           },
           "defaultConfiguration": "development"

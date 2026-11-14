@@ -42,7 +42,7 @@ type PolicyKey = 'privacy' | 'payment' | 'terms';
           </a>
           @if (authStore.user()?.role === 'STAFF' || authStore.user()?.role === 'ADMIN') {
             <a
-              routerLink="/staff/checkin"
+              routerLink="/portal/staff"
               class="inline-flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/20"
             >
               <span>📷</span>

@@ -1001,9 +1001,9 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.authStore.setSession(session.accessToken, session.user);
       this.toast.show(`Xin chào, ${session.user.fullName}!`, 'success');
       if (session.user.role === 'STAFF') {
-        void this.router.navigateByUrl('/staff/checkin');
+        void this.router.navigateByUrl('/portal/staff');
       } else if (session.user.role === 'ADMIN') {
-        void this.router.navigateByUrl('/admin');
+        void this.router.navigateByUrl('/portal/admin');
       } else {
         this.navigateAfterAuth();
       }
@@ -1015,6 +1015,15 @@ export class AuthPageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private navigateAfterAuth(): void {
+    const role = this.authStore.user()?.role;
+    if (role === 'STAFF') {
+      void this.router.navigateByUrl('/portal/staff');
+      return;
+    }
+    if (role === 'ADMIN') {
+      void this.router.navigateByUrl('/portal/admin');
+      return;
+    }
     const raw = this.route.snapshot.queryParams['returnUrl'];
     if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) {
       void this.router.navigateByUrl(raw);

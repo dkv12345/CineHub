@@ -141,46 +141,39 @@ function normalizeGenre(value: string): string {
               <!-- Rating Badge -->
               <div class="mt-7 flex flex-wrap items-center gap-4">
                 <div
-                  class="grid h-[76px] w-[76px] place-items-center rounded-full border-2 border-amber-300 bg-black/70 shadow-[0_0_30px_rgba(251,191,36,.3)] backdrop-blur"
+                  class="flex items-center gap-2.5 rounded-[4px] bg-black/60 px-3.5 py-2 backdrop-blur-md border border-amber-400/30 shadow-lg"
                   [attr.aria-label]="
                     'Đánh giá ' + (ratingLabel() === '—' ? 'chưa có' : ratingLabel())
                   "
                 >
-                  <span class="flex flex-col items-center">
-                    <span class="flex items-center gap-1 text-base font-black text-amber-300">
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        class="h-3.5 w-3.5"
-                        fill="currentColor"
-                      >
-                        <path
-                          d="m12 2 3.1 6.3 7 .9-5.1 4.9 1.2 7-6.2-3.3-6.2 3.3 1.2-7L1.9 9.2l7-.9L12 2Z"
-                        />
-                      </svg>
-                      {{ ratingLabel() }}
-                    </span>
-                    <span class="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
-                      Đánh giá
-                    </span>
+                  <span class="flex items-center gap-1.5 text-base font-black text-amber-400">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                      <path
+                        d="m12 2 3.1 6.3 7 .9-5.1 4.9 1.2 7-6.2-3.3-6.2 3.3 1.2-7L1.9 9.2l7-.9L12 2Z"
+                      />
+                    </svg>
+                    {{ ratingLabel() }}
+                  </span>
+                  <span class="text-xs font-bold uppercase tracking-wider text-slate-300">
+                    IMDb
                   </span>
                 </div>
                 @if (m.votes > 0) {
-                  <span class="text-xs font-semibold text-white">
+                  <span class="text-xs font-medium text-slate-300">
                     {{ m.votes.toLocaleString('vi-VN') }} lượt đánh giá
                   </span>
                 }
               </div>
             </div>
 
-            <!-- Big Round Play Trailer Button -->
+            <!-- Play Trailer Button (Login-style crisp sharp button with crimson glow) -->
             <button
               type="button"
               (click)="openTrailer()"
               [attr.aria-label]="'Xem trailer phim ' + m.title"
-              class="hidden h-16 w-16 place-items-center rounded-full border-2 border-white bg-black/40 text-white shadow-2xl backdrop-blur transition hover:scale-110 hover:border-amber-300 hover:bg-amber-400 hover:text-black md:grid lg:mb-2"
+              class="hidden h-13 w-13 place-items-center rounded-[4px] bg-[#e50914] hover:bg-[#ff1f2d] text-white border border-white/20 shadow-[0_0_25px_rgba(229,9,20,0.6)] backdrop-blur-md transition hover:scale-105 md:grid lg:mb-2 p-3.5"
             >
-              <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" class="ml-1">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" class="ml-0.5">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
             </button>
@@ -189,12 +182,12 @@ function normalizeGenre(value: string): string {
 
         <!-- DETAILED INFO SECTION -->
         <section
-          class="relative z-10 mx-auto grid max-w-[1440px] gap-8 bg-slate-950 px-5 pb-12 pt-4 md:grid-cols-[260px_minmax(0,1fr)] md:gap-12 md:px-9 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16"
+          class="relative z-10 mx-auto grid max-w-[1440px] gap-8 bg-[#020617] px-5 pb-12 pt-4 md:grid-cols-[260px_minmax(0,1fr)] md:gap-12 md:px-9 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-16"
         >
           <!-- Left Column Poster Card -->
           <div class="mx-auto -mt-16 w-full max-w-[280px] md:mx-0 md:-mt-24 md:max-w-none">
             <div
-              class="overflow-hidden rounded-xl bg-slate-900 shadow-2xl shadow-black/90 ring-2 ring-white/20"
+              class="overflow-hidden rounded-[4px] bg-[#0c1322] border border-white/[0.12] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] transition duration-300 hover:scale-[1.02]"
             >
               <img
                 [src]="m.poster || m.backdrop"
@@ -203,7 +196,7 @@ function normalizeGenre(value: string): string {
               />
             </div>
             <span
-              class="mt-4 inline-flex rounded-md border border-amber-300/50 bg-amber-400/20 px-3.5 py-1.5 text-xs font-black tracking-wide text-amber-300"
+              class="mt-3.5 inline-flex rounded-[2px] bg-[#e50914] px-2.5 py-1 text-xs font-black text-white shadow"
             >
               {{ m.age }}
             </span>
@@ -211,7 +204,7 @@ function normalizeGenre(value: string): string {
 
           <!-- Right Column Details -->
           <div class="min-w-0 pt-1">
-            <p class="text-xs font-extrabold uppercase tracking-[.25em] text-amber-400">
+            <p class="text-xs font-black uppercase tracking-[.25em] text-[#e50914]">
               THÔNG TIN PHIM
             </p>
             <h2 class="mt-2 text-2xl font-black text-white md:text-3xl">
@@ -219,33 +212,36 @@ function normalizeGenre(value: string): string {
             </h2>
 
             <p class="mt-4 text-base font-semibold text-white">
-              <span class="font-extrabold text-amber-400">Đạo diễn:</span>
-              <span class="font-bold text-white ml-2">{{ m.director }}</span>
+              <span class="font-bold text-amber-400">Đạo diễn:</span>
+              <span class="font-medium text-slate-200 ml-2">{{ m.director }}</span>
             </p>
 
             <div class="mt-8">
               <h3
-                class="mb-3 flex items-center gap-3 text-sm font-extrabold uppercase tracking-wide text-amber-400"
+                class="mb-3 flex items-center gap-3 text-sm font-bold uppercase tracking-wide text-white"
               >
-                <span aria-hidden="true" class="h-5 w-1 rounded-full bg-amber-400"></span>
+                <span
+                  aria-hidden="true"
+                  class="h-5 w-1 rounded-[1px] bg-[#e50914] shadow-[0_0_10px_#e50914]"
+                ></span>
                 NỘI DUNG PHIM
               </h3>
               <p
-                class="max-w-3xl whitespace-pre-line text-sm font-medium leading-relaxed text-white sm:text-base"
+                class="max-w-3xl whitespace-pre-line text-sm font-medium leading-relaxed text-slate-200 sm:text-base"
               >
                 {{ m.synopsis || 'Nội dung phim đang được cập nhật.' }}
               </p>
             </div>
 
-            <!-- Thể loại Pills -->
+            <!-- Thể loại Pills (Clean Tab Radius) -->
             <div class="mt-7">
-              <h3 class="mb-3 text-xs font-extrabold uppercase tracking-wide text-amber-400">
+              <h3 class="mb-3 text-xs font-black uppercase tracking-wider text-slate-400">
                 THỂ LOẠI
               </h3>
               <div class="flex flex-wrap gap-2">
                 @for (genre of genreList(); track genre) {
                   <span
-                    class="rounded-full border border-white/50 bg-white/10 px-4 py-1.5 text-sm font-bold text-white backdrop-blur-md"
+                    class="rounded-[4px] bg-[#0c1322] hover:bg-[#131d33] px-3.5 py-1.5 text-xs font-semibold text-slate-200 border border-white/[0.08] backdrop-blur-md transition"
                   >
                     {{ genre }}
                   </span>
@@ -259,7 +255,7 @@ function normalizeGenre(value: string): string {
                 type="button"
                 (click)="openTrailer()"
                 [attr.aria-label]="'Xem trailer phim ' + m.title"
-                class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-white/15 px-6 py-3 text-sm font-extrabold text-white backdrop-blur-md transition hover:bg-white hover:text-black shadow-lg"
+                class="inline-flex items-center justify-center gap-2 rounded-[4px] bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-3 text-sm font-bold text-white backdrop-blur-md transition shadow-lg"
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                   <polygon points="5 3 19 12 5 21 5 3" />
@@ -272,7 +268,7 @@ function normalizeGenre(value: string): string {
                   [routerLink]="['/showtimes']"
                   [queryParams]="showtimesQueryParams(m)"
                   [attr.aria-label]="'Mua vé phim ' + m.title"
-                  class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-8 py-3 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+                  class="inline-flex items-center justify-center gap-2 rounded-[4px] bg-gradient-to-r from-[#e50914] to-[#f6121d] hover:from-[#f6121d] hover:to-[#ff2a36] px-8 py-3 text-sm font-extrabold uppercase tracking-wider text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition active:scale-[0.99]"
                 >
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                     <path
@@ -286,11 +282,11 @@ function normalizeGenre(value: string): string {
                   type="button"
                   (click)="store.toggleMovieNotification(m.id)"
                   [attr.aria-pressed]="store.isMovieNotified(m.id)"
-                  class="inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-extrabold text-white shadow-lg transition"
+                  class="inline-flex items-center justify-center gap-2 rounded-[4px] px-6 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition"
                   [class]="
                     store.isMovieNotified(m.id)
                       ? 'bg-emerald-600 hover:bg-emerald-500'
-                      : 'bg-red-600 hover:bg-red-700'
+                      : 'bg-gradient-to-r from-[#e50914] to-[#f6121d] hover:from-[#f6121d] hover:to-[#ff2a36]'
                   "
                 >
                   {{ store.isMovieNotified(m.id) ? 'Đã đăng ký nhận tin' : 'Nhận thông báo' }}
@@ -299,7 +295,7 @@ function normalizeGenre(value: string): string {
             </div>
 
             @if (m.status === 'soon') {
-              <p class="mt-3 text-xs font-semibold text-white">
+              <p class="mt-3 text-xs font-semibold text-slate-400">
                 Khởi chiếu: {{ m.release }}. Đăng ký nhận tin để cập nhật lịch mở bán vé.
               </p>
             }
@@ -307,13 +303,13 @@ function normalizeGenre(value: string): string {
             <!-- Diễn viên Pills -->
             @if (castList().length > 0) {
               <div class="mt-8">
-                <h3 class="mb-3 text-xs font-extrabold uppercase tracking-wide text-amber-400">
+                <h3 class="mb-3 text-xs font-black uppercase tracking-wider text-slate-400">
                   DIỄN VIÊN
                 </h3>
                 <div class="flex flex-wrap gap-2">
                   @for (actor of castList(); track actor) {
                     <span
-                      class="rounded-full border border-white/20 bg-slate-900/80 px-3.5 py-1 text-xs font-bold text-white/90"
+                      class="rounded-[4px] bg-[#0c1322] hover:bg-[#131d33] px-3.5 py-1.5 text-xs font-medium text-slate-300 border border-white/[0.08] transition"
                     >
                       {{ actor }}
                     </span>
@@ -326,23 +322,29 @@ function normalizeGenre(value: string): string {
 
         <!-- SIMILAR MOVIES SECTION -->
         @if (similarMovies().length > 0) {
-          <section class="mx-auto max-w-[1440px] px-5 py-12 md:px-9 border-t border-white/10">
-            <h2 class="mb-6 text-xl font-black uppercase text-amber-300">Có thể bạn thích</h2>
+          <section class="mx-auto max-w-[1440px] px-5 py-12 md:px-9 border-t border-white/[0.08]">
+            <div class="mb-6 flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                class="h-5 w-1 rounded-[1px] bg-[#e50914] shadow-[0_0_10px_#e50914]"
+              ></span>
+              <h2 class="text-xl font-black uppercase tracking-wide text-white">
+                Có thể bạn thích
+              </h2>
+            </div>
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               @for (sim of similarMovies(); track sim.id) {
                 <a
                   [routerLink]="['/movie', sim.id]"
-                  class="group rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg transition hover:border-amber-400"
+                  class="group flex flex-col transition duration-300"
                 >
-                  <div class="aspect-[2/3] overflow-hidden rounded-xl bg-slate-950">
-                    <img
-                      [src]="sim.poster"
-                      [alt]="sim.title"
-                      class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
+                  <div
+                    class="aspect-[2/3] overflow-hidden rounded-[4px] bg-[#0c1322] border border-white/[0.08] shadow-md transition duration-500 group-hover:scale-105 group-hover:border-[#e50914]/60 group-hover:shadow-[0_12px_30px_rgba(229,9,20,0.3)]"
+                  >
+                    <img [src]="sim.poster" [alt]="sim.title" class="h-full w-full object-cover" />
                   </div>
                   <h3
-                    class="mt-2.5 truncate text-xs font-black text-white group-hover:text-amber-300"
+                    class="mt-2.5 truncate text-xs font-bold text-white group-hover:text-amber-300"
                   >
                     {{ sim.title }}
                   </h3>
@@ -360,14 +362,14 @@ function normalizeGenre(value: string): string {
             (click)="closeTrailer()"
           >
             <div
-              class="relative w-full max-w-4xl overflow-hidden rounded-2xl border-2 border-white/20 bg-black shadow-2xl"
+              class="relative w-full max-w-4xl overflow-hidden rounded-[6px] border border-white/10 bg-black shadow-2xl"
               (click)="$event.stopPropagation()"
             >
               <button
                 type="button"
                 (click)="closeTrailer()"
                 aria-label="Đóng trailer"
-                class="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-slate-900/90 text-white border border-white/30 hover:border-amber-400 hover:text-amber-300 transition"
+                class="absolute right-4 top-4 z-10 grid h-8 w-8 place-items-center rounded-[4px] bg-black/80 text-white border border-white/20 hover:border-white/50 hover:text-white transition"
               >
                 ✕
               </button>

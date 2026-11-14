@@ -2,6 +2,7 @@ import { prisma } from '@cinehub/db';
 import { logger } from '../../platform/observability/logger.js';
 import { buildQr } from '../../platform/utils/qr.js';
 import { sendBookingConfirmationEmail } from '../../platform/mail/mailer.js';
+import { broadcastAdminEvent } from '../../modules/admin/index.js';
 
 /**
  * Idempotently settle a payment and transition booking/seats/tickets.
@@ -210,6 +211,29 @@ export async function settlePayment({
     }).catch((err) => {
       logger.warn({ err: err.message }, '[settlePayment] Failed to send confirmation email');
     });
+
+    try {
+      broadcastAdminEvent('NEW_BOOKING', {
+        id: result.booking.id,
+        code: result.booking.code,
+        status: 'CONFIRMED',
+        customerName:
+          existingPayment.booking.user?.fullName ||
+          existingPayment.booking.contactEmail ||
+          'Khách hàng',
+        customerEmail:
+          existingPayment.booking.user?.email || existingPayment.booking.contactEmail || '',
+        movieTitle: showtimeRecord?.movie?.title || 'Vé xem phim CineHub',
+        cinemaName: showtimeRecord?.cinema?.name || 'CineHub Cinema',
+        screenName: showtimeRecord?.auditorium?.name || 'Phòng chiếu',
+        seats: existingPayment.booking.seats.map((s) => s.seatLabel),
+        totalAmount: result.booking.totalAmount,
+        paymentProvider: provider || existingPayment.provider || 'ONLINE',
+        createdAt: new Date().toISOString(),
+      });
+    } catch {
+      // Non-fatal if broadcast fails
+    }
 
     return { settled: true, ...result };
   } catch (error) {

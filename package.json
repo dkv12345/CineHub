@@ -16,6 +16,8 @@
     "dev:all": "npm run dev",
     "dev:api": "npx nx serve core-api",
     "dev:web": "npx nx serve web",
+    "dev:portal": "npm run dev:portal -w @cinehub/web",
+    "dev:both": "concurrently -n \"API,WEB-CUST,STAFF-ADMIN\" -c \"green,cyan,amber\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:portal\"",
     "build": "npx nx run-many -t build",
     "build:web": "npx nx build web",
     "test": "npx nx run-many -t test",
@@ -51,6 +53,7 @@
     "@angular/ssr": "20.2.2",
     "@jsverse/transloco": "^7.6.1",
     "@ngrx/signals": "^20.1.0",
+    "jsqr": "^1.4.0",
     "mongoose": "^9.12.0",
     "rxjs": "~7.8.1"
   },
