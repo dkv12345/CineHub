@@ -41,7 +41,7 @@ import {
         >
           <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Thu nhỏ tỷ lệ poster ngang cho sắc nét, tỷ lệ ~3:1 chuẩn mockup) -->
           <div
-            class="relative w-full min-h-[360px] sm:min-h-[400px] md:min-h-[440px] lg:min-h-[460px] overflow-hidden"
+            class="relative w-full min-h-[420px] sm:min-h-[460px] md:min-h-[500px] lg:min-h-[530px] overflow-hidden"
           >
             @for (movie of trendingMovies(); track movie.id) {
               <div
@@ -65,7 +65,7 @@ import {
               class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-1/2 md:w-[42%] lg:w-[36%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-50% to-transparent"
             ></div>
             <div
-              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-[#020617] via-[#020617]/85 to-transparent"
+              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-[#020617]/90 to-transparent"
             ></div>
             <div
               class="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#020617]/70 to-transparent"
@@ -73,7 +73,7 @@ import {
 
             <!-- Hero Content Container (Overlaying the Backdrop - Dịch sang bên trái gọn gàng để lộ trọn vẹn poster ngang) -->
             <div
-              class="relative z-20 mx-auto flex h-full min-h-[360px] sm:min-h-[400px] md:min-h-[440px] lg:min-h-[460px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-8 pb-10 md:pt-10 md:pb-12"
+              class="relative z-20 mx-auto flex h-full min-h-[420px] sm:min-h-[460px] md:min-h-[500px] lg:min-h-[530px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-8 pb-10 md:pt-10 md:pb-12"
             >
               <div class="max-w-md lg:max-w-[420px] xl:max-w-[460px]">
                 <!-- Badge Xu hướng -->
@@ -174,8 +174,10 @@ import {
             </div>
           </div>
 
-          <!-- Section TOP 10 THỊNH HÀNH với Dãy Phim và Số Viền (Đúng như Hình 1) -->
-          <div class="relative z-20 mx-auto -mt-6 sm:-mt-8 max-w-[1440px] px-5 pb-8 md:px-9">
+          <!-- Section TOP 10 THỊNH HÀNH với Dãy Phim và Số Viền (Lùi xuống bên dưới để thấy trọn vẹn banner hero) -->
+          <div
+            class="relative z-20 mx-auto mt-6 sm:mt-10 md:mt-12 max-w-[1440px] px-5 pb-8 md:px-9"
+          >
             <div class="mb-4 flex items-center justify-between">
               <h2 class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
                 <span class="text-amber-400">TOP 10</span> THỊNH HÀNH
