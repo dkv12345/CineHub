@@ -115,13 +115,6 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
               >
                 {{ activeLang() === 'vi' ? 'Vé của tôi' : 'My Tickets' }}
               </a>
-              <a
-                routerLink="/profile"
-                routerLinkActive="!text-amber-300"
-                class="text-white/75 transition hover:text-white"
-              >
-                {{ activeLang() === 'vi' ? 'Hồ sơ' : 'Profile' }}
-              </a>
             </nav>
 
             <!-- Search Bar with Live Results Dropdown -->
@@ -256,24 +249,6 @@ import { AuthStore, ToastService } from '@cinehub/web/core';
                 </div>
               } @else {
                 <div class="flex items-center gap-2">
-                  <a
-                    routerLink="/profile"
-                    aria-label="Hồ sơ người dùng"
-                    title="Hồ sơ người dùng"
-                    class="grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-white/5 text-white/80 transition hover:border-amber-400 hover:text-amber-300"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="8" r="4" />
-                      <path d="M20 21a8 8 0 0 0-16 0" />
-                    </svg>
-                  </a>
                   <a
                     [routerLink]="['/auth']"
                     [queryParams]="{ mode: 'register' }"
