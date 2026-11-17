@@ -20,12 +20,13 @@ import { verifyAccessToken } from '../security/jwt.js';
  */
 export function requireAuth(req, _res, next) {
   const match = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
-  if (!match) {
+  const token = match ? match[1] : req.query?.token || null;
+  if (!token) {
     return next(new AppError(401, 'UNAUTHORIZED', 'Authentication token required'));
   }
 
   try {
-    const payload = verifyAccessToken(match[1]);
+    const payload = verifyAccessToken(token);
     req.user = { id: payload.sub, email: payload.email, role: payload.role };
     return next();
   } catch (error) {

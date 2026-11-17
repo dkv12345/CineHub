@@ -3,11 +3,14 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   OnDestroy,
   OnInit,
   signal,
+  viewChild,
 } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { CatalogStore } from '@cinehub/web/catalog/data-access';
 import { MovieCardComponent } from '@cinehub/web/catalog/ui';
@@ -21,6 +24,21 @@ import {
   vietnamDate,
 } from '@cinehub/web/showtimes/util';
 
+export interface CinemaTech {
+  id: string;
+  badge: string;
+  title: string;
+  desc: string;
+  image: string;
+  accent: string;
+  glow: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  tag: string;
+  features: string[];
+}
+
 @Component({
   selector: 'ch-home-page',
   standalone: true,
@@ -28,189 +46,490 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="min-h-screen bg-[#020617] text-white selection:bg-amber-400 selection:text-black">
-      <!-- 1. Hero Promotion Carousel Banner -->
+      <!-- 1. Top Phim Thịnh Hành (Cinematic Hero Showcase & Top 10 Thumbnail Strip with Outline Numbers) -->
+      @if (trendingMovies().length > 0) {
+        <section
+          class="relative w-full overflow-hidden bg-[#020617] text-white"
+          (mouseenter)="pauseTrending()"
+          (mouseleave)="resumeTrending()"
+          aria-label="Top phim thịnh hành"
+        >
+          <!-- Background Horizontal Posters with Smooth Cross-Fade Transition (Mở rộng toàn diện phần nhìn thấy của banner) -->
+          <div
+            class="relative w-full min-h-[520px] sm:min-h-[580px] md:min-h-[640px] lg:min-h-[680px] overflow-hidden"
+          >
+            @for (movie of trendingMovies(); track movie.id) {
+              <div
+                class="absolute inset-0 transition-all duration-700 ease-out"
+                [class]="
+                  currentTrendingMovie()?.id === movie.id
+                    ? 'opacity-100 scale-100 z-10'
+                    : 'opacity-0 scale-105 pointer-events-none z-0'
+                "
+              >
+                <img
+                  [src]="movie.backdrop || movie.poster"
+                  [alt]="movie.title"
+                  class="h-full w-full object-cover object-top [image-rendering:-webkit-optimize-contrast]"
+                />
+              </div>
+            }
+
+            <!-- Soft Contrast Scrim: Che mờ nền chữ bên trái, giữ sáng 100% hình ảnh poster/nhân vật ở giữa và bên phải -->
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 z-10 w-full sm:w-1/2 md:w-[42%] lg:w-[36%] bg-gradient-to-r from-[#020617] via-[#020617]/90 via-50% to-transparent"
+            ></div>
+            <div
+              class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent"
+            ></div>
+            <div
+              class="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#020617]/70 to-transparent"
+            ></div>
+
+            <!-- Hero Content Container (Overlaying the Backdrop - Dịch sang bên trái gọn gàng để lộ trọn vẹn poster ngang) -->
+            <div
+              class="relative z-20 mx-auto flex h-full min-h-[520px] sm:min-h-[580px] md:min-h-[640px] lg:min-h-[680px] max-w-[1600px] flex-col justify-center px-4 sm:px-6 md:px-8 lg:px-12 pt-10 pb-14 md:pt-14 md:pb-16"
+            >
+              <div class="max-w-md lg:max-w-[420px] xl:max-w-[460px]">
+                <!-- Badge Xu hướng -->
+                <div
+                  class="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-0.5 backdrop-blur-md"
+                >
+                  <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span class="text-xs font-black uppercase tracking-wider text-amber-300">
+                    TOP #{{ selectedTrendingIndex() + 1 }} THỊNH HÀNH
+                  </span>
+                </div>
+
+                <!-- Big Bold Movie Title -->
+                <h1
+                  class="mt-2.5 text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl lg:text-[42px] drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] leading-tight"
+                >
+                  {{ currentTrendingMovie()?.title }}
+                </h1>
+
+                <!-- Metadata Row (Rating, Year, Duration, Age, Genre) -->
+                <div
+                  class="mt-2.5 flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-white/90"
+                >
+                  <span
+                    class="flex items-center gap-1 rounded bg-amber-400 px-2 py-0.5 text-xs font-black text-black shadow-md shadow-amber-400/30"
+                  >
+                    ★ {{ currentTrendingMovie()?.rating || '9.6' }}
+                  </span>
+                  <span class="text-slate-300">
+                    {{ formatReleaseDate(currentTrendingMovie()?.release) }}
+                  </span>
+                  <span class="text-white/30">•</span>
+                  <span class="text-slate-300">
+                    {{ currentTrendingMovie()?.duration || '2h 2m' }}
+                  </span>
+                  <span class="text-white/30">•</span>
+                  <span
+                    class="rounded border border-amber-400/60 bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-black text-amber-300"
+                  >
+                    {{ currentTrendingMovie()?.age || 'P' }}
+                  </span>
+                  <span class="text-white/30">•</span>
+                  <span class="font-medium text-amber-300">
+                    {{ currentTrendingMovie()?.genre }}
+                  </span>
+                </div>
+
+                <!-- Description / Giới thiệu phim trên banner (Đầy đủ nội dung, súc tích trọn vẹn) -->
+                @if (currentTrendingMovie()?.synopsis || currentTrendingMovie()?.description) {
+                  <p
+                    class="mt-2.5 max-w-lg text-xs sm:text-sm leading-relaxed text-slate-200 font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] line-clamp-2 sm:line-clamp-3"
+                  >
+                    {{ currentTrendingMovie()?.synopsis || currentTrendingMovie()?.description }}
+                  </p>
+                }
+
+                <!-- Action Buttons (Mua vé ngay, Chi tiết phim, Trailer) -->
+                <div class="mt-4 flex flex-wrap items-center gap-2.5">
+                  <a
+                    [routerLink]="['/showtimes']"
+                    [queryParams]="
+                      currentTrendingMovie() ? showtimesQueryParams(currentTrendingMovie()!) : {}
+                    "
+                    class="inline-flex items-center gap-2 rounded-[6px] bg-gradient-to-r from-[#e50914] to-[#f43f5e] hover:from-[#f43f5e] hover:to-[#fb7185] px-5 py-2 text-xs sm:text-sm font-black text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition active:scale-95"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                      <path
+                        d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a3 3 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a3 3 0 0 1 0-4z"
+                      />
+                    </svg>
+                    Mua vé ngay
+                  </a>
+
+                  <a
+                    [routerLink]="[
+                      '/movie',
+                      currentTrendingMovie()?.slug || currentTrendingMovie()?.id,
+                    ]"
+                    class="inline-flex items-center justify-center rounded-[6px] border border-white/20 bg-white/10 hover:bg-white/20 px-4 py-2 text-xs sm:text-sm font-bold text-white backdrop-blur-md transition"
+                  >
+                    Chi tiết phim
+                  </a>
+
+                  @if (currentTrendingMovie()?.trailer) {
+                    <button
+                      type="button"
+                      (click)="openTrailer(currentTrendingMovie()!)"
+                      class="inline-flex items-center gap-1.5 rounded-[6px] border border-white/15 bg-black/40 hover:bg-black/60 px-4 py-2 text-xs sm:text-sm font-bold text-slate-200 backdrop-blur-md transition"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                      Trailer
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section NGUYÊN COMPONENT TOP 10 THỊNH HÀNH (Lùi xuống dưới banner, gồm tiêu đề + nút + dãy cards) -->
+          <div class="relative z-20 mx-auto mt-6 sm:mt-8 md:mt-10 max-w-[1440px] px-5 pb-8 md:px-9">
+            <!-- Header Tiêu đề & Nút chuyển hướng -->
+            <div class="mb-4 flex items-center justify-between">
+              <h2
+                class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+              >
+                <span class="text-amber-400">TOP 10</span> THỊNH HÀNH
+              </h2>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="stepTrending(-1)"
+                  aria-label="Phim trước"
+                  class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  (click)="stepTrending(1)"
+                  aria-label="Phim sau"
+                  class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/15 bg-black/60 text-white backdrop-blur transition hover:bg-amber-400 hover:text-black hover:border-transparent"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Row Cards with Stylized Numbers (Hollow Outline for unselected, Solid Yellow for active) -->
+            <div
+              #trendingRow
+              class="scrollbar-hide flex items-end gap-5 overflow-x-auto pb-4 pt-2 scroll-smooth"
+            >
+              @for (movie of trendingMovies(); track movie.id; let idx = $index) {
+                <button
+                  type="button"
+                  [attr.data-index]="idx"
+                  (click)="selectTrending(idx)"
+                  [attr.aria-label]="'Chọn phim ' + movie.title"
+                  class="group relative flex shrink-0 items-end cursor-pointer text-left transition-transform duration-300 hover:scale-[1.03] focus:outline-none"
+                >
+                  <!-- Stylized Giant Number (Italic, outlined or filled gold) -->
+                  <span
+                    class="select-none font-black italic tracking-tighter leading-none transition-all duration-300 pr-1.5 shrink-0"
+                    [style]="
+                      currentTrendingMovie()?.id === movie.id
+                        ? 'color: #fbbf24; text-shadow: 0 0 25px rgba(251,191,36,0.6); -webkit-text-stroke: 0;'
+                        : 'color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.45);'
+                    "
+                    style="font-size: clamp(56px, 7vw, 92px);"
+                  >
+                    {{ idx + 1 }}
+                  </span>
+
+                  <!-- Poster Card -->
+                  <div
+                    class="relative aspect-[2/3] w-[135px] sm:w-[165px] md:w-[190px] lg:w-[210px] overflow-hidden rounded-[6px] bg-[#0c1322] transition-all duration-300"
+                    [class]="
+                      currentTrendingMovie()?.id === movie.id
+                        ? 'border-2 border-amber-400 ring-2 ring-amber-400/30 shadow-[0_0_25px_rgba(251,191,36,0.45)]'
+                        : 'border border-white/10 group-hover:border-white/40'
+                    "
+                  >
+                    <img
+                      [src]="movie.poster"
+                      [alt]="movie.title"
+                      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div
+                      class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent"
+                    ></div>
+
+                    <!-- Info inside poster (Image 1 style) -->
+                    <div class="absolute bottom-2.5 left-2.5 right-2.5">
+                      <p class="truncate text-xs sm:text-sm font-bold text-white drop-shadow">
+                        {{ movie.title }}
+                      </p>
+                      <p
+                        class="mt-0.5 flex items-center gap-1 text-[11px] font-bold text-amber-300 drop-shadow"
+                      >
+                        <span>★</span>
+                        <span>{{ movie.rating }}</span>
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+      }
+
+      <!-- 2. Section ƯU ĐÃI ĐẶC QUYỀN - KHUYẾN MÃI & SỰ KIỆN NỔI BẬT (Đưa lên ngay dưới phần Top Thịnh Hành theo yêu cầu 2) -->
       @if (banners.length > 0) {
         <section
-          class="relative mx-auto min-h-[350px] sm:min-h-[480px] md:min-h-[600px] max-w-[1600px] overflow-hidden bg-[#020617] text-white"
+          class="relative mx-auto mt-6 md:mt-10 max-w-[1440px] px-5 md:px-9"
           (mouseenter)="pauseCarousel()"
           (mouseleave)="resumeCarousel()"
           aria-roledescription="carousel"
-          aria-label="Banner chương trình ưu đãi"
+          aria-label="Chương trình ưu đãi và sự kiện"
         >
-          @for (slide of banners; track slide.id; let idx = $index) {
-            <div
-              class="absolute inset-0 transition-opacity duration-700"
-              [class]="
-                currentSlide() === idx ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
-              "
-            >
-              <div class="absolute inset-0 overflow-hidden bg-[#020617]">
+          <div class="mb-5 flex items-center justify-between border-b border-white/[0.08] pb-3">
+            <div class="flex items-center gap-3">
+              <span class="h-6 w-1 rounded-[1px] bg-amber-400 shadow-[0_0_12px_#fbbf24]"></span>
+              <div>
+                <p class="text-[11px] font-black uppercase tracking-[0.25em] text-amber-400">
+                  ƯU ĐÃI ĐẶC QUYỀN
+                </p>
+                <h2
+                  class="mt-0.5 text-xl font-black uppercase tracking-wide text-white md:text-2xl"
+                >
+                  KHUYẾN MÃI & SỰ KIỆN NỔI BẬT
+                </h2>
+              </div>
+            </div>
+
+            <!-- Slide Dots & Controls (Image 2 style) -->
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                (click)="stepSlide(-1)"
+                aria-label="Ưu đãi trước"
+                class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/10 bg-black/60 text-white shadow backdrop-blur transition hover:bg-[#e50914] hover:border-transparent"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+
+              <div class="hidden sm:flex items-center gap-1.5">
+                @for (slide of banners; track slide.id; let idx = $index) {
+                  <button
+                    type="button"
+                    (click)="currentSlide.set(idx)"
+                    [attr.aria-label]="'Banner ' + (idx + 1)"
+                    class="h-1 rounded-[1px] transition-all duration-300"
+                    [class]="
+                      currentSlide() === idx
+                        ? 'w-7 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]'
+                        : 'w-2.5 bg-white/30 hover:bg-white/60'
+                    "
+                  ></button>
+                }
+              </div>
+
+              <button
+                type="button"
+                (click)="stepSlide(1)"
+                aria-label="Ưu đãi sau"
+                class="grid h-8 w-8 place-items-center rounded-[4px] border border-white/10 bg-black/60 text-white shadow backdrop-blur transition hover:bg-[#e50914] hover:border-transparent"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Carousel Banner Container (Tỷ lệ 2.36:1 chuẩn theo kích thước ảnh poster 3168x1344) -->
+          <div
+            class="relative w-full aspect-[2.35/1] overflow-hidden rounded-[8px] border border-white/10 shadow-2xl bg-[#090d16]"
+          >
+            @for (slide of banners; track slide.id; let idx = $index) {
+              <div
+                class="absolute inset-0 transition-opacity duration-700"
+                [class]="
+                  currentSlide() === idx ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                "
+              >
                 <img
                   [src]="slide.image || slide.imageUrl"
                   [alt]="slide.title"
                   class="h-full w-full object-cover object-center"
                 />
+                <div
+                  class="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-20 flex items-center gap-2"
+                >
+                  <span
+                    class="rounded bg-[#e50914] px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase text-white shadow"
+                  >
+                    HOT PROMO
+                  </span>
+                  <span
+                    class="text-xs sm:text-sm font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+                  >
+                    {{ slide.title }}
+                  </span>
+                </div>
               </div>
-            </div>
-          }
-
-          <!-- Slide Controls -->
-          <div
-            class="absolute bottom-6 right-5 z-20 flex items-center gap-3 md:bottom-8 md:right-9"
-          >
-            <button
-              type="button"
-              (click)="stepSlide(-1)"
-              aria-label="Slide trước"
-              class="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-
-            <div class="flex gap-2">
-              @for (slide of banners; track slide.id; let idx = $index) {
-                <button
-                  type="button"
-                  (click)="currentSlide.set(idx)"
-                  [attr.aria-label]="'Slide ' + (idx + 1)"
-                  class="h-2 rounded-full transition-all"
-                  [class]="
-                    currentSlide() === idx
-                      ? 'w-8 bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,1)]'
-                      : 'w-3 bg-white/70'
-                  "
-                ></button>
-              }
-            </div>
-
-            <button
-              type="button"
-              (click)="stepSlide(1)"
-              aria-label="Slide sau"
-              class="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-lg backdrop-blur transition hover:border-amber-300 hover:bg-amber-400 hover:text-black"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </button>
+            }
           </div>
         </section>
       }
 
-      <!-- 2. Thanh QuickBooking Mua vé nhanh nằm tách biệt dưới Hero -->
-      <div class="relative z-10 mx-auto mt-6 max-w-[1400px] px-5 md:mt-8 md:px-9">
+      <!-- 3. Thanh QuickBooking Mua vé nhanh (Luxury Cinema Console) -->
+      <div class="relative z-20 mx-auto mt-10 md:mt-14 max-w-[1440px] px-5 md:px-9">
         <section
-          class="grid gap-3 rounded-2xl border-2 border-white/40 bg-slate-900 p-4 shadow-2xl shadow-black/90 ring-1 ring-white/20 backdrop-blur-2xl md:grid-cols-[1.15fr_1.15fr_.8fr_.8fr_auto] md:items-end md:p-5"
+          class="grid gap-4 rounded-[6px] border border-white/[0.12] bg-gradient-to-b from-[#101726]/95 via-[#090d17]/95 to-[#04060c]/98 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-2xl md:grid-cols-[1.15fr_1.15fr_.8fr_.8fr_auto] md:items-end md:p-6"
           aria-label="Đặt vé nhanh"
         >
           <!-- Chọn phim -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn phim
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
+            CHỌN PHIM
             <div class="relative mt-2">
               <select
                 [value]="quickMovieId()"
                 (change)="onQuickMovieChange($event)"
                 [disabled]="showtimesStore.loading() || quickMovies().length === 0"
-                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914]"
               >
                 @if (quickMovies().length === 0) {
                   <option value="">Chưa có phim có suất chiếu</option>
                 } @else {
                   @for (m of quickMovies(); track m.id) {
-                    <option [value]="m.slug || m.id" class="bg-slate-900 font-black text-white">
+                    <option [value]="m.slug || m.id" class="bg-slate-900 font-bold text-white">
                       {{ m.title }}
                     </option>
                   }
                 }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
           </label>
 
           <!-- Chọn rạp -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn rạp
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
+            CHỌN RẠP
             <div class="relative mt-2">
               <select
                 [value]="quickCinemaId()"
                 (change)="onQuickCinemaChange($event)"
                 [disabled]="showtimesStore.loading() || quickMovies().length === 0"
-                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914]"
               >
-                <option value="" class="bg-slate-900 font-black text-white">Tất cả rạp</option>
+                <option value="" class="bg-slate-900 font-bold text-white">Tất cả rạp</option>
                 @for (c of cinemaList(); track c.id) {
-                  <option [value]="c.id" class="bg-slate-900 font-black text-white">
+                  <option [value]="c.id" class="bg-slate-900 font-bold text-white">
                     {{ c.name }}
                   </option>
                 }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
           </label>
 
           <!-- Chọn ngày -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn ngày
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
+            CHỌN NGÀY
             <div class="relative mt-2">
               <select
                 (change)="onQuickDayChange($event)"
                 [value]="quickShowtimeDate()"
                 [disabled]="showtimesStore.loading() || quickDateOptions().length === 0"
-                class="block w-full appearance-none rounded-xl border-2 border-white/80 bg-slate-950 py-3 pl-3.5 pr-10 text-sm font-black text-white outline-none transition [color-scheme:dark] hover:border-white focus:border-amber-300 disabled:opacity-50"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] disabled:opacity-50"
               >
                 @if (quickDateOptions().length === 0) {
-                  <option value="" class="bg-slate-900 font-black text-white">
+                  <option value="" class="bg-slate-900 font-bold text-white">
                     Chưa có suất phù hợp
                   </option>
                 } @else {
                   @for (d of quickDateOptions(); track d.date) {
-                    <option [value]="d.date" class="bg-slate-900 font-black text-white">
+                    <option [value]="d.date" class="bg-slate-900 font-bold text-white">
                       {{ d.label }}
                     </option>
                   }
                 }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
           </label>
 
           <!-- Chọn suất -->
-          <label class="min-w-0 text-xs font-black uppercase tracking-wider text-amber-300">
-            Chọn suất
+          <label class="min-w-0 text-[11px] font-black uppercase tracking-wider text-slate-300">
+            CHỌN SUẤT
             <div class="relative mt-2">
               <select
-                disabled
-                class="block w-full appearance-none rounded-xl border-2 border-white/40 bg-slate-950/60 py-3 pl-3.5 pr-10 text-sm font-black text-white/50 outline-none"
+                (change)="onQuickSessionChange($event)"
+                [value]="quickSessionId()"
+                [disabled]="showtimesStore.loading() || quickSessionOptions().length === 0"
+                class="block h-[46px] w-full appearance-none rounded-[4px] border border-white/10 bg-[#070b13] py-2.5 pl-3.5 pr-10 text-sm font-bold text-white outline-none transition [color-scheme:dark] hover:border-white/30 focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] disabled:opacity-50"
               >
-                <option class="bg-slate-900">Xem tại bước sau</option>
+                @if (quickSessionOptions().length === 0) {
+                  <option value="" class="bg-slate-900 font-bold text-white">
+                    Chưa có suất phù hợp
+                  </option>
+                } @else {
+                  <option value="" class="bg-slate-900 font-bold text-white">
+                    Tất cả suất ({{ quickSessionOptions().length }} suất)
+                  </option>
+                  @for (s of quickSessionOptions(); track s.id) {
+                    <option [value]="s.id" class="bg-slate-900 font-bold text-white">
+                      {{ s.label }}
+                    </option>
+                  }
+                }
               </select>
               <span
-                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40"
+                class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
                 >▼</span
               >
             </div>
@@ -224,14 +543,10 @@ import {
               showtimesStore.loading() || quickMovies().length === 0 || !quickShowtimeDate()
             "
             aria-label="Mua vé nhanh theo phim, rạp và ngày đã chọn"
-            class="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
+            class="inline-flex h-[46px] w-full items-center justify-center gap-2 whitespace-nowrap rounded-[4px] bg-[#e50914] px-7 text-sm font-black uppercase tracking-wider text-white shadow-[0_4px_20px_rgba(229,9,20,0.5)] transition hover:bg-[#ff1f2d] hover:shadow-[0_6px_25px_rgba(229,9,20,0.7)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:w-auto"
           >
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor">
-              <path
-                d="M22 10V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a3 3 0 0 1 0 4v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a3 3 0 0 1 0-4z"
-              />
-            </svg>
-            Mua vé nhanh
+            <span class="text-xs">■</span>
+            MUA VÉ NHANH
           </button>
           @if (!showtimesStore.loading() && quickMovies().length > 0 && !quickShowtimeDate()) {
             <p class="text-xs font-bold text-amber-200 md:col-span-full">
@@ -241,704 +556,354 @@ import {
         </section>
       </div>
 
-      <!-- 3. Section Top Thịnh Hành (Giant 3D Numbering) -->
-      <section class="mx-auto max-w-[1400px] px-5 pt-10 md:px-9 md:pt-14">
-        <div class="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[.2em] text-amber-400">
-              Được khán giả lựa chọn
-            </p>
-            <h2 class="mt-2 text-2xl font-black text-white">Top thịnh hành</h2>
-          </div>
-          <a
-            [routerLink]="buildShowtimesLink()"
-            class="inline-flex items-center gap-1 text-xs font-black text-amber-300 transition hover:text-amber-200"
-          >
-            Xem lịch chiếu →
-          </a>
-        </div>
-
-        <div
-          class="scrollbar-hide -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto pb-4 pl-12 pr-6 md:-mx-9 md:pl-14 md:pr-9"
-        >
-          @for (m of trendingMovies(); track m.id; let idx = $index) {
-            <article
-              class="group relative flex w-[190px] shrink-0 snap-start flex-col rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 pt-3 shadow-xl transition hover:border-amber-400 sm:w-[220px]"
-            >
-              <!-- Số 3D nhô hẳn ra ngoài khung (-left-7) -->
-              <span
-                class="pointer-events-none display absolute -left-7 bottom-14 z-20 font-black leading-none text-amber-300 drop-shadow-[0_10px_20px_rgba(0,0,0,0.95)] transition-all duration-300 group-hover:scale-110 group-hover:text-amber-400"
-                [class]="idx >= 9 ? 'text-[100px] tracking-tighter' : 'text-[108px]'"
-              >
-                {{ idx + 1 }}
-              </span>
-
-              <a
-                [routerLink]="['/movie', m.id]"
-                class="ml-9 block overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
-              >
-                <img
-                  [src]="m.poster"
-                  [alt]="'Poster ' + m.title"
-                  class="aspect-[2/3] w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-              </a>
-
-              <a
-                [routerLink]="['/movie', m.id]"
-                class="mt-3 block truncate pl-9 text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
-              >
-                {{ m.title }}
-              </a>
-              <span class="block pl-9 text-xs font-black text-amber-300">
-                ★ {{ m.rating }} · {{ m.country || 'Quốc tế' }}
-              </span>
-
-              <div class="mt-2.5 flex items-center gap-1.5 pl-9 pr-1 pb-1">
-                <a
-                  [routerLink]="['/showtimes']"
-                  [queryParams]="showtimesQueryParams(m)"
-                  class="inline-flex flex-1 items-center justify-center rounded-lg bg-[#e50914] px-2.5 py-1.5 text-[11px] font-black text-white shadow transition hover:bg-red-500"
-                >
-                  Mua vé
-                </a>
-                <a
-                  [routerLink]="['/movie', m.id]"
-                  class="inline-flex items-center justify-center rounded-lg border border-white/25 bg-slate-800 px-2.5 py-1.5 text-[11px] font-bold text-white/90 transition hover:border-amber-300 hover:text-amber-300"
-                >
-                  Chi tiết
-                </a>
-              </div>
-            </article>
-          }
-        </div>
-      </section>
-
-      <!-- 4. Section CineHub AI Dành riêng cho bạn -->
-      <section class="mt-12 border-y-2 border-white/20 bg-slate-900/90 backdrop-blur-md">
-        <div
-          class="mx-auto grid max-w-[1400px] gap-8 px-5 py-10 md:grid-cols-[.8fr_2fr] md:items-center md:px-9"
-        >
-          <div>
-            <p
-              class="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-400"
-            >
-              ✨ CineHub AI
-            </p>
-            <h2 class="mt-2 text-2xl font-black text-white">Dành riêng cho bạn</h2>
-            <p class="mt-2 max-w-sm text-sm font-bold leading-6 text-white/80">
-              {{
-                authStore.isAuthenticated()
-                  ? 'Gợi ý chuẩn gu theo sở thích và lịch sử xem phim của ' +
-                    authStore.displayName() +
-                    '.'
-                  : 'Khám phá những bộ phim đang được yêu thích nhất hiện tại.'
-              }}
-            </p>
-            @if (!authStore.isAuthenticated()) {
-              <a
-                routerLink="/auth"
-                class="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-400 transition hover:text-amber-300"
-              >
-                Đăng nhập để nhận gợi ý chuẩn gu →
-              </a>
-            }
-          </div>
-
-          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            @for (m of recommendedMovies(); track m.id) {
-              <div
-                class="group flex min-w-0 gap-3 rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-md transition hover:border-amber-400 hover:bg-slate-800"
-              >
-                <a [routerLink]="['/movie', m.id]" class="shrink-0">
-                  <img
-                    [src]="m.poster"
-                    [alt]="'Poster ' + m.title"
-                    class="h-28 w-[74px] rounded-lg object-cover shadow-md ring-1 ring-white/20"
-                  />
-                </a>
-                <div class="flex min-w-0 flex-1 flex-col justify-between py-0.5">
-                  <div>
-                    <a
-                      [routerLink]="['/movie', m.id]"
-                      class="line-clamp-2 block text-sm font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
-                    >
-                      {{ m.title }}
-                    </a>
-                    <p class="mt-1 line-clamp-1 text-xs font-bold leading-5 text-amber-300">
-                      {{ m.genre.split(',')[0] }} · Đang được yêu thích
-                    </p>
-                  </div>
-                  <div class="mt-2 flex items-center justify-between gap-2">
-                    <span class="text-[11px] font-black text-white/80">
-                      {{ m.age || 'Phim chiếu rạp' }}
-                    </span>
-                    <a
-                      [routerLink]="['/showtimes']"
-                      [queryParams]="showtimesQueryParams(m)"
-                      class="rounded-lg bg-[#e50914] px-2.5 py-1 text-[11px] font-black text-white transition hover:bg-red-500"
-                    >
-                      Mua vé
-                    </a>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- 5. Section Thư Viện Của Bạn -->
+      <!-- 4. Section CineHub AI Dành riêng cho bạn (Atmospheric Cinematic Studio) -->
       <section
-        class="mx-auto grid max-w-[1400px] gap-5 px-5 py-14 md:px-9 lg:grid-cols-[220px_minmax(0,1fr)] lg:grid-rows-[auto_auto]"
+        class="relative mt-14 overflow-hidden border-y border-white/[0.08] bg-gradient-to-b from-[#0a0f1d] via-[#05070d] to-[#020617] py-14"
       >
-        <aside
-          class="h-fit rounded-2xl border-2 border-slate-700 bg-slate-900 p-3 shadow-xl backdrop-blur-md lg:col-start-1 lg:row-start-2"
-        >
-          <p class="px-3 pb-3 pt-2 text-[11px] font-black uppercase tracking-widest text-amber-300">
-            THƯ VIỆN CỦA BẠN
-          </p>
-          <div class="flex flex-col gap-2">
-            @for (item of shelfOptions; track item.key) {
-              <button
-                type="button"
-                (click)="shelf.set(item.key)"
-                class="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm transition"
-                [class]="
-                  shelf() === item.key
-                    ? 'border-2 border-amber-400 bg-amber-400/20 font-black text-amber-300 shadow-md'
-                    : 'border-2 border-white/40 bg-slate-800 font-black text-white shadow-md hover:bg-slate-700 hover:text-amber-300'
-                "
-              >
-                <span>{{ item.label }}</span>
-              </button>
-            }
-          </div>
-        </aside>
+        <div
+          class="pointer-events-none absolute -left-20 top-0 h-96 w-96 rounded-full bg-red-600/10 blur-[130px]"
+          aria-hidden="true"
+        ></div>
+        <div
+          class="pointer-events-none absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-amber-500/10 blur-[130px]"
+          aria-hidden="true"
+        ></div>
 
-        <div class="min-w-0 lg:contents">
-          <div class="mb-5 flex items-end justify-between gap-4 lg:col-start-2 lg:row-start-1">
-            <div>
-              <p class="text-xs font-black uppercase tracking-wider text-amber-400">
-                CineHub của bạn
-              </p>
-              <h2 class="mt-1 text-2xl font-black text-white">
-                {{
-                  shelf() === 'history'
-                    ? 'Xem tiếp'
-                    : shelf() === 'collection'
-                      ? 'Bộ sưu tập của tôi'
-                      : 'Đang thịnh hành'
-                }}
-              </h2>
+        <div class="relative z-10 mx-auto max-w-[1440px] px-5 md:px-9">
+          <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <span class="h-7 w-1 rounded-[1px] bg-amber-400 shadow-[0_0_12px_#fbbf24]"></span>
+              <div>
+                <p class="text-[11px] font-black uppercase tracking-[0.25em] text-amber-400">
+                  CineHub AI STUDIO
+                </p>
+                <h2
+                  class="mt-0.5 text-2xl font-black uppercase tracking-wide text-white md:text-3xl"
+                >
+                  Gợi Ý Riêng Cho Bạn
+                </h2>
+              </div>
             </div>
-            <span class="text-xs font-black text-white">{{ shelfMovies().length }} phim</span>
+            <div class="flex flex-wrap gap-2">
+              @for (tab of shelfOptions; track tab.key) {
+                <button
+                  type="button"
+                  (click)="shelf.set(tab.key)"
+                  class="rounded-[4px] px-3.5 py-1.5 text-xs font-bold transition duration-200"
+                  [class]="
+                    shelf() === tab.key
+                      ? 'bg-amber-400 text-black shadow-md shadow-amber-400/20'
+                      : 'border border-white/10 bg-black/40 text-slate-300 hover:border-white/20 hover:text-white'
+                  "
+                >
+                  {{ tab.label }}
+                </button>
+              }
+            </div>
           </div>
 
-          <div
-            class="scrollbar-hide -mx-2 flex snap-x gap-4 overflow-x-auto px-2 pb-3 lg:col-start-2 lg:row-start-2"
-          >
+          <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-6">
             @for (m of shelfMovies(); track m.id) {
-              <article
-                class="group flex w-[160px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-900 p-2 shadow-lg backdrop-blur transition hover:border-amber-400 sm:w-[178px]"
-              >
-                <a
-                  [routerLink]="['/movie', m.id]"
-                  class="relative block aspect-[2/3] overflow-hidden rounded-xl bg-slate-950 ring-1 ring-white/20"
-                >
-                  <img
-                    [src]="m.poster"
-                    [alt]="'Poster ' + m.title"
-                    class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <span
-                    class="absolute right-2 top-2 rounded-full border border-amber-300 bg-slate-950/95 px-2 py-1 text-[10px] font-black text-amber-300 backdrop-blur"
-                  >
-                    ★ {{ m.rating || 'Mới' }}
-                  </span>
-                </a>
-                <a
-                  [routerLink]="['/movie', m.id]"
-                  class="mt-3 block truncate px-1 text-xs font-black text-white transition hover:text-amber-300 group-hover:text-amber-300"
-                >
-                  {{ m.title }}
-                </a>
-                <div
-                  class="mt-1.5 flex items-center justify-between px-1 text-[10px] font-bold text-amber-300"
-                >
-                  <span class="truncate">{{ m.genre.split(',')[0] }}</span>
-                  <span class="shrink-0 text-white/60">{{ m.country || 'Việt Nam' }}</span>
-                </div>
-                <div class="mt-2.5 flex items-center gap-1.5 px-1 pb-1">
-                  <a
-                    [routerLink]="['/showtimes']"
-                    [queryParams]="showtimesQueryParams(m)"
-                    class="inline-flex flex-1 items-center justify-center rounded-lg bg-[#e50914] px-2.5 py-1.5 text-[11px] font-black text-white transition hover:bg-red-500"
-                  >
-                    Mua vé
-                  </a>
-                  <a
-                    [routerLink]="['/movie', m.id]"
-                    class="inline-flex items-center justify-center rounded-lg border border-white/25 bg-slate-800 px-2 py-1.5 text-[11px] font-bold text-white/90 transition hover:border-amber-300 hover:text-amber-300"
-                  >
-                    Xem
-                  </a>
-                </div>
-              </article>
+              <ch-movie-card [movie]="m" />
             }
           </div>
         </div>
       </section>
 
-      <!-- 6. Section PHIM (Đang chiếu / Sắp chiếu & Country Pills) -->
-      <section class="mx-auto max-w-[1400px] px-5 py-16 md:px-9">
-        @if (store.error()) {
-          <div
-            role="alert"
-            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-red-950/60 px-4 py-3 text-sm text-red-100"
-          >
-            <span>{{ store.error() }} Đang hiển thị dữ liệu đã có.</span>
-            <button type="button" (click)="refreshCatalog()" class="font-black text-amber-200">
-              Thử cập nhật lại
-            </button>
+      <!-- 5. Section Phim Chiếu Rạp & Lọc Thể Loại (Đúng chuẩn thiết kế) -->
+      <section
+        id="phim-dang-chieu"
+        class="relative mx-auto max-w-[1440px] px-5 pt-14 md:px-9 md:pt-16"
+      >
+        <!-- Header: Tiêu đề & Tabs ĐANG CHIẾU / SẮP CHIẾU -->
+        <div class="mb-5 flex flex-col gap-4">
+          <!-- Title row: | PHIM CHIẾU RẠP -->
+          <div class="flex items-center gap-2.5">
+            <span class="h-5 w-1 rounded-[1px] bg-[#e50914] shadow-[0_0_8px_#e50914]"></span>
+            <h2 class="text-xl sm:text-2xl font-black uppercase tracking-wider text-white">
+              PHIM CHIẾU RẠP
+            </h2>
           </div>
-        } @else if (store.loading()) {
-          <p role="status" class="mb-5 text-sm font-bold text-slate-300">
-            Đang cập nhật danh sách phim mới nhất…
-          </p>
-        }
-        @if (showtimesStore.error()) {
-          <div
-            role="alert"
-            class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-red-950/60 px-4 py-3 text-sm text-red-100"
-          >
-            <span>{{ showtimesStore.error() }}</span>
-            <button type="button" (click)="refreshShowtimes()" class="font-black text-amber-200">
-              Thử tải lịch lại
-            </button>
-          </div>
-        }
-        <div class="mb-5 flex items-center gap-3">
-          <span aria-hidden="true" class="h-7 w-1 rounded-full bg-amber-400"></span>
-          <h2 class="text-xl font-black uppercase tracking-wide text-white">PHIM</h2>
-        </div>
 
-        <!-- Status Tabs: Đang chiếu / Sắp chiếu -->
-        <div role="tablist" class="mb-8 flex gap-8 border-b-2 border-white/20">
-          <button
-            type="button"
-            role="tab"
-            [attr.aria-selected]="activeTab() === 'now'"
-            (click)="activeTab.set('now')"
-            class="-mb-px border-b-[3px] pb-4 text-lg transition"
-            [class]="
-              activeTab() === 'now'
-                ? 'border-amber-400 font-black text-amber-300'
-                : 'border-transparent font-black text-white hover:text-amber-300'
-            "
-          >
-            Đang chiếu
-          </button>
-          <button
-            type="button"
-            role="tab"
-            [attr.aria-selected]="activeTab() === 'soon'"
-            (click)="activeTab.set('soon')"
-            class="-mb-px border-b-[3px] pb-4 text-lg transition"
-            [class]="
-              activeTab() === 'soon'
-                ? 'border-amber-400 font-black text-amber-300'
-                : 'border-transparent font-black text-white hover:text-amber-300'
-            "
-          >
-            Sắp chiếu
-          </button>
-        </div>
-
-        <!-- Thể loại Phim Filter Pills -->
-        <div
-          class="scrollbar-hide mb-7 flex gap-2 overflow-x-auto pb-2"
-          aria-label="Lọc theo thể loại phim"
-        >
-          @for (f of filterOptions(); track f.key) {
+          <!-- Tabs row: ĐANG CHIẾU | SẮP CHIẾU -->
+          <div class="flex items-center gap-6 border-b border-white/[0.08] pb-1">
             <button
               type="button"
-              (click)="catalogFilter.set(f.key)"
-              class="shrink-0 rounded-full border-2 px-4 py-2 text-xs font-black transition"
+              (click)="activeTab.set('now')"
+              class="relative pb-2.5 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors duration-200"
               [class]="
-                catalogFilter() === f.key
-                  ? 'border-amber-300 bg-amber-400 font-black text-slate-950 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
-                  : 'border-white/60 bg-slate-800 text-white shadow-md hover:border-amber-300 hover:bg-slate-700 hover:text-amber-300'
+                activeTab() === 'now'
+                  ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#e50914] after:shadow-[0_0_8px_#e50914]'
+                  : 'text-slate-400 hover:text-white'
               "
             >
-              {{ f.label }}
+              ĐANG CHIẾU
+            </button>
+
+            <button
+              type="button"
+              (click)="activeTab.set('soon')"
+              class="relative pb-2.5 text-xs sm:text-sm font-black uppercase tracking-wider transition-colors duration-200"
+              [class]="
+                activeTab() === 'soon'
+                  ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#e50914] after:shadow-[0_0_8px_#e50914]'
+                  : 'text-slate-400 hover:text-white'
+              "
+            >
+              SẮP CHIẾU
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Genres (Pill buttons style) -->
+        <div class="scrollbar-hide mb-8 flex items-center gap-2 overflow-x-auto pb-2 pt-1">
+          @for (filter of filterOptions(); track filter.key) {
+            <button
+              type="button"
+              (click)="catalogFilter.set(filter.key)"
+              class="shrink-0 rounded-[4px] px-3.5 py-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition duration-200"
+              [class]="
+                catalogFilter() === filter.key
+                  ? 'bg-[#e50914] text-white shadow-md shadow-red-600/30 font-black'
+                  : 'border border-white/10 bg-[#121829] text-slate-200 hover:border-white/20 hover:bg-[#1a233b] hover:text-white'
+              "
+            >
+              {{ filter.label }}
             </button>
           }
         </div>
 
-        <!-- Movie Cards Grid -->
-        <div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <!-- Movies Grid -->
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-5">
           @for (m of displayMovies(); track m.id) {
-            <ch-movie-card
-              [movie]="m"
-              [notified]="store.isMovieNotified(m.id)"
-              (notifyClick)="onMovieBellClick($event)"
-            />
-          } @empty {
-            <div
-              class="col-span-full rounded-2xl border-2 border-slate-700 bg-slate-900 p-12 text-center text-sm font-bold text-white/60"
-            >
-              Không tìm thấy bộ phim phù hợp với bộ lọc hiện tại.
-            </div>
+            <ch-movie-card [movie]="m" />
           }
         </div>
       </section>
 
-      <!-- 7. Member Promo Callout Banner -->
-      <section class="mx-auto max-w-[1400px] px-5 pb-14 md:px-9">
+      <!-- 6. Section Trải Nghiệm Công Nghệ Rạp (3D Curved Perspective Carousel) -->
+      <section
+        class="relative mx-auto max-w-[1440px] px-4 py-20 sm:px-6 md:px-9 overflow-hidden"
+        (mouseenter)="pauseTech()"
+        (mouseleave)="resumeTech()"
+        aria-label="Công nghệ chiếu đỉnh cao"
+      >
+        <!-- Dynamic Ambient Background Glow matched to active technology color -->
         <div
-          class="flex flex-col gap-5 rounded-3xl border-2 border-amber-500/50 bg-gradient-to-r from-slate-900 via-slate-900/95 to-amber-950/50 p-6 shadow-2xl backdrop-blur-xl ring-1 ring-white/20 sm:flex-row sm:items-center sm:justify-between sm:p-8"
-        >
-          <div>
-            <p class="text-xs font-black uppercase tracking-widest text-amber-400">
-              Ưu đãi thành viên
-            </p>
-            <h2 class="mt-2 text-2xl font-black text-white">Một vé hay, thêm một niềm vui</h2>
-            <p class="mt-2 text-sm font-extrabold text-white">
-              Nhập mã <b class="font-black text-amber-300">CINEHUB20</b> để nhận ưu đãi 20.000₫ cho
-              vé tiếp theo.
-            </p>
-          </div>
-          <a
-            [routerLink]="buildShowtimesLink()"
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-amber-500 px-7 py-3.5 text-sm font-black text-white shadow-xl shadow-red-900/50 transition hover:brightness-125"
+          class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[420px] w-[650px] max-w-full rounded-full blur-[140px] opacity-20 transition-all duration-700 ease-out"
+          [style.backgroundColor]="currentTechItem().accent"
+        ></div>
+
+        <!-- Section Header -->
+        <div class="relative z-10 mb-12 text-center">
+          <p class="text-[11px] font-black uppercase tracking-[0.25em] text-[#e50914]">
+            ĐẲNG CẤP ĐIỆN ẢNH
+          </p>
+          <h2
+            class="mt-1 text-2xl font-black uppercase tracking-wide text-white sm:text-3xl md:text-4xl"
           >
-            Khám phá suất chiếu →
+            Công Nghệ Chiếu Đỉnh Cao
+          </h2>
+          <p class="mx-auto mt-2 max-w-2xl text-xs sm:text-sm text-slate-400">
+            Hòa mình vào không gian điện ảnh chân thực chuẩn quốc tế tại mọi cụm rạp CineHub
+          </p>
+        </div>
+
+        <!-- 3D Curved Cylinder Carousel Stage -->
+        <div
+          class="relative mx-auto h-[480px] sm:h-[520px] md:h-[550px] w-full max-w-5xl [perspective:1200px]"
+        >
+          <!-- Inner 3D Stage -->
+          <div class="relative h-full w-full [transform-style:preserve-3d]">
+            @for (item of techItems; track item.id; let idx = $index) {
+              <div
+                class="absolute left-1/2 top-1/2 h-[430px] sm:h-[470px] md:h-[490px] w-[290px] sm:w-[350px] md:w-[390px] rounded-[24px] sm:rounded-[28px] border bg-[#0d111c]/90 backdrop-blur-xl transition-all duration-700 ease-out cursor-pointer overflow-hidden flex flex-col group select-none"
+                [style]="getTechCardStyle(idx)"
+                (click)="selectTech(idx)"
+                [attr.aria-label]="item.title"
+              >
+                <!-- Top Image Hero with visual gradient overlay -->
+                <div
+                  class="relative h-[200px] sm:h-[225px] md:h-[240px] w-full shrink-0 overflow-hidden bg-black"
+                >
+                  <img
+                    [src]="item.image"
+                    [alt]="item.title"
+                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div
+                    class="absolute inset-0 bg-gradient-to-t from-[#0d111c] via-[#0d111c]/30 to-transparent"
+                  ></div>
+
+                  <!-- Badges overlay -->
+                  <div
+                    class="absolute inset-x-3 sm:inset-x-4 top-3 sm:top-4 flex items-center justify-between"
+                  >
+                    <span
+                      class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border shadow-md backdrop-blur-md"
+                      [class]="item.badgeBg + ' ' + item.badgeText + ' ' + item.badgeBorder"
+                    >
+                      {{ item.badge }}
+                    </span>
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide text-slate-300 bg-black/60 border border-white/10 backdrop-blur-md"
+                    >
+                      {{ item.tag }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Card Content -->
+                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                  <div>
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight">
+                      {{ item.title }}
+                    </h3>
+                    <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-3">
+                      {{ item.desc }}
+                    </p>
+                  </div>
+
+                  <!-- Highlight Features Pills -->
+                  <div class="mt-4 flex flex-wrap gap-1.5 sm:gap-2">
+                    @for (feat of item.features; track feat) {
+                      <span
+                        class="inline-flex items-center rounded-md bg-white/5 px-2 py-1 text-[10px] sm:text-[11px] font-medium text-slate-300 border border-white/5"
+                      >
+                        {{ feat }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Left / Right Navigation Buttons (Glassmorphic floating arrows) -->
+          <button
+            type="button"
+            (click)="stepTech(-1); $event.stopPropagation()"
+            class="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 z-40 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 active:scale-95 shadow-2xl"
+            aria-label="Công nghệ trước"
+          >
+            <svg
+              class="h-5 w-5 sm:h-6 sm:w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            (click)="stepTech(1); $event.stopPropagation()"
+            class="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 z-40 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-white/15 bg-black/60 text-white backdrop-blur-md transition-all duration-200 hover:scale-110 hover:border-white/40 hover:bg-black/90 active:scale-95 shadow-2xl"
+            aria-label="Công nghệ kế tiếp"
+          >
+            <svg
+              class="h-5 w-5 sm:h-6 sm:w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Pagination Indicator Dots -->
+        <div class="relative z-20 mt-6 flex items-center justify-center gap-2">
+          @for (item of techItems; track item.id; let idx = $index) {
+            <button
+              type="button"
+              (click)="selectTech(idx)"
+              class="h-2 rounded-full transition-all duration-300"
+              [class]="
+                activeTechIndex() === idx ? 'w-8 bg-[#e50914]' : 'w-2 bg-white/20 hover:bg-white/50'
+              "
+              [attr.aria-label]="'Chuyển đến ' + item.title"
+            ></button>
+          }
+        </div>
+
+        <!-- Action Buttons (Pill shape styled like reference image) -->
+        <div class="relative z-20 mt-8 flex flex-wrap items-center justify-center gap-4">
+          <a
+            routerLink="/showtimes"
+            class="inline-flex items-center gap-2 rounded-full bg-[#e50914] px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-red-900/30 transition-all hover:bg-red-700 hover:scale-105 active:scale-95"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+              />
+            </svg>
+            <span>Đặt vé theo định dạng</span>
+          </a>
+          <a
+            routerLink="/showtimes"
+            class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-xs sm:text-sm font-bold text-white backdrop-blur-md transition-all hover:border-white/40 hover:bg-white/10 hover:scale-105 active:scale-95"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+            <span>Tìm cụm rạp gần nhất</span>
           </a>
         </div>
       </section>
 
-      <!-- ══════════════════════════════════════════════════════════
-           8. MODAL MOCKUP EMAIL THÔNG BÁO PHIM SẮP CHIẾU / SUẤT CHIẾU SỚM
-      ══════════════════════════════════════════════════════════ -->
-      @if (notificationPreviewMovie(); as notifyMovie) {
+      <!-- Trailer Modal Dialog -->
+      @if (trailerModalUrl()) {
         <div
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6 backdrop-blur-md overflow-y-auto"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-in fade-in duration-300"
+          (click)="closeTrailer()"
           role="dialog"
           aria-modal="true"
-          [attr.aria-label]="'Mẫu email thông báo phim ' + notifyMovie.title"
-          (click)="closeNotificationPreview()"
         >
           <div
-            class="relative my-auto w-full max-w-[680px] overflow-hidden rounded-2xl border-2 border-amber-400/50 bg-[#0b0f19] text-white shadow-[0_25px_90px_rgba(0,0,0,0.95)]"
+            class="relative w-full max-w-4xl overflow-hidden rounded-xl border border-white/20 bg-slate-950 shadow-2xl"
             (click)="$event.stopPropagation()"
           >
-            <!-- Thanh công cụ phía trên Modal: Trạng thái đăng ký chuông & Tùy chỉnh tên khách hàng -->
             <div
-              class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-5 py-3.5"
+              class="flex items-center justify-between border-b border-white/10 bg-slate-900/80 px-4 py-3"
             >
-              <div class="flex items-center gap-2.5">
-                <span
-                  class="grid h-8 w-8 place-items-center rounded-full bg-amber-400 text-slate-950 shadow-[0_0_12px_rgba(251,191,36,0.8)]"
-                >
-                  🔔
-                </span>
-                <div>
-                  <p class="text-xs font-black uppercase tracking-wider text-amber-300">
-                    Đã bật thông báo nhắc lịch phim
-                  </p>
-                  <p class="text-[11px] text-slate-400">
-                    Mockup Email tự động gửi khi phim có suất chiếu sớm hoặc gần tới ngày khởi chiếu
-                  </p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-2">
-                <button
-                  type="button"
-                  (click)="toggleNotifyFromModal(notifyMovie)"
-                  class="rounded-lg border px-3 py-1.5 text-xs font-bold transition"
-                  [class]="
-                    store.isMovieNotified(notifyMovie.id)
-                      ? 'border-amber-400/60 bg-amber-400/15 text-amber-300 hover:bg-amber-400/25'
-                      : 'border-slate-700 bg-slate-800 text-slate-300 hover:text-white'
-                  "
-                >
-                  {{
-                    store.isMovieNotified(notifyMovie.id)
-                      ? '✓ Đang nhận thông báo (Bấm để tắt)'
-                      : 'Bật lại thông báo'
-                  }}
-                </button>
-                <button
-                  type="button"
-                  (click)="closeNotificationPreview()"
-                  aria-label="Đóng cửa sổ"
-                  class="grid h-8 w-8 place-items-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:border-white hover:text-white transition"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <!-- Thanh nhập thử Tên khách hàng & Loại thông báo -->
-            <div
-              class="grid gap-3 border-b border-slate-800 bg-slate-900/80 px-5 py-3 sm:grid-cols-[1fr_1fr_auto] sm:items-center"
-            >
-              <label class="flex items-center gap-2 text-xs text-slate-300">
-                <span class="shrink-0 font-bold text-amber-300">Khách hàng:</span>
-                <input
-                  type="text"
-                  [value]="previewCustomerName()"
-                  (input)="onCustomerNameInput($event)"
-                  placeholder="VD: Ngân"
-                  class="h-8 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 text-xs font-bold text-white outline-none focus:border-amber-400"
-                />
-              </label>
-
-              <label class="flex items-center gap-2 text-xs text-slate-300">
-                <span class="shrink-0 font-bold text-amber-300">Email:</span>
-                <input
-                  type="email"
-                  [value]="previewCustomerEmail()"
-                  (input)="onCustomerEmailInput($event)"
-                  placeholder="ngan.nguyen@gmail.com"
-                  class="h-8 w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 text-xs text-white outline-none focus:border-amber-400"
-                />
-              </label>
-
-              <div class="flex rounded-lg border border-slate-700 bg-slate-950 p-0.5 text-[11px]">
-                <button
-                  type="button"
-                  (click)="notificationScenario.set('early')"
-                  class="rounded-md px-2.5 py-1 font-bold transition"
-                  [class]="
-                    notificationScenario() === 'early'
-                      ? 'bg-[#e50914] text-white'
-                      : 'text-slate-400 hover:text-white'
-                  "
-                >
-                  Suất chiếu sớm
-                </button>
-                <button
-                  type="button"
-                  (click)="notificationScenario.set('release')"
-                  class="rounded-md px-2.5 py-1 font-bold transition"
-                  [class]="
-                    notificationScenario() === 'release'
-                      ? 'bg-[#e50914] text-white'
-                      : 'text-slate-400 hover:text-white'
-                  "
-                >
-                  Sắp khởi chiếu
-                </button>
-              </div>
-            </div>
-
-            <!-- ── KHUNG MOCKUP EMAIL CHUẨN THEME DỰ ÁN CINEHUB ── -->
-            <div class="max-h-[75vh] overflow-y-auto p-4 sm:p-6 bg-[#0b0f19]">
-              <!-- Metadata Hộp thư đến -->
-              <div
-                class="mb-4 rounded-xl border border-slate-800 bg-slate-900/90 px-4 py-3 text-xs text-slate-300 space-y-1"
+              <h3 class="font-bold text-white text-sm">
+                Trailer: {{ activeTrailerMovie()?.title }}
+              </h3>
+              <button
+                type="button"
+                (click)="closeTrailer()"
+                class="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white"
+                aria-label="Đóng trailer"
               >
-                <div class="flex flex-wrap justify-between gap-2">
-                  <span>
-                    <strong class="text-slate-400">Từ:</strong> CineHub Cinema
-                    &lt;no-reply&#64;cinehub.vn&gt;
-                  </span>
-                  <span class="text-amber-300 font-bold">🔔 Tự động gửi từ lịch hẹn của bạn</span>
-                </div>
-                <div>
-                  <strong class="text-slate-400">Đến:</strong> {{ previewCustomerName() }} &lt;{{
-                    previewCustomerEmail()
-                  }}&gt;
-                </div>
-                <div>
-                  <strong class="text-slate-400">Chủ đề:</strong>
-                  <span class="font-bold text-white ml-1">
-                    @if (notificationScenario() === 'early') {
-                      🎬 [CineHub] Mở bán Suất Chiếu Sớm (Sneak Show) phim "{{
-                        notifyMovie.title
-                      }}"!
-                    } @else {
-                      🎬 [CineHub] Chỉ còn ít ngày nữa "{{ notifyMovie.title }}" chính thức khởi
-                      chiếu!
-                    }
-                  </span>
-                </div>
-              </div>
-
-              <!-- Thân Email được bọc theo đúng chuẩn layout.js của CineHub -->
-              <div
-                class="overflow-hidden rounded-xl border border-slate-800 bg-[#111827] shadow-2xl"
-              >
-                <!-- Email Brand Header -->
-                <div
-                  class="border-b-2 border-[#e50914] bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 px-6 py-6 text-center"
-                >
-                  <div class="text-2xl font-black tracking-[0.12em] text-white">
-                    CINE<span class="text-[#e50914]">HUB</span>
-                  </div>
-                  <p
-                    class="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300/90"
-                  >
-                    Thông báo lịch chiếu &amp; suất chiếu sớm dành riêng cho bạn
-                  </p>
-                </div>
-
-                <!-- Email Content Body -->
-                <div class="p-6 sm:p-8 space-y-5">
-                  <!-- Badge trạng thái -->
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-400/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-300"
-                    >
-                      @if (notificationScenario() === 'early') {
-                        ✨ Đã mở bán vé Suất Chiếu Sớm (Sneak Show)
-                      } @else {
-                        📅 Sắp tới ngày khởi chiếu chính thức ({{ notifyMovie.release }})
-                      }
-                    </span>
-                    <span class="text-xs font-bold text-slate-400">
-                      Mã phim: #{{ notifyMovie.slug || notifyMovie.id }}
-                    </span>
-                  </div>
-
-                  <!-- Lời chào cá nhân hóa ("Ngân thân mến, ...") -->
-                  <div class="space-y-2.5">
-                    <h3 class="text-xl font-black text-white">
-                      {{ previewCustomerName() }} thân mến,
-                    </h3>
-                    @if (notificationScenario() === 'early') {
-                      <p class="text-sm leading-relaxed text-slate-300">
-                        Cảm ơn bạn đã nhấn chuông theo dõi bộ phim
-                        <strong class="text-amber-300">{{ notifyMovie.title }}</strong> trên hệ
-                        thống <strong class="text-white">CineHub</strong>. Chúng tôi rất vui được
-                        thông báo bộ phim bạn mong đợi vừa chính thức mở lịch
-                        <strong class="text-red-400">Suất Chiếu Sớm (Sneak Show)</strong> trước ngày
-                        khởi chiếu chính thức (<strong class="text-white">{{
-                          notifyMovie.release
-                        }}</strong
-                        >)!
-                      </p>
-                    } @else {
-                      <p class="text-sm leading-relaxed text-slate-300">
-                        Chỉ còn ít ngày nữa, bộ phim
-                        <strong class="text-amber-300">{{ notifyMovie.title }}</strong> mà bạn đã
-                        đặt lời nhắc trên <strong class="text-white">CineHub</strong> sẽ chính thức
-                        ra mắt khán giả toàn quốc vào ngày
-                        <strong class="text-white">{{ notifyMovie.release }}</strong
-                        >. Hiện các rạp đã mở đặt trước những vị trí ghế đẹp nhất!
-                      </p>
-                    }
-                  </div>
-
-                  <!-- Card Thông Tin Chi Tiết Bộ Phim trong Email -->
-                  <div
-                    class="relative overflow-hidden rounded-xl border border-slate-700 border-l-4 border-l-[#e50914] bg-slate-950/90 p-4 sm:p-5 shadow-inner"
-                  >
-                    <div class="flex flex-col gap-4 sm:flex-row">
-                      <img
-                        [src]="notifyMovie.poster"
-                        [alt]="notifyMovie.title"
-                        class="h-48 w-32 shrink-0 rounded-lg object-cover shadow-lg ring-1 ring-white/20 mx-auto sm:mx-0"
-                      />
-
-                      <div class="flex-1 space-y-2 text-xs">
-                        <div class="flex flex-wrap items-center gap-2">
-                          <span
-                            class="rounded bg-[#e50914] px-2 py-0.5 text-[10px] font-black text-white"
-                          >
-                            {{ notifyMovie.age || 'P' }}
-                          </span>
-                          @if (notifyMovie.rating > 0) {
-                            <span
-                              class="rounded border border-amber-400/50 bg-amber-400/15 px-2 py-0.5 text-[10px] font-black text-amber-300"
-                            >
-                              ★ {{ notifyMovie.rating }}/10
-                            </span>
-                          }
-                          <span class="font-bold text-amber-300">
-                            Khởi chiếu: {{ notifyMovie.release }}
-                          </span>
-                        </div>
-
-                        <h4 class="text-lg font-black text-white">{{ notifyMovie.title }}</h4>
-
-                        <div class="grid grid-cols-1 gap-1 text-slate-300 sm:grid-cols-2">
-                          <p>
-                            <span class="font-bold text-slate-400">Thể loại:</span>
-                            {{ notifyMovie.genre }}
-                          </p>
-                          <p>
-                            <span class="font-bold text-slate-400">Thời lượng:</span>
-                            {{ notifyMovie.duration || '1h 45m' }}
-                          </p>
-                          <p>
-                            <span class="font-bold text-slate-400">Đạo diễn:</span>
-                            {{ notifyMovie.director || 'Đang cập nhật' }}
-                          </p>
-                          <p>
-                            <span class="font-bold text-slate-400">Quốc gia:</span>
-                            {{ notifyMovie.country || 'Quốc tế' }}
-                          </p>
-                        </div>
-
-                        <p class="text-slate-300">
-                          <span class="font-bold text-slate-400">Diễn viên:</span>
-                          {{ notifyMovie.cast || 'Đang cập nhật' }}
-                        </p>
-
-                        <p class="line-clamp-3 pt-1 leading-relaxed text-slate-400">
-                          {{ notifyMovie.synopsis }}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Khối ưu đãi & Trải nghiệm 3D POV -->
-                  <div
-                    class="rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200"
-                  >
-                    🎁
-                    <strong class="text-amber-300">Đặc quyền khách hàng đặt chuông sớm:</strong>
-                    Trải nghiệm chọn ghế góc nhìn <strong>3D Point-of-View</strong> thực tế và nhập
-                    mã <strong class="text-white">CINEHUB20</strong> để giảm ngay 20.000₫ khi đặt vé
-                    sớm.
-                  </div>
-
-                  <!-- Nút Hành Động (CTA) trong Email -->
-                  <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
-                    <a
-                      [routerLink]="['/movie', notifyMovie.id]"
-                      (click)="closeNotificationPreview()"
-                      class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-[#e50914] to-amber-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-900/50 transition hover:brightness-115"
-                    >
-                      <span>🎟️ Đặt Vé Suất Chiếu Sớm Ngay</span>
-                    </a>
-                    <a
-                      [routerLink]="['/movie', notifyMovie.id]"
-                      [queryParams]="{ trailer: '1' }"
-                      (click)="closeNotificationPreview()"
-                      class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-slate-800 px-5 py-3 text-xs font-black text-white transition hover:border-amber-300 hover:text-amber-300"
-                    >
-                      <span>▶ Xem Trailer Chính Thức</span>
-                    </a>
-                  </div>
-                </div>
-
-                <!-- Email Footer -->
-                <div
-                  class="border-t border-slate-800 bg-[#0d131f] px-6 py-4 text-center text-[11px] text-slate-400 space-y-1"
-                >
-                  <p>
-                    Bạn nhận được email này vì đã nhấn biểu tượng chuông 🔔 đăng ký nhận thông báo
-                    cho phim <strong class="text-slate-300">{{ notifyMovie.title }}</strong> trên
-                    CineHub.
-                  </p>
-                  <p>© 2026 CineHub Enterprise. Mọi quyền được bảo lưu.</p>
-                </div>
-              </div>
+                ✕
+              </button>
+            </div>
+            <div class="aspect-video w-full bg-black">
+              <iframe
+                [src]="trailerModalUrl()"
+                class="h-full w-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
             </div>
           </div>
         </div>
@@ -951,70 +916,125 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly showtimesStore = inject(ShowtimesStore);
   readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
 
-  // State cho Chuông thông báo & Mockup Email Template
-  readonly notificationPreviewMovie = signal<Movie | null>(null);
-  readonly notificationScenario = signal<'early' | 'release'>('early');
-  readonly customRecipientName = signal<string>('');
-  readonly customRecipientEmail = signal<string>('');
-
-  readonly previewCustomerName = computed(() => {
-    const custom = this.customRecipientName().trim();
-    if (custom) return custom;
-    if (this.authStore.isAuthenticated() && this.authStore.displayName()) {
-      return this.authStore.displayName();
-    }
-    return 'Ngân';
-  });
-
-  readonly previewCustomerEmail = computed(() => {
-    const custom = this.customRecipientEmail().trim();
-    if (custom) return custom;
-    const userEmail = this.authStore.user()?.email;
-    if (userEmail) return userEmail;
-    return 'ngan.nguyen@gmail.com';
-  });
-
+  // Promotion Carousel Banners (Đã làm sạch watermark, tải trực tiếp từ local assets)
   readonly banners = [
     {
       id: 'trai-buon-nguoi',
       title: 'Ưu đãi Trại Buôn Người',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792729025/IMG_1348.png',
+      image: '/images/promotions/trai-buon-nguoi.png',
     },
     {
       id: 'shopeepay',
       title: 'Ưu đãi ShopeePay',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728689/IMG_1333.png',
+      image: '/images/promotions/shopeepay.png',
     },
     {
       id: 'momo',
       title: 'Ưu đãi MoMo',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755846/IMG_1365.png',
+      image: '/images/promotions/momo.png',
     },
     {
       id: 'joydrops',
       title: 'Ưu đãi JoyDrops',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792728622/IMG_1332.png',
+      image: '/images/promotions/joydrops.png',
     },
     {
       id: 'shaune',
       title: 'Ưu đãi shaun',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792731423/IMG_1360.png',
+      image: '/images/promotions/shaune.png',
     },
     {
       id: 'godzila',
       title: 'Ưu đãi Godzila',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755871/IMG_1366.png',
+      image: '/images/promotions/godzila.png',
     },
     {
       id: 'dune',
       title: 'Ưu đãi Dune',
-      image: 'https://res.cloudinary.com/cljwquf9/image/upload/v1792755977/IMG_1367.png',
+      image: '/images/promotions/dune.png',
     },
   ];
   readonly currentSlide = signal(0);
   private carouselTimer: ReturnType<typeof setInterval> | null = null;
   private isCarouselPaused = false;
+
+  // 3D Cinema Technology Carousel
+  readonly techItems: CinemaTech[] = [
+    {
+      id: 'imax',
+      badge: 'IMAX',
+      title: 'IMAX Laser 4K',
+      desc: 'Màn hình cong cực đại cùng hệ thống máy chiếu đôi tái hiện độ tương phản hoàn hảo.',
+      image: '/images/tech/imax.jpg',
+      accent: '#f59e0b',
+      glow: 'rgba(245, 158, 11, 0.35)',
+      badgeBg: 'bg-amber-400/20',
+      badgeText: 'text-amber-300',
+      badgeBorder: 'border-amber-400/50',
+      tag: 'Laser 4K Double Projector',
+      features: ['Màn hình cong cực đại', 'Máy chiếu đôi Laser 4K', 'Tỷ lệ khung hình 1.43:1'],
+    },
+    {
+      id: '4dx',
+      badge: '4DX',
+      title: '4DX Cinematic Motion',
+      desc: 'Ghế chuyển động đa chiều kết hợp hiệu ứng gió, nước, mùi hương chân thực.',
+      image: '/images/tech/4dx.jpg',
+      accent: '#ef4444',
+      glow: 'rgba(239, 68, 68, 0.35)',
+      badgeBg: 'bg-rose-500/20',
+      badgeText: 'text-rose-300',
+      badgeBorder: 'border-rose-500/50',
+      tag: 'Sensory & Motion Hall',
+      features: [
+        'Ghế chuyển động đa chiều',
+        'Hiệu ứng gió, nước & sương',
+        'Rung chấn cảm biến môi trường',
+      ],
+    },
+    {
+      id: 'atmos',
+      badge: 'ATMOS',
+      title: 'Dolby Atmos Sound',
+      desc: 'Âm thanh vòm 360 độ di chuyển sống động xung quanh bạn với 64 kênh độc lập.',
+      image: '/images/tech/atmos.jpg',
+      accent: '#06b6d4',
+      glow: 'rgba(6, 182, 212, 0.35)',
+      badgeBg: 'bg-cyan-500/20',
+      badgeText: 'text-cyan-300',
+      badgeBorder: 'border-cyan-500/50',
+      tag: 'Spatial Audio 360°',
+      features: ['Âm thanh vòm 360 độ', '64 kênh âm thanh độc lập', 'Loa âm trần đa chiều'],
+    },
+    {
+      id: 'gold',
+      badge: 'GOLD',
+      title: 'Gold Class Luxury',
+      desc: 'Ghế bọc da ngả lưng cao cấp kèm chăn gối và phục vụ ẩm thực chuẩn 5 sao tận nơi.',
+      image: '/images/tech/gold-class.jpg',
+      accent: '#a855f7',
+      glow: 'rgba(168, 85, 247, 0.35)',
+      badgeBg: 'bg-purple-500/20',
+      badgeText: 'text-purple-300',
+      badgeBorder: 'border-purple-500/50',
+      tag: '5-Star VIP Lounge',
+      features: ['Ghế bọc da ngả 180°', 'Chăn gối cao cấp', 'Phục vụ ẩm thực chuẩn 5 sao'],
+    },
+  ];
+  readonly activeTechIndex = signal(0);
+  readonly currentTechItem = computed(() => this.techItems[this.activeTechIndex()]);
+  private techTimer: ReturnType<typeof setInterval> | null = null;
+  private isTechPaused = false;
+
+  // Trending Movies Hero Banner
+  readonly selectedMovieId = signal<string>('');
+  readonly trendingRowRef = viewChild<ElementRef<HTMLDivElement>>('trendingRow');
+  private trendingTimer: ReturnType<typeof setInterval> | null = null;
+  private isTrendingPaused = false;
+  readonly trailerModalUrl = signal<SafeResourceUrl | null>(null);
+  readonly activeTrailerMovie = signal<Movie | null>(null);
 
   // QuickBooking Bar State
   readonly cinemaList = computed(() => {
@@ -1034,6 +1054,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
   readonly quickMovieId = signal<string>('');
   readonly quickCinemaId = signal<string>('');
   readonly quickShowtimeDate = signal<string>('');
+  readonly quickSessionId = signal<string>('');
 
   // Tabs & Filters
   readonly activeTab = signal<'now' | 'soon'>('now');
@@ -1098,6 +1119,37 @@ export class HomePageComponent implements OnInit, OnDestroy {
         };
       });
   });
+
+  readonly quickSessionOptions = computed(() => {
+    const movieId = this.quickMovieId();
+    const date = this.quickShowtimeDate();
+    if (!movieId || !date) return [];
+
+    const cinemaId = this.quickCinemaId();
+    const sessions = filterShowtimes([...this.showtimesStore.sessions()], {
+      movieId,
+      cinemaId: cinemaId || 'all',
+      date,
+    });
+
+    return sessions
+      .slice()
+      .sort((a, b) => a.showTime.localeCompare(b.showTime))
+      .map((s) => {
+        const time = s.showTime;
+        const format = s.movieFormat || '2D';
+        const caption = s.caption ? ` · ${s.caption}` : '';
+        const screen = s.screenName ? ` · ${s.screenName}` : '';
+        const cinema = !cinemaId ? `${s.cinema.name} - ` : '';
+        return {
+          id: s.id,
+          time: s.showTime,
+          format: s.movieFormat,
+          label: `${cinema}${time} (${format}${caption}${screen})`,
+          session: s,
+        };
+      });
+  });
   readonly comingSoonMovies = computed(() =>
     this.store
       .movies()
@@ -1111,6 +1163,25 @@ export class HomePageComponent implements OnInit, OnDestroy {
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 10),
   );
+
+  readonly currentTrendingMovie = computed<Movie | undefined>(() => {
+    const list = this.trendingMovies();
+    const id = this.selectedMovieId();
+    if (id) {
+      const match = list.find((m) => String(m.id) === id || m.slug === id || m.dbId === id);
+      if (match) return match;
+    }
+    return list[0];
+  });
+
+  readonly selectedTrendingIndex = computed<number>(() => {
+    const curr = this.currentTrendingMovie();
+    if (!curr) return 0;
+    const idx = this.trendingMovies().findIndex(
+      (m) => String(m.id) === String(curr.id) || m.slug === curr.slug,
+    );
+    return idx >= 0 ? idx : 0;
+  });
 
   readonly recommendedMovies = computed(() => this.trendingMovies().slice(0, 3));
 
@@ -1157,12 +1228,104 @@ export class HomePageComponent implements OnInit, OnDestroy {
       },
     );
     this.startCarousel();
+    this.startTrendingAutoSlide();
+    this.startTechAutoSlide();
   }
 
   ngOnDestroy(): void {
     this.stopCarousel();
+    this.stopTrendingAutoSlide();
+    this.stopTechAutoSlide();
   }
 
+  // 3D Cinema Technology Carousel handlers
+  startTechAutoSlide(): void {
+    this.stopTechAutoSlide();
+    this.techTimer = setInterval(() => {
+      if (!this.isTechPaused) {
+        this.stepTech(1);
+      }
+    }, 6000);
+  }
+
+  stopTechAutoSlide(): void {
+    if (this.techTimer) {
+      clearInterval(this.techTimer);
+      this.techTimer = null;
+    }
+  }
+
+  pauseTech(): void {
+    this.isTechPaused = true;
+  }
+
+  resumeTech(): void {
+    this.isTechPaused = false;
+  }
+
+  stepTech(direction: number): void {
+    const len = this.techItems.length;
+    this.activeTechIndex.update((i) => (i + direction + len) % len);
+  }
+
+  selectTech(index: number): void {
+    this.activeTechIndex.set(index);
+  }
+
+  getTechCardStyle(index: number): Record<string, string | number> {
+    const len = this.techItems.length;
+    let diff = (index - this.activeTechIndex() + len) % len;
+    if (diff > len / 2) {
+      diff = diff - len;
+    }
+    const item = this.techItems[index];
+
+    if (diff === 0) {
+      return {
+        transform: 'translate3d(-50%, -50%, 0px) rotateY(0deg) scale(1)',
+        opacity: 1,
+        zIndex: 30,
+        pointerEvents: 'auto',
+        borderColor: item.accent,
+        boxShadow: `0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px ${item.glow}`,
+        filter: 'brightness(1)',
+      };
+    } else if (diff === -1) {
+      return {
+        transform:
+          'translate3d(calc(-50% - min(330px, 62vw)), -50%, -100px) rotateY(24deg) scale(0.88)',
+        opacity: 0.65,
+        zIndex: 20,
+        pointerEvents: 'auto',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        boxShadow: '0 15px 35px -10px rgba(0, 0, 0, 0.7)',
+        filter: 'brightness(0.7)',
+      };
+    } else if (diff === 1) {
+      return {
+        transform:
+          'translate3d(calc(-50% + min(330px, 62vw)), -50%, -100px) rotateY(-24deg) scale(0.88)',
+        opacity: 0.65,
+        zIndex: 20,
+        pointerEvents: 'auto',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        boxShadow: '0 15px 35px -10px rgba(0, 0, 0, 0.7)',
+        filter: 'brightness(0.7)',
+      };
+    } else {
+      return {
+        transform: 'translate3d(-50%, -50%, -240px) rotateY(180deg) scale(0.72)',
+        opacity: 0,
+        zIndex: 10,
+        pointerEvents: 'none',
+        borderColor: 'transparent',
+        boxShadow: 'none',
+        filter: 'brightness(0.4)',
+      };
+    }
+  }
+
+  // Promotion Carousel handlers
   startCarousel(): void {
     this.stopCarousel();
     this.carouselTimer = setInterval(() => {
@@ -1193,19 +1356,142 @@ export class HomePageComponent implements OnInit, OnDestroy {
     this.currentSlide.update((i) => (i + direction + len) % len);
   }
 
+  // Trending Movies Hero Banner handlers
+  startTrendingAutoSlide(): void {
+    this.stopTrendingAutoSlide();
+    this.trendingTimer = setInterval(() => {
+      if (!this.isTrendingPaused && this.trendingMovies().length > 0) {
+        const len = this.trendingMovies().length;
+        const currIdx = this.selectedTrendingIndex();
+        const nextIdx = (currIdx + 1) % len;
+        // On automatic timer: transition banner without scrolling window/container
+        this.selectTrending(nextIdx, false);
+      }
+    }, 7000);
+  }
+
+  stopTrendingAutoSlide(): void {
+    if (this.trendingTimer) {
+      clearInterval(this.trendingTimer);
+      this.trendingTimer = null;
+    }
+  }
+
+  pauseTrending(): void {
+    this.isTrendingPaused = true;
+  }
+
+  resumeTrending(): void {
+    this.isTrendingPaused = false;
+  }
+
+  selectTrending(index: number, shouldScroll = true): void {
+    const movie = this.trendingMovies()[index];
+    if (!movie) return;
+    this.selectedMovieId.set(String(movie.id));
+
+    // Also sync quick booking to this movie if available
+    const match = this.quickMovies().find(
+      (m) => m.slug === movie.slug || String(m.id) === String(movie.id),
+    );
+    if (match) {
+      this.quickMovieId.set(match.slug || String(match.id));
+      this.quickSessionId.set('');
+      this.selectFirstQuickDate();
+    }
+    if (shouldScroll) {
+      this.scrollToActiveCard(index);
+      this.startTrendingAutoSlide();
+    }
+  }
+
+  stepTrending(direction: number): void {
+    const len = this.trendingMovies().length;
+    if (len === 0) return;
+    const currIdx = this.selectedTrendingIndex();
+    const nextIdx = (currIdx + direction + len) % len;
+    this.selectTrending(nextIdx, true);
+  }
+
+  scrollToActiveCard(index: number): void {
+    const container = this.trendingRowRef()?.nativeElement;
+    if (!container) return;
+    const targetCard = container.querySelector<HTMLElement>(`[data-index="${index}"]`);
+    if (targetCard) {
+      const cardLeft = targetCard.offsetLeft;
+      const cardWidth = targetCard.offsetWidth;
+      const containerWidth = container.offsetWidth;
+      const scrollTarget = cardLeft - containerWidth / 2 + cardWidth / 2;
+      container.scrollTo({
+        left: Math.max(0, scrollTarget),
+        behavior: 'smooth',
+      });
+    }
+  }
+
+  formatReleaseDate(release?: string): string {
+    if (!release) return '29/01';
+    if (release.includes('-')) {
+      const parts = release.split('-');
+      if (parts.length >= 3) {
+        return `${parts[2].slice(0, 2)}/${parts[1]}`;
+      }
+    }
+    if (release.includes('/')) {
+      const parts = release.split('/');
+      if (parts.length >= 2) {
+        return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}`;
+      }
+    }
+    return release.slice(0, 5);
+  }
+
+  openTrailer(movie?: Movie): void {
+    if (!movie || !movie.trailer) return;
+    this.pauseTrending();
+    this.activeTrailerMovie.set(movie);
+
+    const match =
+      movie.trailer.match(
+        /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/,
+      ) || movie.trailer.match(/^[a-zA-Z0-9_-]{11}$/);
+    const videoId = match ? match[1] || match[0] : null;
+    if (!videoId) return;
+
+    this.trailerModalUrl.set(
+      this.sanitizer.bypassSecurityTrustResourceUrl(
+        `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`,
+      ),
+    );
+  }
+
+  closeTrailer(): void {
+    this.trailerModalUrl.set(null);
+    this.activeTrailerMovie.set(null);
+    this.resumeTrending();
+  }
+
+  // QuickBooking Handlers
   onQuickMovieChange(event: Event): void {
     this.quickMovieId.set((event.target as HTMLSelectElement).value);
     this.quickCinemaId.set('');
+    this.quickSessionId.set('');
     this.selectFirstQuickDate();
   }
 
   onQuickCinemaChange(event: Event): void {
     this.quickCinemaId.set((event.target as HTMLSelectElement).value);
+    this.quickSessionId.set('');
     this.selectFirstQuickDate();
   }
 
   onQuickDayChange(event: Event): void {
     this.quickShowtimeDate.set((event.target as HTMLSelectElement).value);
+    this.quickSessionId.set('');
+  }
+
+  onQuickSessionChange(event: Event): void {
+    this.quickSessionId.set((event.target as HTMLSelectElement).value);
   }
 
   submitQuickBooking(): void {
@@ -1220,6 +1506,11 @@ export class HomePageComponent implements OnInit, OnDestroy {
       this.showtimesStore.loading() ||
       !this.quickDateOptions().some((option) => option.date === date)
     ) {
+      return;
+    }
+    const sessionId = this.quickSessionId();
+    if (sessionId) {
+      void this.router.navigate(['/seats', sessionId]);
       return;
     }
     const cId = this.quickCinemaId();
@@ -1251,35 +1542,18 @@ export class HomePageComponent implements OnInit, OnDestroy {
       this.quickCinemaId.set('');
     }
     this.selectFirstQuickDate();
+    if (
+      this.quickSessionId() &&
+      !this.quickSessionOptions().some((s) => s.id === this.quickSessionId())
+    ) {
+      this.quickSessionId.set('');
+    }
   }
 
   private selectFirstQuickDate(): void {
     const currentDate = this.quickShowtimeDate();
     if (this.quickDateOptions().some((option) => option.date === currentDate)) return;
     this.quickShowtimeDate.set(this.quickDateOptions()[0]?.date ?? '');
-  }
-
-  onMovieBellClick(movie: Movie): void {
-    if (!this.store.isMovieNotified(movie.id)) {
-      this.store.toggleMovieNotification(movie.id);
-    }
-    this.notificationPreviewMovie.set(movie);
-  }
-
-  toggleNotifyFromModal(movie: Movie): void {
-    this.store.toggleMovieNotification(movie.id);
-  }
-
-  closeNotificationPreview(): void {
-    this.notificationPreviewMovie.set(null);
-  }
-
-  onCustomerNameInput(event: Event): void {
-    this.customRecipientName.set((event.target as HTMLInputElement).value);
-  }
-
-  onCustomerEmailInput(event: Event): void {
-    this.customRecipientEmail.set((event.target as HTMLInputElement).value);
   }
 
   private isMovieCurrentlyShowing(movie: Movie): boolean {

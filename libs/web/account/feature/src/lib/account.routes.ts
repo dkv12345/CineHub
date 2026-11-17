@@ -1,7 +1,5 @@
 import type { Routes } from '@angular/router';
 import { ProfilePageComponent } from './profile-page.component';
-import { StaffCheckinPageComponent } from './staff-checkin-page.component';
-import { AdminDashboardPageComponent } from './admin-dashboard-page.component';
 
 export const ACCOUNT_ROUTES: Routes = [
   {
@@ -11,12 +9,12 @@ export const ACCOUNT_ROUTES: Routes = [
   },
   {
     path: 'staff/checkin',
-    component: StaffCheckinPageComponent,
-    title: 'Soát vé QR tại cổng | CineHub',
+    redirectTo: '/portal/staff',
+    pathMatch: 'full',
   },
   {
     path: 'admin',
-    component: AdminDashboardPageComponent,
-    title: 'Quản trị hệ thống | CineHub',
+    redirectTo: '/portal/admin',
+    pathMatch: 'full',
   },
 ];

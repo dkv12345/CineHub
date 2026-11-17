@@ -46,7 +46,70 @@ export async function checkInTicket({ qrString, staffId }) {
     },
   });
 
+  // Support Single Booking QR code representing all seats in the order
   if (!ticket) {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        OR: [{ id: ticketId }, { code: ticketId }],
+      },
+      include: {
+        tickets: true,
+        seats: true,
+        showtime: {
+          include: {
+            movie: true,
+            cinema: true,
+            auditorium: true,
+          },
+        },
+      },
+    });
+
+    if (booking) {
+      const verifiedBookingId = verifyQr(qrString, 1);
+      if (
+        !verifiedBookingId ||
+        (verifiedBookingId !== booking.id && verifiedBookingId !== booking.code)
+      ) {
+        throw new AppError(
+          400,
+          'INVALID_QR_SIGNATURE',
+          'Chữ ký mã QR vé không hợp lệ hoặc đã bị chỉnh sửa',
+        );
+      }
+
+      const allUsed =
+        booking.tickets.length > 0 && booking.tickets.every((t) => t.status === 'USED');
+      if (allUsed) {
+        throw new AppError(
+          400,
+          'TICKET_ALREADY_USED',
+          'Đơn vé này đã được sử dụng check-in trước đó',
+        );
+      }
+
+      await prisma.ticket.updateMany({
+        where: { bookingId: booking.id },
+        data: {
+          status: 'USED',
+          usedAt: new Date(),
+          checkedInById: staffId || null,
+        },
+      });
+
+      return {
+        ticketId: booking.id,
+        status: 'USED',
+        usedAt: new Date(),
+        movieTitle: booking.showtime?.movie?.title || 'Phim CineHub',
+        cinemaName: booking.showtime?.cinema?.name || 'CineHub Cinema',
+        auditoriumName: booking.showtime?.auditorium?.name || 'Phòng chiếu',
+        showtimeStart: booking.showtime?.startTime,
+        seatLabel: booking.seats.map((s) => s.seatLabel).join(', '),
+        bookingCode: booking.code,
+      };
+    }
+
     throw new AppError(404, 'TICKET_NOT_FOUND', 'Vé không tồn tại trong hệ thống');
   }
 

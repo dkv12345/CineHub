@@ -19,6 +19,8 @@ interface BackendBooking {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
   totalAmount: number;
   contactEmail: string;
+  qrCode?: string;
+  qrDataUrl?: string;
   showtime?: {
     movie?: { title: string };
     cinema?: { name: string };
@@ -33,6 +35,7 @@ interface BackendBooking {
   tickets?: Array<{
     id: string;
     qrCode: string;
+    qrDataUrl?: string;
     status: string;
   }>;
   payments?: Array<{
@@ -178,34 +181,41 @@ interface BackendBooking {
               </div>
             </dl>
 
-            <!-- Mã QR Vé Điện Tử -->
-            @if (t.qrCodes && t.qrCodes.length > 0) {
-              <div class="mt-6 border-t border-white/10 pt-4 text-center">
-                <p class="text-xs font-bold text-amber-300">
-                  Mã QR Check-in vào rạp (xuất trình cho nhân viên soát vé):
+            <!-- Mã QR Vé Điện Tử Duy Nhất Cho Đơn Đặt Vé -->
+            @if (t.singleQrCode) {
+              <div class="mt-6 border-t border-white/10 pt-5 text-center">
+                <span
+                  class="inline-block rounded-full border border-amber-400/40 bg-amber-400/15 px-3.5 py-1 text-xs font-black text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.2)]"
+                >
+                  Mã QR Check-in vào rạp (Đại diện cho {{ t.seats.length }} ghế)
+                </span>
+                <p class="mt-2 text-xs font-bold text-slate-300">
+                  Xuất trình mã này cho nhân viên soát vé tại cửa phòng chiếu để vào rạp:
                 </p>
-                <div class="mt-4 flex flex-wrap justify-center gap-4">
-                  @for (qr of t.qrCodes; track $index) {
-                    <div
-                      class="flex flex-col items-center rounded-2xl bg-white p-4 shadow-2xl text-black"
-                    >
-                      <img
-                        [src]="
-                          'https://quickchart.io/qr?text=' +
-                          encodeURIComponent(qr) +
-                          '&size=220&margin=2'
-                        "
-                        alt="QR Ticket Code"
-                        class="h-[220px] w-[220px] object-contain"
-                        loading="eager"
-                      />
+
+                <div class="mt-4 flex flex-col items-center">
+                  <div
+                    class="flex flex-col items-center rounded-3xl bg-white p-5 shadow-2xl text-black"
+                  >
+                    <img
+                      [src]="t.singleQrImage"
+                      alt="QR Check-in Vé"
+                      class="h-[220px] w-[220px] object-contain rounded-xl"
+                      loading="eager"
+                    />
+                    <div class="mt-3 text-center">
                       <span
-                        class="mt-2 font-mono text-xs font-black tracking-widest text-slate-900"
+                        class="block font-mono text-xs font-black tracking-widest text-slate-900"
                       >
-                        {{ qr }}
+                        {{ t.singleQrCode }}
+                      </span>
+                      <span
+                        class="mt-1.5 inline-block rounded-lg bg-slate-100 px-3 py-1 font-mono text-xs font-black text-slate-800"
+                      >
+                        Ghế: {{ t.seats.join(', ') }}
                       </span>
                     </div>
-                  }
+                  </div>
                 </div>
               </div>
             }
@@ -355,6 +365,12 @@ export class ResultPageComponent implements OnInit, OnDestroy {
   }
 
   formatConfirmedBooking(b: BackendBooking) {
+    const singleCode = b.qrCode || b.tickets?.[0]?.qrCode || b.code;
+    const singleImage =
+      b.qrDataUrl ||
+      b.tickets?.[0]?.qrDataUrl ||
+      'https://quickchart.io/qr?text=' + encodeURIComponent(singleCode) + '&size=240&margin=2';
+
     return {
       bookingCode: b.code,
       email: b.contactEmail,
@@ -370,7 +386,8 @@ export class ResultPageComponent implements OnInit, OnDestroy {
       format: b.showtime?.format || '2D',
       seats: (b.seats || []).map((s) => s.seatLabel),
       totalPaid: b.totalAmount,
-      qrCodes: (b.tickets || []).map((t) => t.qrCode).filter(Boolean),
+      singleQrCode: singleCode,
+      singleQrImage: singleImage,
     };
   }
 
@@ -389,6 +406,10 @@ export class ResultPageComponent implements OnInit, OnDestroy {
       '';
     const local = this.store.findTicketById(activeId) ?? this.store.issuedTickets()[0];
     if (local) {
+      const code = local.qrPayload || local.bookingCode;
+      const img =
+        local.qrDataUrl ||
+        'https://quickchart.io/qr?text=' + encodeURIComponent(code) + '&size=240&margin=2';
       return {
         bookingCode: local.bookingCode,
         email: 'bạn',
@@ -399,7 +420,8 @@ export class ResultPageComponent implements OnInit, OnDestroy {
         format: local.format,
         seats: [...local.seats],
         totalPaid: local.totalPaid,
-        qrCodes: [],
+        singleQrCode: code,
+        singleQrImage: img,
       };
     }
 

@@ -9,7 +9,52 @@ import { listSessions } from '../sessions/index.js';
 
 export const adminRouter = Router();
 
+const adminClients = new Set();
+
+export function broadcastAdminEvent(eventType, payload) {
+  const data = JSON.stringify({ type: eventType, payload, timestamp: new Date().toISOString() });
+  for (const client of adminClients) {
+    try {
+      client.res.write(`event: admin_event\ndata: ${data}\n\n`);
+    } catch {
+      adminClients.delete(client);
+    }
+  }
+}
+
 adminRouter.use(requireAuth, requireRole('ADMIN'));
+
+// 0. Live Admin Event Stream (SSE)
+adminRouter.get('/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  if (typeof res.flushHeaders === 'function') {
+    res.flushHeaders();
+  }
+
+  const client = { res, userId: req.user?.id };
+  adminClients.add(client);
+
+  res.write(
+    `event: connected\ndata: ${JSON.stringify({ connectedAt: new Date().toISOString() })}\n\n`,
+  );
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      clearInterval(heartbeat);
+      adminClients.delete(client);
+    }
+  }, 15000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    adminClients.delete(client);
+  });
+});
 
 async function invalidateCatalogAndShowtimeCache(movieId = null) {
   try {
@@ -512,6 +557,11 @@ adminRouter.post('/bookings/:id/refund', async (req, res, next) => {
       type: 'SEAT_HOLD_RELEASED',
       showtimeId: booking.showtimeId,
       releasedSeatIds: booking.seats.map((s) => s.seatLabel),
+    });
+
+    broadcastAdminEvent('BOOKING_REFUNDED', {
+      bookingId: booking.id,
+      code: booking.code,
     });
 
     res.json({ data: { refunded: true, bookingId: booking.id } });

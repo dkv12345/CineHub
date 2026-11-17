@@ -80,14 +80,6 @@ interface MovieGroup {
           </div>
         </header>
 
-        @if (store.stale()) {
-          <p
-            class="mb-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200"
-          >
-            Dữ liệu lịch chiếu đang dùng bản lưu gần nhất từ
-            {{ formatFetchedAt(store.fetchedAt()) }}.
-          </p>
-        }
         @if (store.error() && store.sessions().length > 0) {
           <div
             class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/40 bg-red-950/60 px-4 py-3 text-sm text-red-100"
@@ -106,7 +98,7 @@ interface MovieGroup {
           <div class="mb-4 flex items-center justify-between gap-3">
             <div>
               <p class="text-[10px] font-black uppercase tracking-[.2em] text-amber-300">
-                Lịch trong 7 ngày tới
+                {{ hasMovieFilter() ? 'Ngày chiếu của phim' : 'Lịch chiếu có sẵn' }}
               </p>
               <h2 class="mt-1 text-sm font-black text-white">Chọn ngày xem phim</h2>
             </div>
@@ -160,12 +152,13 @@ interface MovieGroup {
           </div>
         </section>
 
-        <div class="mb-6 rounded-2xl border-2 border-slate-700 bg-slate-900 p-4 shadow-xl">
+        <div class="mb-6">
           <ch-showtime-filter-bar
             [filters]="store.filters()"
             [cities]="store.cities()"
+            [cinemas]="store.cinemas()"
+            [formats]="store.formats()"
             [movies]="store.movies()"
-            [movieLocked]="hasMovieFilter()"
             (filterChanged)="updateFilters($event)"
             (resetClicked)="resetFilters()"
           />
@@ -268,41 +261,57 @@ interface MovieGroup {
                 </div>
                 <div class="space-y-5 p-4 sm:p-5">
                   @for (movieGroup of group.movieGroups; track movieGroup.id) {
-                    <article class="rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5">
-                      <div class="flex items-start gap-4">
+                    <article
+                      class="rounded-2xl border border-white/10 bg-slate-900/60 p-5 sm:p-6 transition hover:border-white/20"
+                    >
+                      <div class="flex items-start gap-4 sm:gap-6">
                         @if (movieGroup.movie.imagePortrait || movieGroup.movie.imageLandscape) {
-                          <img
-                            [src]="
-                              movieGroup.movie.imagePortrait || movieGroup.movie.imageLandscape
-                            "
-                            [alt]="'Poster ' + movieGroup.movie.name"
-                            class="h-24 w-16 shrink-0 rounded-lg object-cover ring-1 ring-white/15 sm:h-28 sm:w-[74px]"
-                          />
+                          <a
+                            [routerLink]="['/movie', movieGroup.movie.dbId || movieGroup.movie.id]"
+                            class="group shrink-0 overflow-hidden rounded-xl ring-1 ring-white/20 shadow-lg block"
+                            [attr.aria-label]="'Chi tiết phim ' + movieGroup.movie.name"
+                          >
+                            <img
+                              [src]="
+                                movieGroup.movie.imagePortrait || movieGroup.movie.imageLandscape
+                              "
+                              [alt]="'Poster ' + movieGroup.movie.name"
+                              class="h-32 w-24 sm:h-40 sm:w-28 md:h-48 md:w-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          </a>
                         }
                         <div class="min-w-0 flex-1">
-                          <div class="flex flex-wrap items-center gap-2">
-                            <ch-age-badge [age]="movieGroup.movie.age" />
+                          <div class="flex flex-wrap items-center gap-2.5">
+                            <ch-age-badge
+                              [age]="movieGroup.movie.age"
+                              class="scale-110 origin-left"
+                            />
                             <a
                               [routerLink]="[
                                 '/movie',
                                 movieGroup.movie.dbId || movieGroup.movie.id,
                               ]"
-                              class="text-lg font-black text-white transition hover:text-amber-300"
+                              class="text-xl sm:text-2xl font-black text-white transition hover:text-amber-300 leading-snug"
                             >
                               {{ movieGroup.movie.name }}
                             </a>
                           </div>
-                          <p class="mt-1 text-xs font-medium text-slate-400">
-                            {{ movieGroup.movie.duration }} phút ·
-                            {{ movieGroup.sessions.length }} suất tại rạp này
+                          <p
+                            class="mt-2 text-sm sm:text-base font-semibold text-slate-300 flex flex-wrap items-center gap-2"
+                          >
+                            <span>⏱ {{ movieGroup.movie.duration }} phút</span>
+                            <span class="text-slate-500">•</span>
+                            <span class="text-amber-300 font-bold"
+                              >{{ movieGroup.sessions.length }} suất tại rạp này</span
+                            >
                           </p>
-                          <div class="mt-4 flex flex-wrap gap-2">
+                          <div class="mt-5 flex flex-wrap gap-2.5 sm:gap-3">
                             @for (session of movieGroup.sessions; track session.id) {
                               @if (session.status === 'SOLD_OUT') {
                                 <button
                                   type="button"
                                   disabled
-                                  class="min-w-[112px] cursor-not-allowed rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-left opacity-60"
+                                  class="min-w-[130px] sm:min-w-[145px] cursor-not-allowed rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-left opacity-60"
                                   [attr.aria-label]="
                                     'Suất ' +
                                     session.showTime +
@@ -311,10 +320,12 @@ interface MovieGroup {
                                     ', đã hết vé'
                                   "
                                 >
-                                  <span class="block text-sm font-black text-slate-300">
+                                  <span
+                                    class="block text-base sm:text-lg font-black text-slate-400"
+                                  >
                                     {{ session.showTime }}
                                   </span>
-                                  <span class="mt-1 block text-[10px] font-bold text-slate-400">
+                                  <span class="mt-1 block text-xs font-bold text-slate-500">
                                     {{ session.movieFormat }} · Hết vé
                                   </span>
                                 </button>
@@ -322,7 +333,7 @@ interface MovieGroup {
                                 <button
                                   type="button"
                                   (click)="onSelectSession(session)"
-                                  class="min-w-[112px] rounded-xl border border-amber-300/35 bg-amber-400/10 px-3 py-2 text-left transition hover:border-amber-300 hover:bg-amber-400 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+                                  class="group/session min-w-[130px] sm:min-w-[150px] rounded-xl border border-amber-300/35 bg-amber-400/10 px-3.5 py-2.5 sm:px-4 sm:py-3 text-left transition duration-200 hover:border-amber-300 hover:bg-amber-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 cursor-pointer shadow-sm hover:shadow-md hover:shadow-amber-400/20 active:scale-[0.98]"
                                   [attr.aria-label]="
                                     'Chọn suất ' +
                                     session.showTime +
@@ -333,13 +344,19 @@ interface MovieGroup {
                                     (store.filters().date ? '' : ', ngày ' + session.showDate)
                                   "
                                 >
-                                  <span class="block text-sm font-black">
+                                  <span
+                                    class="block text-base sm:text-lg font-black text-white group-hover/session:text-slate-950 transition-colors"
+                                  >
                                     {{ session.showTime }}
                                     @if (!store.filters().date) {
-                                      · {{ formatSessionDate(session.showDate) }}
+                                      <span class="text-xs sm:text-sm font-bold opacity-80"
+                                        >· {{ formatSessionDate(session.showDate) }}</span
+                                      >
                                     }
                                   </span>
-                                  <span class="mt-1 block text-[10px] font-bold text-amber-200">
+                                  <span
+                                    class="mt-1 block text-xs sm:text-[13px] font-bold text-amber-300 group-hover/session:text-slate-900 transition-colors"
+                                  >
                                     {{ session.movieFormat }} ·
                                     {{ session.caption === 'voice' ? 'Lồng tiếng' : 'Phụ đề' }}
                                   </span>
@@ -531,9 +548,17 @@ export class ShowtimesPageComponent implements OnInit {
       const date =
         params.get('date') || (legacyDay !== null ? vietnamDate(Number(legacyDay)) : null);
       const movieId = params.get('movie') || params.get('movieId') || 'all';
+      const cinemaId = params.get('cinema') || params.get('cinemaId') || 'all';
+      const cityId = params.get('city') || params.get('cityId') || 'all';
+      const format = params.get('format') || 'all';
+      const searchQuery = params.get('q') || params.get('search') || '';
+
       this.store.updateFilters({
         movieId,
-        cinemaId: params.get('cinema') || params.get('cinemaId') || 'all',
+        cinemaId,
+        cityId,
+        format,
+        searchQuery,
         date,
       });
       if (
@@ -570,8 +595,30 @@ export class ShowtimesPageComponent implements OnInit {
       queryParams['cinemaId'] = null;
     }
     if (filters.movieId !== undefined) {
-      queryParams['movie'] = filters.movieId === 'all' ? null : String(filters.movieId ?? '');
+      queryParams['movie'] =
+        filters.movieId === 'all' || !filters.movieId ? null : String(filters.movieId);
       queryParams['movieId'] = null;
+      const availableDates = this.store.days();
+      const currentDate = this.store.filters().date;
+      if (currentDate && !availableDates.some((d) => d.isoDate === currentDate && d.count > 0)) {
+        const firstDay = availableDates.find((d) => d.count > 0);
+        const newDate = firstDay ? firstDay.isoDate : null;
+        this.store.updateFilters({ date: newDate });
+        queryParams['date'] = newDate;
+      }
+    }
+    if (filters.cityId !== undefined) {
+      queryParams['city'] = filters.cityId === 'all' ? null : (filters.cityId ?? null);
+      queryParams['cityId'] = null;
+    }
+    if (filters.format !== undefined) {
+      queryParams['format'] = filters.format === 'all' ? null : (filters.format ?? null);
+    }
+    if (filters.searchQuery !== undefined) {
+      queryParams['q'] =
+        filters.searchQuery && filters.searchQuery.trim().length > 0
+          ? filters.searchQuery.trim()
+          : null;
     }
     if (Object.keys(queryParams).length > 0) {
       void this.router.navigate([], {
@@ -585,7 +632,7 @@ export class ShowtimesPageComponent implements OnInit {
   resetFilters(): void {
     this.updateFilters({
       date: null,
-      movieId: this.hasMovieFilter() ? this.store.filters().movieId : 'all',
+      movieId: 'all',
       cinemaId: 'all',
       cityId: 'all',
       format: 'all',

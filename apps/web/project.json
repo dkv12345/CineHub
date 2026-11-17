@@ -10,6 +10,17 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "npm run dev -w @cinehub/web"
+      },
+      "configurations": {
+        "portal": {
+          "command": "npm run dev:portal -w @cinehub/web"
+        }
+      }
+    },
+    "serve-portal": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run dev:portal -w @cinehub/web"
       }
     },
     "build": {
